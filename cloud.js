@@ -1,0 +1,64 @@
+let cloudMode=false,owner=false,stopWatch=null,sessionEpoch=0,writeQueue=Promise.resolve(),pendingWrites=0;
+const localJoin=joinGame,localWrite=write,localHome=goHome,baseRender=render;
+function syncStatus(message){el('sync').textContent=message;}
+function canWrite(){return !cloudMode||owner;}
+function updateAccess(){
+  document.querySelectorAll('#score button,#events button,#clockButton,.gameTools button').forEach(b=>b.disabled=!canWrite());
+  if(!canWrite())closePicker();
+}
+render=function(){baseRender();updateAccess();if(cloudMode)el('overlay').href='overlay.html?game='+id;else el('overlay').href='overlay.html?game='+id+'&local=1';};
+function stopCloud(){sessionEpoch++;stopWatch?.();stopWatch=null;cloudMode=false;owner=false;}
+async function signIn(){
+ try{if(!Live.client)throw Error('Cloud library unavailable');const {error}=await Live.client.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});el('password').value='';if(error)throw error;syncStatus('Signed in');if(id&&cloudMode)await joinGame(id);}
+ catch(e){syncStatus(e.message);}
+}
+async function signOut(){if(!Live.client)return;if(pendingWrites){alert('Wait for the current save to finish.');return;}await Live.client.auth.signOut();owner=false;closePicker();if(cloudMode&&id)await joinGame(id);syncStatus('Signed out · public viewing');}
+joinGame=async function(code){
+ if(pendingWrites){alert('Wait for the current save to finish.');return;}
+ const next=String(code||'').trim().toUpperCase();
+ if(!/^[A-Z0-9]{6}$/.test(next)){syncStatus('Enter a six-character game ID');return;}
+ stopCloud();
+ if(el('localMode').checked){localJoin(next);syncStatus('Local only · same browser');return;}
+ cloudMode=true; const epoch=sessionEpoch;syncStatus('Connecting…');
+ try{
+  let privateRow=null;
+  if(Live.client){const {data,error}=await Live.client.auth.getSession();if(error)throw error;if(data.session)privateRow=await Live.read(Live.client,'live_games',next);}
+  const row=await Live.read(Live.client,'live_scoreboards',next);
+  if(epoch!==sessionEpoch)return;
+  if(!row)throw Error('Game not found. For local games, select Local only.');
+  if(channel){channel.close();channel=null;}if(clockTimer)clearInterval(clockTimer);
+  id=next;owner=!!privateRow;state=privateRow?.state||Live.publicState(row);
+  history.replaceState({},'',location.pathname+'?game='+id);
+  el('lobby').classList.add('hide');el('app').classList.remove('hide');render();
+  clockTimer=setInterval(()=>{if(state?.running)render()},250);
+  stopWatch=Live.watch(id,async publicRow=>{
+   if(epoch!==sessionEpoch||!publicRow||pendingWrites)return;
+   if(owner){try{const fresh=await Live.read(Live.client,'live_games',next);if(epoch===sessionEpoch&&!pendingWrites){if(fresh)state=fresh.state;else{owner=false;state=Live.publicState(publicRow);}render();}}catch(e){syncStatus('Scorer refresh failed · retrying');}}
+   else{state=Live.publicState(publicRow);render();}
+  },message=>{if(epoch===sessionEpoch)syncStatus((owner?'Scorer · ':'Read only · ')+message);});
+ }catch(e){if(epoch===sessionEpoch){owner=false;syncStatus(e.message);updateAccess();}}
+};
+goHome=function(event){if(pendingWrites){event?.preventDefault();alert('Wait for the current save to finish.');return false;}stopCloud();return localHome(event);};
+reload=function(){if(!cloudMode){const raw=localStorage.getItem(key(id));if(raw){const next=JSON.parse(raw);if(!state||next.version>=state.version){state=next;render();}}}};
+write=function(fn){
+ if(!cloudMode){localWrite(fn);return Promise.resolve(true);}
+ if(!owner){syncStatus('Read only · sign in as the game owner to score');return Promise.resolve(false);}
+ const game=id,epoch=sessionEpoch;pendingWrites++;
+ const task=writeQueue.then(async()=>{
+  if(epoch!==sessionEpoch) return false;
+  try{
+   for(let attempt=0;attempt<5;attempt++){
+    const row=await Live.read(Live.client,'live_games',game);if(!row)throw Error('Scorer access expired. Sign in again.');
+    const next=structuredClone(row.state);fn(next);next.version=Date.now()+Math.random();
+    const {data,error}=await Live.client.from('live_games').update({state:next}).eq('id',game).eq('state',JSON.stringify(row.state)).select('state');
+    if(error)throw error;
+    if(data?.length){if(epoch===sessionEpoch){state=data[0].state;render();syncStatus('Scorer · saved');}return true;}
+   }
+   throw Error('Another scorer is busy. Try the action again.');
+  }catch(e){syncStatus('Not saved: '+e.message+' · retry the action');return false;}
+ }).finally(()=>pendingWrites--);
+ writeQueue=task.catch(()=>{});return task;
+};
+// Session changes immediately remove scorer controls; RLS remains authoritative.
+Live.client?.auth.onAuthStateChange((event,session)=>{el('authStatus').textContent=session?'Signed in as '+session.user.email:'View publicly or sign in to score';if(!session){owner=false;if(cloudMode&&state){state={...state,events:[],rosters:{}};render();}updateAccess();}});
+(async()=>{if(Live.client){const {data}=await Live.client.auth.getSession();el('authStatus').textContent=data.session?'Signed in as '+data.session.user.email:'View publicly or sign in to score';}const params=new URLSearchParams(location.search);el('localMode').checked=params.get('local')==='1';if(params.get('game'))joinGame(params.get('game'));})();
