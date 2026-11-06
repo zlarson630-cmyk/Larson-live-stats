@@ -1,0 +1,52 @@
+/* Larson Live Stats v0.5 — presentation-only athletic refresh */
+@import url('https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700&family=Barlow+Condensed:ital,wght@1,800&display=swap');
+:root{font-family:'Barlow',system-ui,sans-serif;color:#252b34;background:#f6f7f9;color-scheme:light}
+body{background:#f6f7f9;color:#252b34;font-family:'Barlow',system-ui,sans-serif}
+main{max-width:1120px}
+header{padding:12px 3px 8px;border-bottom:1px solid #dce2e8}
+header h1{margin:5px 0;font-size:clamp(20px,3vw,29px)}
+.brandHome{display:inline-flex;align-items:center;gap:11px;text-transform:uppercase;font-family:'Barlow Condensed','Barlow',sans-serif;font-style:italic;font-weight:800;letter-spacing:.025em;color:#252b34}
+.brandHome:before{content:'Z';display:inline-grid;place-items:center;width:36px;height:36px;flex:none;background:#d71936;color:white;font-family:'Barlow',sans-serif;font-style:italic;font-size:23px;font-weight:800;clip-path:polygon(50% 0,82% 11%,100% 39%,96% 72%,72% 97%,35% 100%,7% 78%,0 42%,19% 12%)}
+section{background:#fff;color:#252b34;border:1px solid #e0e5eb;border-radius:15px;box-shadow:0 2px 9px rgba(28,43,61,.045)}
+h1,h2,h3{color:#252b34}h2,h3{font-family:'Barlow Condensed','Barlow',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:.035em}
+h2{font-size:clamp(22px,3vw,29px);margin-top:0}
+button,input,select,textarea{font-family:'Barlow',system-ui,sans-serif}
+button{background:#e9edf2;color:#283441;border:1px solid #d3dce5;border-radius:10px;font-weight:700;box-shadow:0 1px 2px rgba(20,35,50,.07);transition:background .12s,border-color .12s,transform .1s,box-shadow .12s}
+button:hover:not(:disabled){background:#dce4ed;border-color:#aab9c8;box-shadow:0 2px 6px rgba(20,35,50,.10)}
+button:active:not(:disabled){transform:scale(.97);filter:brightness(.96)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #d71936;outline-offset:2px}
+button.primary{background:#d71936;border-color:#b9142c;color:#fff}
+button.primary:hover:not(:disabled){background:#bb1730}
+button:disabled{opacity:.5}
+input:not([type=color]):not([type=checkbox]):not([type=file]),select,textarea,.seasonGrid select{background:#fff;color:#252b34;border:1px solid #bfcbd7;border-radius:9px}
+input[type=checkbox]{accent-color:#d71936;width:17px;height:17px;vertical-align:middle}
+input[type=color]{background:#fff;border:1px solid #cbd5e1}
+textarea{background:#fff;color:#252b34}
+.small,.compactBottom,#broadcast .bc-muted{color:#667586}
+.notice{color:#9a6100}.ok{color:#16754c}.pending{color:#9d1b35;border-color:#dc5870}
+a{color:#ad1830}
+.event{border-color:#e2e8ef}
+.scoreTeam{border-color:#c8d2dc;background:#fff}
+.scoreTeam .secondaryAction{background:#e8edf2;color:#283441}
+.teamTile{background:#f8fafc}
+.jerseyBadge{box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.big{font-variant-numeric:tabular-nums;font-weight:800}
+.picker{background:rgba(19,29,43,.67)}
+.pickerPanel{background:#fff;color:#252b34;box-shadow:0 -10px 35px rgba(0,0,0,.15)}
+.confirming .pickerPanel{background:#d9f2e5}
+.confirmIcon{color:#16754c}
+#pdfReview{background:#fff9e8;border-color:#dfac41}
+.pdfUpload{border-color:#b8c5d3}
+details summary{font-weight:700}
+#broadcast{background:#f6f7f9;color:#252b34}
+#broadcast .bc-team,#broadcast .bc-card{background:#fff;color:#252b34;border:1px solid #e0e5eb;box-shadow:0 2px 9px rgba(28,43,61,.045)}
+#broadcast .bc-team{border-top:5px solid var(--jersey)}
+#broadcast .bc-card{border-left:5px solid var(--team-color,#d71936)}
+#broadcast .bc-card h3{color:#252b34}
+#broadcast td,#broadcast th,#broadcast .bc-play{border-bottom-color:#e0e5eb}
+#broadcast th{color:#5a6a7c}
+#broadcast .bc-head a{background:#27394b;color:#fff}
+#broadcast .bc-card.bc-player h3{color:var(--team-ink,#fff)}
+#broadcast .bc-compare-head{color:#fff}
+@media(max-width:600px){header h1{font-size:19px}.brandHome{gap:7px}.brandHome:before{width:28px;height:28px;font-size:18px}section{box-shadow:none}button{min-height:39px}}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
