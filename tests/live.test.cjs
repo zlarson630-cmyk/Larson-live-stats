@@ -4,12 +4,12 @@ const vm=require('node:vm');
 const fs=require('node:fs');
 function app(){
  const nodes=new Map(), storage=new Map();
- const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
  const ctx=vm.createContext({console,structuredClone,URLSearchParams,Date,Math,Promise,
  document:{getElementById:node,querySelectorAll:()=>[],addEventListener(){},removeEventListener(){}},
  localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},
  location:{pathname:'/',search:''},history:{replaceState(){}},
- setInterval:()=>1,clearInterval(){},alert(){},confirm:()=>true,prompt:()=>null,
+ setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},alert(){},confirm:()=>true,prompt:()=>null,
  BroadcastChannel:class{postMessage(){}close(){}},Live:{client:null,watch(){return ()=>{}}}});
  ctx.window=ctx;ctx.addEventListener=()=>{};
  vm.runInContext(fs.readFileSync('index.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);

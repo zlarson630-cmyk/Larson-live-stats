@@ -1,0 +1,14 @@
+/* Soccer-only controls: both teams remain available at every viewport width. */
+@font-face{font-family:Barlow;src:url('fonts/Barlow-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:Barlow;src:url('fonts/Barlow-Bold.ttf') format('truetype');font-weight:700 900;font-display:swap}
+@font-face{font-family:'Barlow Condensed';src:url('fonts/BarlowCondensed-Bold.ttf') format('truetype');font-weight:700 900;font-display:swap}
+.eventColumns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.eventColumn{min-width:0;display:flex;flex-direction:column;gap:8px;border-top:7px solid var(--color);background:#f4f6f8;border-radius:10px;padding:12px}
+.eventColumn h3{font:700 24px 'Barlow Condensed',sans-serif;font-style:normal;margin:0 0 8px;overflow-wrap:anywhere}
+.teamRole{font-size:11px;letter-spacing:.12em;font-weight:700;color:#586473}
+.eventColumn button{min-height:48px;width:100%;border-left:5px solid var(--color);text-align:left;background:#fff;padding:10px 12px;line-height:1.15}
+.eventColumn button:first-of-type{background:#252b34;color:#fff;font-size:19px;min-height:54px}
+.eventColumn button:focus-visible{outline:3px solid #d71936;outline-offset:2px}
+.team{background:#f4f6f8;color:#252b34}.muted{color:#586473}.sticky{background:#fff}.stat,.feed article{border-color:#dce2e8}
+#entry{border-top:2px solid #d71936;margin-top:18px;padding-top:12px}#entry input{width:100%}#entry label{display:block}#entry button{min-height:48px}#entryTitle{overflow-wrap:anywhere}
+@media(max-width:560px){.eventColumns{gap:8px}.eventColumn{padding:8px;gap:7px}.eventColumn h3{font-size:21px}.eventColumn button{font-size:14px;padding:9px 7px;min-height:48px}.sticky{position:static}.row button{min-height:44px}header h1{font-size:18px}header h1 small{display:block;margin-top:5px}}
