@@ -12,3 +12,5 @@
 .team{background:#f4f6f8;color:#252b34}.muted{color:#586473}.sticky{background:#fff}.stat,.feed article{border-color:#dce2e8}
 #entry{border-top:2px solid #d71936;margin-top:18px;padding-top:12px}#entry input{width:100%}#entry label{display:block}#entry button{min-height:48px}#entryTitle{overflow-wrap:anywhere}
 @media(max-width:560px){.eventColumns{gap:8px}.eventColumn{padding:8px;gap:7px}.eventColumn h3{font-size:21px}.eventColumn button{font-size:14px;padding:9px 7px;min-height:48px}.sticky{position:static}.row button{min-height:44px}header h1{font-size:18px}header h1 small{display:block;margin-top:5px}}
+
+.clockSettings{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:12px 0}.clockSettings label{display:flex;flex-direction:column;gap:6px;flex:1;min-width:130px}.clockSettings input,.clockSettings select{width:100%;min-height:44px}.clockCaption{text-align:center;margin:0 0 8px}#clockSettings summary{cursor:pointer;padding:8px 0}
