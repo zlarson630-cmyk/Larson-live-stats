@@ -52,3 +52,28 @@ test('public subscription catches up on reconnect, polls and cleans up',async()=
  cb('CHANNEL_ERROR');assert.match(status,/Reconnecting/);cb('SUBSCRIBED');await new Promise(setImmediate);assert.equal(last.home_score,2);
  await refresh();assert.equal(last.home_score,3);stop();await refresh();assert.equal(reads,3);assert.equal(removed,1);
 });
+
+test('all missed shot types keep scores, fouls and scoring runs intact; support assignment and undo',async()=>{
+ const a=app();a.node('localMode').checked=true;await a.run('createGame()');
+ await a.run("score('home',2)");a.run('closePicker()');
+ for(const [team,points] of [['home',1],['away',2],['home',3]]){
+  await a.run(`miss('${team}',${points})`);
+  assert.match(a.node('pickerTitle').textContent,/Who missed/);
+  assert.match(a.node('pickerHint').textContent,new RegExp(points===1?'Miss FT':`Miss ${points} PT`));
+  await a.run("pickerValue('23')");
+  assert.equal(a.run('state.events[0].scorer'),'23');
+  assert.match(a.run('eventHtml(state.events[0])'),/Shooter: #23/);
+  assert.doesNotMatch(a.run('eventHtml(state.events[0])'),/Assist:/);
+ }
+ assert.equal(a.run('state.scores.home'),2);assert.equal(a.run('state.scores.away'),0);
+ assert.equal(a.run('state.fouls.home'),0);assert.match(a.node('run').textContent,/2–0 run/);
+ assert.match(a.node('recent').textContent,/Miss 3 PT · #23/);
+ a.run('undo()');assert.equal(a.run('state.events.length'),3);assert.equal(a.run('state.scores.home'),2);
+ a.run('reload()');assert.equal(a.run('state.events[0].points'),2);
+});
+test('cloud misses save privately without score changes and cannot be recorded by public viewers',async()=>{
+ const a=app(),db=cloud(a);await a.run("miss('away',3)");
+ assert.equal(db.row().events[0].kind,'miss');assert.equal(db.row().events[0].points,3);
+ assert.equal(db.row().scores.away,0);a.run('owner=false;closePicker()');
+ await a.run("miss('home',1)");assert.equal(db.calls(),1);assert.equal(a.run('pickerEvent'),null);
+});
