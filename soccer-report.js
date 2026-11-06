@@ -53,7 +53,7 @@ window.SoccerReport=(()=>{
   text('Clock: '+(SoccerClock.mode(match)==='down'?'COUNT DOWN':'COUNT UP')+' / '+(SoccerClock.duration(match)/60)+' minute halves',m,y,9,regular,muted);y+=12;
   text("'left' marks time remaining; other event times show elapsed time. Generated "+new Date().toLocaleString(),m,y,8,regular,muted);y+=7;
   section('Team comparison');
-  const definitions=[['Goals','Goal'],['Shots on goal','Shot on goal'],['Shots off target','Shot off target'],['Saves','Save'],['Corners','Corner'],['Fouls','Foul'],['Yellow cards','Yellow card'],['Red cards','Red card'],['Offsides','Offside']];if(match.trackCrosses)definitions.push(['Crosses','Cross']);
+  const definitions=[['Goals','Goal'],['Shots on goal','Shot on goal'],['Shots off target','Shot off target'],['Saves','Save'],['Corners','Corner'],['Fouls','Foul'],['Yellow cards','Yellow card'],['Red cards','Red card'],['Offsides','Offside']];if(match.trackCrosses||match.trackedStats?.includes('Cross'))definitions.push(['Crosses','Cross']);if(match.trackedStats?.includes('Free kick'))definitions.push(['Free kicks','Free kick']);if(match.trackedStats?.includes('Team save'))definitions.push(['Team saves','Team save']);
   table(['HOME','STATISTIC','VISITOR'],[110,316,110],definitions.map(([label,k])=>[tally('home',k)+(k==='Shot on goal'?tally('home','Goal'):0),label,tally('away',k)+(k==='Shot on goal'?tally('away','Goal'):0)]));
   section('Scoring summary');
   const ordered=SoccerClock.order(events,match);
