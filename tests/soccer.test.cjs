@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),vm=requir
 function app(){
  const nodes=new Map(),storage=new Map();
  function node(id){if(!nodes.has(id)){const classes=new Set();nodes.set(id,{value:'',textContent:'',children:[],style:{setProperty(){}},classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle(c,on){on?classes.add(c):classes.delete(c)}},setAttribute(k,v){this[k]=v},append(...a){this.children.push(...a)},set innerHTML(v){this.children=[];this.html=v},get innerHTML(){return this.html||''},scrollIntoView(){}})}return nodes.get(id)}
- const ctx=vm.createContext({console,Date,Math,Promise,JSON,document:{getElementById:node,createElement:()=>node(Symbol()),querySelectorAll:()=>[]},localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},setInterval:()=>1,clearInterval(){},confirm:()=>true,alert(){},prompt:()=>null,Live:{client:null}});ctx.window=ctx;
+ const ctx=vm.createContext({console,Date,Math,Promise,JSON,URL,document:{getElementById:node,createElement:()=>node(Symbol()),querySelectorAll:()=>[]},localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},setInterval:()=>1,clearInterval(){},confirm:()=>true,alert(){},prompt:()=>null,Live:{client:null}});ctx.window=ctx;
  vm.runInContext(fs.readFileSync('soccer-clock.js','utf8'),ctx);ctx.SoccerClock=ctx.window.SoccerClock;
  vm.runInContext(fs.readFileSync('soccer.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);
  node('home').value='Home';node('away').value='Visitor';node('hc').value='#ffffff';node('ac').value='#245eaa';node('hr').value='9, Jordan\n7, Casey';node('ar').value='1, Alex';
@@ -54,10 +54,29 @@ test('broadcaster and public OBS use the same countdown math and clamp expired c
  for(const file of ['soccer-broadcast.html','soccer-overlay.html']){
   const nodes=new Map(),node=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',innerHTML:'',style:{setProperty(){}}});return nodes.get(id)};
   const state={home:'H',away:'A',scores:{home:0,away:0},colors:{},events:[],rosters:{},period:1,seconds:60,clockMode:'down',running:true,startedAt:100000};
-  const ctx=vm.createContext({window:{},Date:class extends Date{static now(){return 105000}},URLSearchParams,location:{search:file.includes('overlay')?'?game=ABC123':'?local=1'},document:{getElementById:node},localStorage:{getItem:()=>JSON.stringify(state)},setInterval:()=>1,Live:{watch(id,cb){cb({home:'H',away:'A',clock_mode:'down'})},publicState:()=>state}});
+  const ctx=vm.createContext({window:{},Date:class extends Date{static now(){return 105000}},URLSearchParams,location:{search:file.includes('overlay')?'?game=ABC123':'?local=1'},document:{getElementById:node},localStorage:{getItem:()=>JSON.stringify(state)},setInterval:()=>1,SoccerBrand:{logo(){}},Live:{watch(id,cb){cb({home:'H',away:'A',clock_mode:'down'})},publicState:()=>state}});
   vm.runInContext(fs.readFileSync('soccer-clock.js','utf8'),ctx);ctx.SoccerClock=ctx.window.SoccerClock;
   vm.runInContext(fs.readFileSync(file,'utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);
   vm.runInContext(file.includes('broadcast')?'tick()':'draw()',ctx);assert.match(node('clock').textContent,/00:55$/);
   ctx.Date=class extends Date{static now(){return 200000}};vm.runInContext(file.includes('broadcast')?'tick()':'draw()',ctx);assert.match(node('clock').textContent,/00:00$/);
  }
+});
+test('shots on goal auto-credit the opposing keeper in one linked pair; goals do not create saves',()=>{
+ const a=app();a.run("s.goalkeepers={home:'7, Casey',away:'1, Alex'};choose('Shot on goal','home')");assert.equal(a.node('savePlayer').value,'1, Alex');a.node('player').value='9, Jordan';a.node('eventTime').value='12:00';a.run('saveEvent()');assert.equal(a.run('s.events.length'),2);assert.equal(a.run('s.events[1].team'),'away');assert.equal(a.run('s.events[1].kind'),'Save');assert.equal(a.run('s.events[1].player'),'1, Alex');assert.equal(a.run('s.events[1].time'),720);assert.equal(a.run('s.events[0].saveId===s.events[1].id'),true);assert.equal(a.run('s.events[1].shotId===s.events[0].id'),true);assert.equal(a.node('homeScore').textContent,0);
+ a.run("choose('Goal','home')");a.node('eventTime').value='11:00';a.run('saveEvent()');assert.equal(a.run("s.events.filter(e=>e.kind==='Save').length"),1);assert.equal(a.node('homeScore').textContent,1);
+});
+test('missing keeper prompts with opposing roster; override and cancellation do not mutate lineup',()=>{
+ const a=app();a.run("choose('Shot on goal','home')");assert.equal(a.node('savePlayer').value,'');assert.equal(a.node('savePlayers').children[0].textContent,'1, Alex');assert.match(a.node('saveHint').textContent,/Who made the save/);a.node('savePlayers').children[0].onclick();a.node('eventTime').value='01:00';a.run('cancelEntry()');assert.equal(a.run('s.events.length'),0);
+ a.run("s.goalkeepers={away:'1, Alex'};choose('Shot on goal','home')");a.node('savePlayer').value='Substitute keeper';a.node('eventTime').value='01:00';a.run('saveEvent()');assert.equal(a.run('s.events[1].player'),'Substitute keeper');assert.equal(a.run('s.goalkeepers.away'),'1, Alex');
+});
+test('editing either side preserves pair IDs; delete and undo remove both without orphan saves',()=>{
+ const a=app();a.run("choose('Shot on goal','away')");a.node('savePlayer').value='7, Casey';a.node('eventTime').value='10:00';a.run('saveEvent();editEvent(s.events[1].id)');assert.equal(a.run('kind'),'Shot on goal');assert.equal(a.node('savePlayer').value,'7, Casey');a.node('savePlayer').value='9, Jordan';a.node('eventTime').value='09:30';a.run('saveEvent()');assert.equal(a.run('s.events.length'),2);assert.equal(a.run('s.events[1].time'),570);assert.equal(a.run('s.events[1].player'),'9, Jordan');a.run('deleteEvent(s.events[1].id)');assert.equal(a.run('s.events.length'),0);
+ a.run("choose('Shot on goal','home')");a.node('eventTime').value='08:00';a.run('saveEvent();resume();undo()');assert.equal(a.run('s.events.length'),0);
+});
+test('legacy shots stay unlinked until corrected; read-only cannot add pairs or update keepers',()=>{
+ const a=app();a.run("s.events=[{id:'legacy',team:'home',kind:'Shot on goal',time:60,period:1,player:'9, Jordan'}];editEvent('legacy')");assert.equal(a.node('savePlayer').value,'');a.node('savePlayer').value='1, Alex';a.run('saveEvent()');assert.equal(a.run('s.events.length'),2);a.run('editEvent(s.events[0].id);endMatch();saveEvent()');assert.equal(a.run('s.events.length'),2);
+ a.run("cloudId='ABC123';cloudOwner=false;cancelEntry();choose('Shot on goal','home');saveLineupSettings()");assert.equal(a.run('kind'),null);assert.equal(a.run('s.events.length'),2);
+});
+test('starting/current keepers and HTTPS logos survive saved matches; invalid URLs are rejected',()=>{
+ const a=app();a.node('homeKeeper').value='7, Casey';a.node('awayKeeper').value='1, Alex';a.node('homeLogo').value='https://example.com/logo.png';a.node('awayLogo').value='javascript:alert(1)';a.run('newMatch();resume()');assert.equal(a.run('s.goalkeepers.away'),'1, Alex');assert.equal(a.run('s.logos.home'),'https://example.com/logo.png');assert.equal(a.run('s.logos.away'),'');a.node('currentAwayKeeper').value='Sub keeper';a.run('saveLineupSettings();resume()');assert.equal(a.run('s.goalkeepers.away'),'Sub keeper');a.run("choose('Shot on goal','home')");assert.equal(a.node('savePlayer').value,'Sub keeper');
 });

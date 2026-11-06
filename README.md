@@ -1,6 +1,6 @@
 # Larson Live Stats
 
-Basketball scoring with private scorer state and a public, read-only OBS scoreboard.
+Basketball and soccer scoring with private scorer state, public OBS scoreboards, and a reusable Team Brands library.
 
 App: https://zlarson630-cmyk.github.io/Larson-live-stats/
 
@@ -30,3 +30,11 @@ Run `node --test tests/live.test.cjs` (Node 20+). These tests exercise the actua
 Live endpoint verification during implementation: public scoreboard SELECT returned 200; anonymous private SELECT returned no rows; anonymous inserts into both `live_games` and `live_scoreboards` were denied by RLS (401 / 42501). No authenticated scorer credentials were supplied, so real signed-in writes, realtime delivery and OBS rendering still require the manual test above. No test game was inserted by the anonymous checks.
 
 Supabase API references: https://supabase.com/docs/reference/javascript/auth-signinwithpassword and https://supabase.com/docs/guides/realtime/postgres-changes
+
+## Reusable Team Brands
+
+Open `brands.html` to save team/school names, nicknames, short names, logos and whites/primary uniform schemes and an optional alternate. Upload PNG/JPG/WebP logos or use HTTPS image links. Select a saved team and uniform in either sport’s setup. The library is stored on this device/browser; export/import JSON to back it up or move it to another device. Games retain brand snapshots.
+
+Soccer shots on goal create a linked save for the other team. Set each current goalkeeper in setup or under **Goalkeepers and team logos**; update it after a keeper substitution. Without a designated keeper, the event form offers the opponent roster. Goals do not create saves. Edit/delete/undo keeps linked shots and saves together.
+
+The connected database has the public display updates in `supabase/002_soccer_clock.sql`, `003_soccer_logos.sql`, and `004_team_brand_display.sql`. New database installations should apply them after `001_live_games.sql`. Public display metadata contains logos and compact names; rosters and goalkeeper assignments stay in private game state.
