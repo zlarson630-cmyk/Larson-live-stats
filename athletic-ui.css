@@ -50,3 +50,35 @@ details summary{font-weight:700}
 #broadcast .bc-compare-head{color:#fff}
 @media(max-width:600px){header h1{font-size:19px}.brandHome{gap:7px}.brandHome:before{width:28px;height:28px;font-size:18px}section{box-shadow:none}button{min-height:39px}}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
+
+/* Mobile lobby repair: isolate auth fields and prevent overlapping controls */
+#lobby{min-width:0}
+#lobby>label{display:block;margin:10px 0;font-weight:600}
+#lobby>label input{display:block;width:100%;max-width:100%;margin-top:6px;min-width:0}
+#lobby>input{width:calc(50% - 8px);max-width:none;min-width:0;margin:6px 4px 6px 0}
+#lobby>button{margin:5px 5px 5px 0}
+#lobby .uniformSetup{grid-template-columns:repeat(2,minmax(0,1fr))}
+#lobby .uniformSetup label{min-width:0;justify-content:space-between;gap:6px}
+#lobby .seasonGrid>*{min-width:0}
+#lobby .seasonGrid select,#lobby .seasonGrid textarea{max-width:100%}
+#lobby .seasonGrid button{max-width:100%;white-space:normal}
+@media(max-width:600px){
+header{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:start}
+header h1{min-width:0}
+header h1 .small{display:block;margin:2px 0 0 35px;font-size:11px}
+header #sync{font-size:12px;max-width:100px;text-align:right;overflow-wrap:anywhere}
+#lobby{padding:15px}
+#lobby>label{margin:12px 0}
+#lobby>label input{height:46px}
+#lobby>button{min-height:44px;margin:5px 7px 5px 0}
+#lobby>input{width:100%;margin:6px 0}
+#lobby .uniformSetup{gap:8px;margin:10px 0}
+#lobby .uniformSetup label{display:flex;flex-direction:column;align-items:flex-start;font-size:13px}
+#lobby .uniformSetup input[type=color]{width:100%;max-width:90px}
+#lobby details{margin-top:16px}
+#lobby details>summary{padding:12px 0}
+#lobby .seasonGrid{gap:12px}
+#lobby .seasonGrid select{min-height:46px}
+#lobby .seasonGrid button{width:100%;margin:8px 0}
+#lobby .pdfUpload input{width:100%;max-width:100%}
+}
