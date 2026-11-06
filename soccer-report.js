@@ -46,15 +46,15 @@ window.SoccerReport=(()=>{
   page(true);
   text(match.finished?'FINAL REPORT':'IN PROGRESS',m,y+5,10,bold,red);
   text('HALF '+match.period+'  /  '+fmt(match.seconds),574,y+5,10,bold,muted,{align:'right'});y+=20;
-  const nameLines=['home','away'].map(t=>wrap(match[t],206,22,heading));
+  const nameLines=['away','home'].map(t=>wrap(match[t],206,22,heading));
   const scoreHeight=Math.max(105,66+Math.max(...nameLines.map(a=>a.length))*25);
   rect(m,y,w,scoreHeight,ink);
-  ['home','away'].forEach((t,i)=>{const x=m+i*268;rect(x,y,268,5,color(t));text(t==='home'?'HOME':'VISITOR',x+16,y+23,9,bold,'#dce2e8');nameLines[i].forEach((line,j)=>text(line,x+16,y+49+j*25,22,heading,'#ffffff'));text(tally(t,'Goal'),x+246,y+scoreHeight-15,37,heading,'#ffffff',{align:'right'})});y+=scoreHeight+18;
+  ['away','home'].forEach((t,i)=>{const x=m+i*268;rect(x,y,268,5,color(t));text(t==='home'?'HOME':'VISITOR',x+16,y+23,9,bold,'#dce2e8');nameLines[i].forEach((line,j)=>text(line,x+16,y+49+j*25,22,heading,'#ffffff'));text(tally(t,'Goal'),x+246,y+scoreHeight-15,37,heading,'#ffffff',{align:'right'})});y+=scoreHeight+18;
   text('Clock: '+(SoccerClock.mode(match)==='down'?'COUNT DOWN':'COUNT UP')+' / '+(SoccerClock.duration(match)/60)+' minute halves',m,y,9,regular,muted);y+=12;
   text("'left' marks time remaining; other event times show elapsed time. Generated "+new Date().toLocaleString(),m,y,8,regular,muted);y+=7;
   section('Team comparison');
   const definitions=[['Goals','Goal'],['Shots on goal','Shot on goal'],['Shots off target','Shot off target'],['Saves','Save'],['Corners','Corner'],['Fouls','Foul'],['Yellow cards','Yellow card'],['Red cards','Red card'],['Offsides','Offside']];if(match.trackCrosses||match.trackedStats?.includes('Cross'))definitions.push(['Crosses','Cross']);if(match.trackedStats?.includes('Free kick'))definitions.push(['Free kicks','Free kick']);if(match.trackedStats?.includes('Team save'))definitions.push(['Team saves','Team save']);if(match.trackedStats?.includes('Injury timeout'))definitions.push(['Injury timeouts','Injury timeout']);
-  table(['HOME','STATISTIC','VISITOR'],[110,316,110],definitions.map(([label,k])=>[tally('home',k)+(k==='Shot on goal'?tally('home','Goal'):0),label,tally('away',k)+(k==='Shot on goal'?tally('away','Goal'):0)]));
+  table(['VISITOR','STATISTIC','HOME'],[110,316,110],definitions.map(([label,k])=>[tally('away',k)+(k==='Shot on goal'?tally('away','Goal'):0),label,tally('home',k)+(k==='Shot on goal'?tally('home','Goal'):0)]));
   section('Scoring summary');
   const ordered=SoccerClock.order(events,match);
   table(['HALF / TIME','TEAM','GOAL / ASSIST'],[80,150,306],ordered.filter(e=>e.kind==='Goal').map(e=>['H'+e.period+' '+SoccerClock.timeLabel(e,fmt),match[e.team],(e.player||'Unassigned')+(e.assist?' / Assist: '+e.assist:'')]));
