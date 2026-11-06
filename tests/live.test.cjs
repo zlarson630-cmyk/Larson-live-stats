@@ -4,7 +4,7 @@ const vm=require('node:vm');
 const fs=require('node:fs');
 function app(){
  const nodes=new Map(), storage=new Map();
- const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',parentElement:{style:{}},style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
  const ctx=vm.createContext({console,structuredClone,URLSearchParams,Date,Math,Promise,
  document:{getElementById:node,querySelectorAll:()=>[],addEventListener(){},removeEventListener(){}},
  localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},

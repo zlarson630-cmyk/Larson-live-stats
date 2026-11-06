@@ -1,0 +1,9 @@
+# Profile dashboard
+
+Open My Profile from the account indicator in Basketball, Soccer, or Team Brands, or visit `profile.html`. The indicator displays signed-in email, signed-out state, or an unavailable-account state. The dashboard supports existing scorer email/password sign-in and sign-out.
+
+Teams combines brand identities and teams in saved games. Brands opens the existing editor, including a selected team's edit form. Rosters displays browser-local basketball season libraries and roster snapshots from saved games. Previous games lists owner-only cloud games and browser-local basketball/soccer games, with search, sport filtering, scores and direct reopen links. Account and device items have explicit badges. Local records are never uploaded automatically. Account brands use the existing private `team_brand_libraries` table; games use existing owner-filtered `live_games` reads and RLS. No schema change is required on the configured project.
+
+Cloud games load in pages of 100. Private results are held only in memory, cleared immediately on account changes, and protected against late responses from previous sessions. Refresh, browser focus, online and storage events reload the dashboard. Soccer links support cloud game codes, archived local matches and the legacy current match.
+
+Verification: 21 profile, account-brand, brand and basketball tests pass. Four profile tests cover mixed local archives, correct links, owner-filtered reads, sign-out with an in-flight cloud read, malformed entries and search. Existing soccer tests have eight failures also present with the unchanged published soccer implementation: stale event-count/time-field expectations and incomplete entry-sheet DOM mocks. This change does not alter soccer scoring functions. A real signed-in browser flow still needs user credentials; automated account coverage uses simulated sessions.

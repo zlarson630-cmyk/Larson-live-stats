@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 function app(){
  const nodes=new Map(),storage=new Map();
- function node(id){if(!nodes.has(id)){const classes=new Set();nodes.set(id,{value:'',textContent:'',children:[],style:{setProperty(){}},classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle(c,on){on?classes.add(c):classes.delete(c)}},setAttribute(k,v){this[k]=v},append(...a){this.children.push(...a)},set innerHTML(v){this.children=[];this.html=v},get innerHTML(){return this.html||''},scrollIntoView(){}})}return nodes.get(id)}
+ function node(id){if(!nodes.has(id)){const classes=new Set();nodes.set(id,{value:'',textContent:'',children:[],querySelectorAll(){return []},style:{setProperty(){}},classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle(c,on){on?classes.add(c):classes.delete(c)}},setAttribute(k,v){this[k]=v},append(...a){this.children.push(...a)},set innerHTML(v){this.children=[];this.html=v},get innerHTML(){return this.html||''},scrollIntoView(){}})}return nodes.get(id)}
  const ctx=vm.createContext({console,Date,Math,Promise,JSON,URL,document:{getElementById:node,createElement:()=>node(Symbol()),querySelectorAll:()=>[]},localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},setInterval:()=>1,clearInterval(){},confirm:()=>true,alert(){},prompt:()=>null,Live:{client:null}});ctx.window=ctx;
  vm.runInContext(fs.readFileSync('soccer-clock.js','utf8'),ctx);ctx.SoccerClock=ctx.window.SoccerClock;
  vm.runInContext(fs.readFileSync('soccer.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);
