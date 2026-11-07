@@ -3,25 +3,47 @@ const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
 function app(){
- const nodes=new Map(), storage=new Map();
- const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',parentElement:{style:{}},style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
+ const nodes=new Map(), storage=new Map(),listeners=new Map();
+ let activeElement=null;
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',parentElement:{style:{}},style:{},classList:{add(){},remove(){},toggle(){},contains(c){return c==='hide'&&id==='subSheet'}},focus(){activeElement=this},blur(){activeElement=null},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
  const ctx=vm.createContext({console,structuredClone,URLSearchParams,Date,Math,Promise,
- document:{getElementById:node,querySelectorAll:()=>[],addEventListener(){},removeEventListener(){}},
+ document:{getElementById:node,get activeElement(){return activeElement},querySelectorAll:()=>[],addEventListener(type,handler){listeners.set(type,handler)},removeEventListener(){}},
  localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},
  location:{pathname:'/',search:''},history:{replaceState(){}},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},alert(){},confirm:()=>true,prompt:()=>null,
  BroadcastChannel:class{postMessage(){}close(){}},Live:{client:null,watch(){return ()=>{}}}});
  ctx.window=ctx;ctx.addEventListener=()=>{};
- vm.runInContext(fs.readFileSync('index.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);
+ vm.runInContext(fs.readFileSync('soccer-brand.js','utf8'),ctx);ctx.SoccerBrand.logo=()=>{};
+ vm.runInContext(fs.readFileSync('basketball.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);
  vm.runInContext(fs.readFileSync('cloud.js','utf8'),ctx);
- return {ctx,node,run:s=>vm.runInContext(s,ctx)};
+ const press=(key,options={})=>listeners.get('keydown')({key,target:activeElement,preventDefault(){},...options});
+ return {ctx,node,press,run:s=>vm.runInContext(s,ctx)};
 }
 const initial={id:'ABC123',home:'Home',away:'Away',scores:{home:0,away:0},colors:{home:'#ffffff',away:'#c62828'},fouls:{home:0,away:0},timeouts:{home:5,away:5},period:1,seconds:480,running:false,startedAt:null,events:[],version:1};
-function cloud(a,{conflicts=0,fail=false}={}){
- let row=structuredClone(initial), calls=0;
+function cloud(a,{conflicts=0,fail=false,game=initial}={}){
+ let row=structuredClone(game), calls=0;
  a.ctx.Live.read=async()=>({state:structuredClone(row)});
- a.ctx.Live.client={from:()=>({update:({state})=>{calls++;const q={eq:(key,value)=>{if(key==='state')assert.equal(typeof value,'string');return q;},select:async()=>{if(fail)return {error:Error('offline')};if(conflicts-->0){row.scores.home++;return {data:[]};}row=state;return {data:[{state:row}]};}};return q;}})};
- a.run("cloudMode=true;owner=true;id='ABC123'");a.ctx.seed=initial;a.run('state=structuredClone(seed)');
+ a.ctx.Live.client={from:()=>({update:({state})=>{
+  calls++;
+  const filters=new Map();
+  const q={
+   eq(key,value){filters.set(key,value);return q},
+   is(key,value){filters.set(key,value);return q},
+   async select(){
+    if(fail)return {error:Error('offline')};
+    if(filters.has('state'))return {error:Error('Request URL is too long')};
+    assert.equal(filters.get('id'),row.id);
+    if(conflicts-->0){row.scores.home++;row.version++;}
+    const matches=row.version==null
+     ?filters.get('state->>version')===null
+     :filters.get('state->version')===JSON.stringify(row.version);
+    if(!matches)return {data:[]};
+    row=state;return {data:[{state:row}]};
+   }
+  };
+  return q;
+ }})};
+ a.run("cloudMode=true;owner=true;id='ABC123'");a.ctx.seed=game;a.run('state=structuredClone(seed)');
  return {row:()=>row,calls:()=>calls};
 }
 test('signed-out scorer cannot create or save a device-only game',async()=>{const a=app();a.node('localMode').checked=true;await a.run('createGame()');assert.match(a.node('sync').textContent,/NOT CREATED/);assert.equal(a.run('state'),null);assert.equal(await a.run('write(()=>{})'),false);});
@@ -70,4 +92,70 @@ test('cloud misses save privately without score changes and cannot be recorded b
  assert.equal(db.row().events[0].kind,'miss');assert.equal(db.row().events[0].points,3);
  assert.equal(db.row().scores.away,0);a.run('owner=false;closePicker()');
  await a.run("miss('home',1)");assert.equal(db.calls(),1);assert.equal(a.run('pickerEvent'),null);
+});
+test('switching possession saves a large legacy cloud game and preserves its data',async()=>{
+ const a=app();
+ const logo='data:image/png;base64,'+'A'.repeat(100000);
+ const game={...initial,version:null,possession:'home',logos:{home:logo}};
+ const db=cloud(a,{game});
+ assert.equal(await a.run('togglePossession()'),true);
+ assert.equal(db.row().possession,'away');
+ assert.equal(a.run('state.possession'),'away');
+ assert.match(a.node('awayStatus').textContent,/◀/);
+ assert.equal(db.row().logos.home,logo);
+ assert.equal(await a.run('togglePossession()'),true);
+ assert.equal(db.row().possession,'home');
+ assert.equal(db.calls(),2);
+});
+
+test('keyboard records shots by visible side and assigns jersey numbers and assists',async()=>{
+ const a=app();
+ cloud(a,{game:{...initial,rosters:{home:[{number:'00',name:'Casey'}]}}});
+ for(const [key,team,points,kind] of [
+  ['a','away',2,'miss'],['s','away',3,'miss'],['d','away',2,'score'],['f','away',3,'score'],
+  ['j','home',3,'score'],['k','home',2,'score'],['l','home',3,'miss'],[';','home',2,'miss']
+ ]){
+  await a.press(key);
+  assert.equal(a.run('state.events[0].team'),team,key);
+  assert.equal(a.run('state.events[0].points'),points,key);
+  assert.equal(a.run('state.events[0].kind'),kind,key);
+  a.press('Escape');
+ }
+ await a.press('j');
+ a.press('0');
+ assert.equal(a.node('pickerJersey').value,'0');
+ a.node('pickerJersey').value='00';
+ await a.press('Enter');
+ assert.equal(a.run('state.events[0].scorer'),'00');
+ assert.equal(a.run('pickerField'),'assist');
+ await a.press('n');
+ assert.equal(a.run('state.events[0].assist'),'no-assist');
+
+ await a.run('write(s=>s.screenSidesSwapped=true)');
+ await a.press('d');
+ assert.equal(a.run('state.events[0].team'),'home');
+ a.press('Escape');
+ await a.press('k');
+ assert.equal(a.run('state.events[0].team'),'away');
+ a.node('pickerJersey').value='11';
+ await a.press('Enter');
+ a.node('pickerJersey').value='23';
+ await a.press('Enter');
+ assert.equal(a.run('state.events[0].assist'),'23');
+ assert.equal(a.run('pickerEvent'),null);
+});
+test('space toggles the clock once per press and shortcuts ignore other inputs and viewers',async()=>{
+ const a=app(),db=cloud(a);
+ await a.press(' ');
+ assert.equal(db.row().running,true);
+ await a.press(' ',{repeat:true});
+ assert.equal(db.calls(),1);
+ await a.press(' ');
+ assert.equal(db.row().running,false);
+ await a.press('d',{target:{closest:()=>({})}});
+ assert.equal(db.calls(),2);
+ a.run('owner=false');
+ await a.press('j');
+ await a.press(' ');
+ assert.equal(db.calls(),2);
 });

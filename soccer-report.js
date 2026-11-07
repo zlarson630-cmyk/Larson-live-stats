@@ -46,7 +46,7 @@ window.SoccerReport=(()=>{
   page(true);
   text(match.finished?'FINAL REPORT':'IN PROGRESS',m,y+5,10,bold,red);
   text('HALF '+match.period+'  /  '+fmt(match.seconds),574,y+5,10,bold,muted,{align:'right'});y+=20;
-  const nameLines=['away','home'].map(t=>wrap(match[t],206,22,heading));
+  const nameLines=['away','home'].map(t=>wrap(SoccerBrand.name(match,t),206,22,heading));
   const scoreHeight=Math.max(105,66+Math.max(...nameLines.map(a=>a.length))*25);
   rect(m,y,w,scoreHeight,ink);
   ['away','home'].forEach((t,i)=>{const x=m+i*268;rect(x,y,268,5,color(t));text(t==='home'?'HOME':'VISITOR',x+16,y+23,9,bold,'#dce2e8');nameLines[i].forEach((line,j)=>text(line,x+16,y+49+j*25,22,heading,'#ffffff'));text(goals(t),x+246,y+scoreHeight-15,37,heading,'#ffffff',{align:'right'})});y+=scoreHeight+18;
@@ -57,11 +57,11 @@ window.SoccerReport=(()=>{
   if(match.trackedStats?.includes('Penalty kick'))definitions.push(['Penalty kicks','_pk']);if(match.trackedStats?.includes('Own goal'))definitions.push(['Own goals','Own goal']);if(match.trackedStats?.includes('Blocked shot'))definitions.push(['Blocked shots','Blocked shot']);const stat=(t,k)=>k==='Goal'?goals(t):k==='_shots'?shots(t):k==='Shot on goal'?sog(t):k==='_pk'?events.filter(e=>e.team===t&&e.penalty).length:tally(t,k);table(['VISITOR','STATISTIC','HOME'],[110,316,110],definitions.map(([label,k])=>[stat('away',k),label,stat('home',k)]));
   section('Scoring summary');
   const ordered=SoccerClock.order(events,match);
-  table(['HALF / TIME','TEAM','GOAL / ASSIST'],[80,150,306],ordered.filter(e=>e.kind==='Goal'||e.kind==='Own goal').map(e=>['H'+e.period+' '+SoccerClock.timeLabel(e,fmt),match[e.team],(e.kind==='Own goal'?'Own goal: ':'')+(e.player||'Unassigned')+(e.assist?' / Assist: '+e.assist:'')]));
+  table(['HALF / TIME','TEAM','GOAL / ASSIST'],[80,150,306],ordered.filter(e=>e.kind==='Goal'||e.kind==='Own goal').map(e=>['H'+e.period+' '+SoccerClock.timeLabel(e,fmt),SoccerBrand.name(match,e.team),(e.kind==='Own goal'?'Own goal: ':'')+(e.player||'Unassigned')+(e.assist?' / Assist: '+e.assist:'')]));
   for(const t of ['home','away']){
    ensure(170);section((t==='home'?'Home':'Visitor')+' player statistics');
    // Team names are table content, so long school names wrap safely.
-   table(['TEAM'],[536],[[match[t]]],ink);
+   table(['TEAM'],[536],[[SoccerBrand.name(match,t)]],ink);
    const names=[...new Set([...(match.rosters?.[t]||[]),...events.filter(e=>e.team===t).flatMap(e=>[e.player,e.assist]).filter(Boolean)])];
    table(['PLAYER','G','A','SOG','OFF','SV','F','YC','RC'],[224,32,32,44,44,40,40,40,40],names.map(p=>{
     const n=k=>events.filter(e=>e.team===t&&e.player===p&&e.kind===k).length;
@@ -73,12 +73,12 @@ window.SoccerReport=(()=>{
   ensure(32);text('G Goals   A Assists   SOG Shots on goal   OFF Off target   SV Saves   F Fouls   YC / RC Cards',m,y+13,8,regular,muted);y+=24;
   if((match.shootout||[]).length){section('Penalty shootout');const kicks=match.shootout;table(['TEAM','KICKER','RESULT'],[150,230,156],kicks.map(k=>[match[k.team],k.player||'Unassigned',k.result]));text('Shootout score: '+kicks.filter(k=>k.team==='away'&&k.result==='goal').length+' – '+kicks.filter(k=>k.team==='home'&&k.result==='goal').length,m,y+14,10,bold);y+=22}
   section('Game flow');
-  table(['HALF / TIME','TEAM','EVENT / PLAYER'],[80,150,306],ordered.map(e=>['H'+e.period+' '+SoccerClock.timeLabel(e,fmt),match[e.team],e.kind+(e.player?' / '+e.player:'')+(e.assist?' / Assist: '+e.assist:'')]));
+  table(['HALF / TIME','TEAM','EVENT / PLAYER'],[80,150,306],ordered.map(e=>['H'+e.period+' '+SoccerClock.timeLabel(e,fmt),SoccerBrand.name(match,e.team),e.kind+(e.player?' / '+e.player:'')+(e.assist?' / Assist: '+e.assist:'')]));
   const total=doc.getNumberOfPages();
   for(let i=1;i<=total;i++){doc.setPage(i);rect(m,758,w,1,'#dce2e8');text('LARSON LIVE STATS  /  SOCCER',m,775,8,bold,muted);text(i+' / '+total,574,775,9,bold,muted,{align:'right'})}
-  doc.setProperties({title:match.home+' vs '+match.away+' - Soccer Stats',author:'Larson Live Stats',subject:'Soccer match statistics'});
+  doc.setProperties({title:SoccerBrand.name(match,'home')+' vs '+SoccerBrand.name(match,'away')+' - Soccer Stats',author:'Larson Live Stats',subject:'Soccer match statistics'});
   return doc;
  }
- async function download(match){const doc=await build(match),slug=v=>String(v).replace(/[^a-z0-9]+/gi,'-').slice(0,24);doc.save('soccer-stats-'+slug(match.away)+'-at-'+slug(match.home)+'.pdf')}
+ async function download(match){const doc=await build(match),slug=v=>String(v).replace(/[^a-z0-9]+/gi,'-').slice(0,24);doc.save('soccer-stats-'+slug(SoccerBrand.name(match,'away'))+'-at-'+slug(SoccerBrand.name(match,'home'))+'.pdf')}
  return {build,download};
 })();

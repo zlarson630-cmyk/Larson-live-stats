@@ -3,6 +3,7 @@ function app(){
  const nodes=new Map(),storage=new Map();
  function node(id){if(!nodes.has(id)){const classes=new Set();nodes.set(id,{value:'',textContent:'',children:[],parentElement:{classList:{toggle(){}}},querySelectorAll(){return []},style:{setProperty(){}},classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle(c,on){on?classes.add(c):classes.delete(c)}},setAttribute(k,v){this[k]=v},append(...a){this.children.push(...a)},set innerHTML(v){this.children=[];this.html=v},get innerHTML(){return this.html||''},scrollIntoView(){}})}return nodes.get(id)}
  const ctx=vm.createContext({console,Date,Math,Promise,JSON,URL,document:{getElementById:node,createElement:()=>node(Symbol()),querySelectorAll:()=>[]},localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},setInterval:()=>1,clearInterval(){},confirm:()=>true,alert(){},prompt:()=>null,Live:{client:null}});ctx.window=ctx;
+ vm.runInContext(fs.readFileSync('soccer-brand.js','utf8'),ctx);ctx.SoccerBrand=ctx.window.SoccerBrand;ctx.SoccerBrand.logo=()=>{};
  vm.runInContext(fs.readFileSync('soccer-clock.js','utf8'),ctx);ctx.SoccerClock=ctx.window.SoccerClock;
  vm.runInContext(fs.readFileSync('soccer.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);
  node('home').value='Home';node('away').value='Visitor';node('hc').value='#ffffff';node('ac').value='#245eaa';node('hr').value='9, Jordan\n7, Casey';node('ar').value='1, Alex';
@@ -26,12 +27,13 @@ test('clock, final-state correction and read-only guards remain intact',()=>{
 test('PDF contains brand, score, players, goals and paginated flow with repeated headers',async()=>{
  const pages=[[]];let current=pages[0];
  class Doc{setFont(){}setFontSize(){}setTextColor(){}setFillColor(){}setProperties(){}rect(){}addPage(){pages.push(current=[])}setPage(i){current=pages[i-1]}getNumberOfPages(){return pages.length}splitTextToSize(v,w){return String(v).match(new RegExp('.{1,'+Math.max(1,Math.floor(w/6))+'}','g'))||['']}text(v,x,y){assert.ok(y>=0&&y<=792,'Text stays on page');current.push(String(v))}}
- const ctx=vm.createContext({window:{jspdf:{jsPDF:Doc}},fetch:async()=>{throw Error('offline')},Date,console});vm.runInContext(fs.readFileSync('soccer-clock.js','utf8'),ctx);ctx.SoccerClock=ctx.window.SoccerClock;vm.runInContext(fs.readFileSync('soccer-report.js','utf8'),ctx);
+ const ctx=vm.createContext({window:{jspdf:{jsPDF:Doc}},fetch:async()=>{throw Error('offline')},Date,console});vm.runInContext(fs.readFileSync('soccer-brand.js','utf8'),ctx);ctx.SoccerBrand=ctx.window.SoccerBrand;ctx.SoccerBrand.logo=()=>{};
+ vm.runInContext(fs.readFileSync('soccer-clock.js','utf8'),ctx);ctx.SoccerClock=ctx.window.SoccerClock;vm.runInContext(fs.readFileSync('soccer-report.js','utf8'),ctx);
  const events=Array.from({length:80},(_,i)=>({team:i%2?'home':'away',kind:i===0?'Goal':'Foul',period:i<40?1:2,time:i*20,player:'Player '+i,assist:i===0?'Helper':''}));
- await ctx.window.SoccerReport.build({home:'Home',away:'Away',colors:{home:'#ffffff',away:'#ffcc00'},period:2,seconds:0,clockMode:'down',halfSeconds:2400,finished:true,events:events.map(e=>({...e,clockMode:'down',halfSeconds:2400,time:2400-e.time})),rosters:{home:['Unused roster player'],away:[]}});
+ await ctx.window.SoccerReport.build({home:'Harlem',away:'Away',teamBrands:{home:{displayName:'The Parks'}},colors:{home:'#ffffff',away:'#ffcc00'},period:2,seconds:0,clockMode:'down',halfSeconds:2400,finished:true,events:events.map(e=>({...e,clockMode:'down',halfSeconds:2400,time:2400-e.time})),rosters:{home:['Unused roster player'],away:[]}});
  assert.ok(pages.length>2);for(const page of pages){assert.ok(page.includes('LARSON LIVE STATS'));assert.ok(page.includes('LARSON LIVE STATS  /  SOCCER'))}
  const text=pages.flat().join('\n');assert.ok(text.indexOf('Foul / Player 1')<text.indexOf('Foul / Player 79'));assert.ok(text.replace(/\s/g,'').includes('39:40left'));
- for(const label of ['TEAM COMPARISON','SCORING SUMMARY','GAME FLOW','Unused roster player','Assist: Helper','Player 79'])assert.ok(text.includes(label),label);
+ for(const label of ['The Parks','TEAM COMPARISON','SCORING SUMMARY','GAME FLOW','Unused roster player','Assist: Helper','Player 79'])assert.ok(text.includes(label),label);
 });
 test('countdown defaults to configured half, pauses, resumes and automatically stops once at zero',()=>{
  const a=app();let now=100000;a.ctx.Date=class extends Date{static now(){return now}};
@@ -55,7 +57,8 @@ test('broadcaster and public OBS use the same countdown math and clamp expired c
   const nodes=new Map(),node=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',innerHTML:'',style:{setProperty(){}}});return nodes.get(id)};
   const state={home:'H',away:'A',scores:{home:0,away:0},colors:{},events:[],rosters:{},period:1,seconds:60,clockMode:'down',running:true,startedAt:100000};
   const ctx=vm.createContext({window:{},Date:class extends Date{static now(){return 105000}},URLSearchParams,location:{search:file.includes('overlay')?'?game=ABC123':'?local=1'},document:{getElementById:node},localStorage:{getItem:()=>JSON.stringify(state)},setInterval:()=>1,SoccerBrand:{logo(){}},Live:{watch(id,cb){cb({home:'H',away:'A',clock_mode:'down'})},publicState:()=>state}});
-  vm.runInContext(fs.readFileSync('soccer-clock.js','utf8'),ctx);ctx.SoccerClock=ctx.window.SoccerClock;
+  vm.runInContext(fs.readFileSync('soccer-brand.js','utf8'),ctx);ctx.SoccerBrand=ctx.window.SoccerBrand;ctx.SoccerBrand.logo=()=>{};
+ vm.runInContext(fs.readFileSync('soccer-clock.js','utf8'),ctx);ctx.SoccerClock=ctx.window.SoccerClock;
   vm.runInContext(fs.readFileSync(file,'utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);
   vm.runInContext(file.includes('broadcast')?'tick()':'draw()',ctx);assert.match(node('clock').textContent,/00:55$/);
   ctx.Date=class extends Date{static now(){return 200000}};vm.runInContext(file.includes('broadcast')?'tick()':'draw()',ctx);assert.match(node('clock').textContent,/00:00$/);
@@ -79,4 +82,16 @@ test('legacy shots stay unlinked until corrected; read-only cannot add pairs or 
 });
 test('starting/current keepers and HTTPS logos survive saved matches; invalid URLs are rejected',()=>{
  const a=app();a.node('homeKeeper').value='7, Casey';a.node('awayKeeper').value='1, Alex';a.node('homeLogo').value='https://example.com/logo.png';a.node('awayLogo').value='javascript:alert(1)';a.run('seedMatch();reopenFixture()');assert.equal(a.run('s.goalkeepers.away'),'1, Alex');assert.equal(a.run('s.logos.home'),'https://example.com/logo.png');assert.equal(a.run('s.logos.away'),'');a.node('currentAwayKeeper').value='Sub keeper';a.run('saveLineupSettings();reopenFixture()');assert.equal(a.run('s.goalkeepers.away'),'Sub keeper');a.run("choose('Shot on goal','home')");assert.equal(a.node('savePlayer').value,'Sub keeper');
+});
+
+test('named soccer alternate keeps the original team and roster in its cloud snapshot',()=>{
+ const a=app();a.node('home').value='Harlem';
+ a.ctx.TeamBrands={snapshot:()=>({home:{id:'harlem',name:'Harlem',displayName:'The Parks',shortName:'The Parks'}})};
+ a.run("seedMatch();choose('Goal','home')");
+ assert.equal(a.node('homeName').textContent,'The Parks');
+ assert.equal(a.node('players').children[0].textContent,'9, Jordan');
+ assert.equal(a.run('cloudSnapshot().teamBrands.home.shortName'),'The Parks');
+ assert.equal(a.run('cloudSnapshot().home'),'Harlem');
+ a.run('reopenFixture()');
+ assert.equal(a.node('homeName').textContent,'The Parks');
 });

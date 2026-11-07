@@ -48,8 +48,15 @@ write=function(fn){
   try{
    for(let attempt=0;attempt<5;attempt++){
     const row=await Live.read(Live.client,'live_games',game);if(!row)throw Error('Scorer access expired. Sign in again.');
-    const next=structuredClone(row.state);fn(next);next.version=Date.now()+Math.random();
-    const {data,error}=await Live.client.from('live_games').update({state:next}).eq('id',game).eq('state',JSON.stringify(row.state)).select('state');
+    const previousVersion=row.state.version;
+    const next=structuredClone(row.state);fn(next);
+    next.version=Math.max(Date.now(),Math.floor(Number(previousVersion)||0)+1);
+    // Compare only the revision so rosters, logos and plays stay out of the URL.
+    const update=Live.client.from('live_games').update({state:next}).eq('id',game);
+    const guarded=previousVersion==null
+      ?update.is('state->>version',null)
+      :update.eq('state->version',JSON.stringify(previousVersion));
+    const {data,error}=await guarded.select('state');
     if(error)throw error;
     if(data?.length){if(epoch===sessionEpoch){state=data[0].state;render();syncStatus('Scorer · saved');}return true;}
    }

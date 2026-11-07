@@ -1,4 +1,10 @@
-window.SoccerBrand={logo(slot,name,url){
+window.SoccerBrand={
+ name(game,team){return game.teamBrands?.[team]?.displayName||game[team]},
+ graphicName(game,team){
+  const brand=game.teamBrands?.[team];
+  return brand?.displayName||brand?.shortName||brand?.nickname||game[team];
+ },
+ logo(slot,name,url){
  const target=document.getElementById(slot);if(!target)return;
  const key=String(name)+'|'+String(url);if(target.getAttribute('data-logo-key')===key)return;target.setAttribute('data-logo-key',key);
  const initials=String(name||'Team').trim().split(/\s+/).slice(0,2).map(v=>v[0]).join('').toUpperCase();
