@@ -9,7 +9,7 @@ test('basketball saves separate season rosters and applies game-day edits only t
  const a=fixtureApp();a.file('soccer-brand.js');a.html('basketball.html');a.file('cloud.js');await a.ready();
  a.node('seasonTeam').value='Jefferson';
  a.node('seasonProgram').value='boys';
- a.run('loadManagedRoster()');a.node('seasonRoster').value='11, Player One';await a.run('saveManagedRoster()');
+ a.node('seasonRoster').value='11, Player One';await a.run('saveManagedRoster()');
  a.node('seasonProgram').value='girls';
  a.run('loadManagedRoster()');a.node('seasonRoster').value='24, Player Two';await a.run('saveManagedRoster()');
  a.node('home').value='Jefferson';a.node('away').value='Visitor';
@@ -30,6 +30,20 @@ test('basketball saves separate season rosters and applies game-day edits only t
  assert.equal(a.ctx.CloudLibrary.rosters()['jefferson|girls|2026–27'],'24, Player Two');
  assert.equal(a.ctx.CloudLibrary.rosters()['jefferson|boys|2026–27'],'11, Player One');
  assert.deepEqual(a.writes,[]);
+});
+test('basketball can import and review a PDF before loading a season',async()=>{
+ const a=fixtureApp();a.html('basketball.html');
+ a.ctx.pdfjsLib={GlobalWorkerOptions:{},getDocument:()=>({promise:Promise.resolve({
+  numPages:1,getPage:async()=>({getTextContent:async()=>({items:[
+   {str:'11 Jordan Robinson',transform:[0,0,0,0,10,50]}
+  ]})})
+ })})};
+ a.ctx.pdfInput={files:[{name:'roster.pdf',arrayBuffer:async()=>new ArrayBuffer(0)}]};
+ await a.run('importPdf(pdfInput)');
+ assert.match(a.node('pdfReviewText').value,/11, Jordan Robinson/);
+ a.run('applyPdfRoster()');
+ assert.match(a.node('seasonRoster').value,/11, Jordan Robinson/);
+ assert.equal(a.db.tables.account_roster_libraries.length,0);
 });
 test('soccer creates a cloud match, confirms edits, and rolls back an unsuccessful save without writing to the browser',async()=>{const a=fixtureApp({sport:'soccer'});a.file('soccer-brand.js');a.file('soccer-clock.js');a.html('soccer.html');await a.ready();a.node('home').value='Jefferson';a.node('away').value='Visitor';a.node('soccerSeason').value='2026–27';a.node('soccerProgram').value='boys';a.node('hr').value='9, Soccer Player';assert.equal(await a.run('createCloudMatch()'),true);await a.run("choose('Goal','home');saveEvent();cloudQueue");assert.equal(a.db.tables.live_games[0].state.scores.home,1);assert.equal(a.ctx.CloudLibrary.rosters()['soccer|jefferson|boys|2026–27'],'9, Soccer Player');a.db.setOffline(true);await a.run("choose('Goal','home');saveEvent();cloudQueue");assert.match(a.node('status').textContent,/NOT SAVED/);assert.equal(a.run('s.events.length'),1);assert.deepEqual(a.writes,[])});
 test('Team Brands renders the complete account shelf and exposes shared brands without opening the editor',async()=>{const db=database(),a=fixtureApp({db}),b=fixtureApp({db,user:{id:'B',email:'b@example.com'}});await Promise.all([a.ready(),b.ready()]);await Promise.all([a.ctx.TeamBrands.save(brand),a.ctx.TeamBrands.save({...brand,id:'another',name:'Another School'})]);await b.ctx.TeamBrands.save({...brand,id:'visitor',name:'Visitor School'});await b.ctx.SharedBrands.publish({id:'visitor'});a.file('soccer-brand.js');a.file('brands-editor.js');await a.settle();assert.equal(a.node('brandCount').textContent,2);assert.equal(a.node('brandLibrary').children.length,2);assert.equal(a.node('sharedLibrary').children.length,1);assert.equal(a.node('sharedLibrary').children[0].children.find(e=>e.textContent==='Add to my library').disabled,false);a.node('brandSearch').value='Another';a.node('brandSearch').input();assert.equal(a.node('brandLibrary').children.length,1);assert.deepEqual(a.writes,[])});
