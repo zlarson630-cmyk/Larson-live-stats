@@ -44,7 +44,18 @@ window.ProfileData=(()=>{
  window.addEventListener('focus',refresh);window.addEventListener('online',refresh);
  }
  if(window.CloudLibrary&&dashboard){const old=$('legacyImportStatus'),button=$('legacyImportButton');try{const data=CloudLibrary.legacy();const count=data.brands.length+Object.keys(data.rosters).length+data.games.length;$('legacyImport').hidden=!count&&location.hash!=='#legacyImport';old.textContent=count?`${data.brands.length} older brands, ${Object.keys(data.rosters).length} rosters, ${data.games.length} games found in this browser.`:'No older device records found in this browser.';button.hidden=!count}catch(e){$('legacyImport').hidden=false;old.textContent=e.message;button.hidden=true}button.onclick=async()=>{button.disabled=true;try{await CloudLibrary.ready();const result=await CloudLibrary.importLegacy();old.textContent=`Saved to cloud: ${result.brands} brands, ${result.rosters} rosters, ${result.games} games. Existing account records were kept.`;await refresh()}catch(e){old.textContent='Import did not finish: '+e.message+' You can retry; already imported records will not duplicate.'}finally{button.disabled=false}}}
- // Keep the basketball roster editor in sync without replacing an in-progress draft.
- if(window.CloudLibrary&&document.body.dataset.sport==='basketball'){let lastOwner=null;CloudLibrary.subscribe(current=>{if(lastOwner!==current.owner){lastOwner=current.owner;rosterLibrary={};for(const t of ['home','away']){const field=$(t+'Roster');if(field)field.value=''}}if(current.phase==='ready'){rosterLibrary=CloudLibrary.rosters();for(const t of ['home','away'])if(!$(t+'Roster').value)loadSeason(t)}})}
+ // Update saved roster previews while preserving game-day drafts.
+ if(window.CloudLibrary&&document.body.dataset.sport==='basketball'){
+  let lastOwner=null;
+  CloudLibrary.subscribe(current=>{
+   if(lastOwner!==current.owner){
+    if(lastOwner!==null){resetGameRosterDrafts();resetManagedRoster();$('seasonTeam').value=''}
+    lastOwner=current.owner;
+   }
+   for(const side of ['home','away'])loadSeason(side);
+   listSeasonTeams();
+  });
+  window.TeamBrands?.subscribe(listSeasonTeams);
+ }
  refresh();
 })();

@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const panel=document.createElement('div');
 panel.id='quickRosterPanel';panel.className='qr-overlay';panel.hidden=true;
-panel.innerHTML='<div class="qr-sheet" role="dialog" aria-modal="true" aria-label="Quick Roster Editor"><div class="qr-top"><div><small>LARSON LIVE STATS · BASKETBALL</small><h2>Quick Roster Editor</h2></div><button id="qrClose" type="button">✕ Close</button></div><div class="qr-tabs"><button id="qrHome" type="button">Home</button><button id="qrAway" type="button">Visitor</button></div><p class="qr-note">Type a jersey number and name. Tab moves across cells; Enter moves to the next player. Save Game Roster updates this game only. The clock keeps its current state.</p><div class="qr-scroll"><table><thead><tr><th>#</th><th>Player name</th><th>Height</th><th>Year</th><th></th></tr></thead><tbody id="qrRows"></tbody></table></div><div class="qr-actions"><button id="qrAdd" type="button">+ Add player</button><button id="qrSave" class="primary" type="button">Save Game Roster</button><button id="qrLibrary" type="button">Save Team for Future Use</button></div><p id="qrStatus" role="status" aria-live="polite"></p></div>';
+panel.innerHTML='<div class="qr-sheet" role="dialog" aria-modal="true" aria-label="Quick Roster Editor"><div class="qr-top"><div><small>LARSON LIVE STATS · BASKETBALL</small><h2>Quick Roster Editor</h2></div><button id="qrClose" type="button">✕ Close</button></div><div class="qr-tabs"><button id="qrHome" type="button">Home</button><button id="qrAway" type="button">Visitor</button></div><p class="qr-note">Type a jersey number and name. Tab moves across cells; Enter moves to the next player. Save Game Roster updates this game only. The clock keeps its current state.</p><div class="qr-scroll"><table><thead><tr><th>#</th><th>Player name</th><th>Height</th><th>Year</th><th></th></tr></thead><tbody id="qrRows"></tbody></table></div><div class="qr-actions"><button id="qrAdd" type="button">+ Add player</button><button id="qrSave" class="primary" type="button">Save Game Roster</button></div><p id="qrStatus" role="status" aria-live="polite"></p></div>';
 document.body.append(panel);
 const css=document.createElement('style');css.textContent=`
 .qr-overlay[hidden]{display:none!important}.qr-overlay{position:fixed;inset:0;z-index:45;background:#080f1be8;display:flex;justify-content:center;align-items:center;padding:10px}
@@ -32,7 +32,7 @@ function clean(){
  if(new Set(active.map(p=>String(Number(p.number)))).size!==active.length)throw Error('Duplicate jersey numbers. Each player must have a unique number.');
  return active.map(p=>({number:p.number.trim(),name:p.name.trim(),height:p.height.trim(),year:p.year.trim()}));
 }
-async function save(saveLibrary=false){
+async function save(){
  if(busy)return;let next;try{next=clean()}catch(e){status(e.message,true);return}
  if(!canWrite()){status('You must be the game owner.',true);return}
  const old=state.rosters?.[side]||[];
@@ -48,18 +48,11 @@ async function save(saveLibrary=false){
   const ok=await write(s=>{s.rosters=s.rosters||{};s.rosters[side]=next});
   if(!ok)throw Error('Cloud game roster did not save. Try again.');
   rows=next.map(p=>({...p}));rows.push({number:'',name:'',height:'',year:''});paint();
-  if(saveLibrary){
-   if(!window.CloudLibrary)throw Error('Game roster saved, but team library is unavailable.');
-   await CloudLibrary.ready();
-   const season=state.seasons?.[side]||currentSeason,program=state.programs?.[side]||'boys';
-   const key=rosterKey(state[side],season,program);
-   await CloudLibrary.saveRoster(key,next.map(p=>[p.number,p.name,p.height,p.year].join(', ')).join('\n'));
-   rosterLibrary=CloudLibrary.rosters();status('Game roster and reusable team saved to your account.');
-  }else status('Game roster saved. Existing plays and statistics preserved.');
+  status('Game roster saved. Existing plays and statistics preserved.');
  }catch(e){status(e.message,true)}
  finally{busy=false;panel.querySelectorAll('button').forEach(b=>b.disabled=false)}
 }
-$('qrClose').onclick=close;$('qrHome').onclick=()=>setSide('home');$('qrAway').onclick=()=>setSide('away');$('qrAdd').onclick=add;$('qrSave').onclick=()=>save(false);$('qrLibrary').onclick=()=>save(true);
+$('qrClose').onclick=close;$('qrHome').onclick=()=>setSide('home');$('qrAway').onclick=()=>setSide('away');$('qrAdd').onclick=add;$('qrSave').onclick=save;
 $('qrRows').addEventListener('input',e=>{const i=Number(e.target.dataset.row),k=e.target.dataset.key;if(!k||!rows[i])return;rows[i][k]=e.target.value;rows[i]._dirty=true});
 $('qrRows').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const i=Number(e.target.dataset.row);if(i===rows.length-1)add();else paint(i+1,0)});
 $('qrRows').addEventListener('click',e=>{const i=e.target.dataset.remove;if(i===undefined)return;rows.splice(Number(i),1);if(!rows.length)rows.push({number:'',name:'',height:'',year:''});paint()});
