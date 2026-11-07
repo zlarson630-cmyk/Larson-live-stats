@@ -57,6 +57,7 @@ window.TeamBrands=(()=>{
    }
    apply();select.onchange=apply;kit.onchange=apply;label.append(select);kitLabel.append(kit);group.append(label,kitLabel);host.append(group);
   }
+  if(document.body.dataset.sport==='basketball')window.syncBasketballTeams?.();
  }
  document.addEventListener('DOMContentLoaded',mount);
  return {list,save,remove,normalize,logo,importData,importLocal,exportData,snapshot,mount,state,subscribe,connect,refresh,signIn,signOut};
