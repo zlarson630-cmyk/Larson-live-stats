@@ -15,7 +15,9 @@ Official name: **Larson Live Stats**. Basketball first; later volleyball, soccer
 - Future: shot chart, keyboard shortcuts, postgame box score, notes, story, milestones, season stats.
 
 ## Current implementation status
-The initial GitHub Pages prototype uses localStorage/BroadcastChannel for same-browser-profile tab synchronization. **It is not cross-device collaborative** and is not production-ready. The OBS overlay preview is also local-only. It needs a Supabase project, persistent event storage, realtime subscriptions, authorization/PIN handling, conflict-safe score and clock actions, and proper reconnect/error states.
+Basketball and soccer now use account-owned cloud games, reusable season rosters, and team brands. My Profile shows saved games and provides a way to import older browser records. OBS has public read-only scoreboards. The original same-browser prototype is historical.
 
-## Next acceptance test
-Deploy GitHub Pages; test scoring and Game Flow in two tabs of the same browser. Then configure Supabase and verify synchronization between two separate phones before calling the first real multiplayer version complete.
+The game owner can use the same account on another device. The multiple-operator workflow above remains a product goal and is tracked in [#6](https://github.com/zlarson630-cmyk/Larson-live-stats/issues/6).
+
+## Next acceptance tests
+Use [#5](https://github.com/zlarson630-cmyk/Larson-live-stats/issues/5) for live multi-device scoring and recovery. Use [#9](https://github.com/zlarson630-cmyk/Larson-live-stats/issues/9) for the missing-brand retest, legacy import, and sharing between real accounts. The [decision log](product-decisions.md) records the rationale and separates deployed features from verified behavior.
