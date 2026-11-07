@@ -1,13 +1,13 @@
-let cloudMode=false,owner=false,stopWatch=null,sessionEpoch=0,writeQueue=Promise.resolve(),pendingWrites=0;
-const localJoin=joinGame,localWrite=write,localHome=goHome,baseRender=render;
+let cloudMode=false,owner=false,ownerId=null,stopWatch=null,sessionEpoch=0,writeQueue=Promise.resolve(),pendingWrites=0;
+const localHome=goHome,baseRender=render;
 function syncStatus(message){el('sync').textContent=message;}
-function canWrite(){return !cloudMode||owner;}
+function canWrite(){return cloudMode&&owner;}
 function updateAccess(){
   document.querySelectorAll('#score button,#events button,#clockButton,.gameTools button').forEach(b=>b.disabled=!canWrite());
   if(!canWrite())closePicker();
 }
 render=function(){baseRender();updateAccess();if(cloudMode)el('overlay').href='overlay.html?game='+id;else el('overlay').href='overlay.html?game='+id+'&local=1';};
-function stopCloud(){sessionEpoch++;stopWatch?.();stopWatch=null;cloudMode=false;owner=false;}
+function stopCloud(){sessionEpoch++;stopWatch?.();stopWatch=null;cloudMode=false;owner=false;ownerId=null;}
 async function signIn(){
  try{if(!Live.client)throw Error('Cloud library unavailable');const {error}=await Live.client.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});el('password').value='';if(error)throw error;syncStatus('Signed in');if(id&&cloudMode)await joinGame(id);}
  catch(e){syncStatus(e.message);}
@@ -18,16 +18,15 @@ joinGame=async function(code){
  const next=String(code||'').trim().toUpperCase();
  if(!/^[A-Z0-9]{6}$/.test(next)){syncStatus('Enter a six-character game ID');return;}
  stopCloud();
- if(el('localMode').checked){localJoin(next);syncStatus('Local only · same browser');return;}
  cloudMode=true; const epoch=sessionEpoch;syncStatus('Connecting…');
  try{
   let privateRow=null;
   if(Live.client){const {data,error}=await Live.client.auth.getSession();if(error)throw error;if(data.session)privateRow=await Live.read(Live.client,'live_games',next);}
   const row=await Live.read(Live.client,'live_scoreboards',next);
   if(epoch!==sessionEpoch)return;
-  if(!row)throw Error('Game not found. For local games, select Local only.');
+  if(!row)throw Error('Game not found in your cloud account.');
   if(channel){channel.close();channel=null;}if(clockTimer)clearInterval(clockTimer);
-  id=next;owner=!!privateRow;state=privateRow?.state||Live.publicState(row);
+  id=next;owner=!!privateRow;ownerId=privateRow?.owner_id||null;state=privateRow?.state||Live.publicState(row);
   history.replaceState({},'',location.pathname+'?game='+id);
   el('lobby').classList.add('hide');el('app').classList.remove('hide');render();
   clockTimer=setInterval(()=>{if(state?.running)render()},250);
@@ -39,9 +38,9 @@ joinGame=async function(code){
  }catch(e){if(epoch===sessionEpoch){owner=false;syncStatus(e.message);updateAccess();}}
 };
 goHome=function(event){if(pendingWrites){event?.preventDefault();alert('Wait for the current save to finish.');return false;}stopCloud();return localHome(event);};
-reload=function(){if(!cloudMode){const raw=localStorage.getItem(key(id));if(raw){const next=JSON.parse(raw);if(!state||next.version>=state.version){state=next;render();}}}};
+reload=function(){};
 write=function(fn){
- if(!cloudMode){localWrite(fn);return Promise.resolve(true);}
+ if(!cloudMode){syncStatus('Open a cloud game before scoring.');return Promise.resolve(false);}
  if(!owner){syncStatus('Read only · sign in as the game owner to score');return Promise.resolve(false);}
  const game=id,epoch=sessionEpoch;pendingWrites++;
  const task=writeQueue.then(async()=>{
@@ -60,5 +59,5 @@ write=function(fn){
  writeQueue=task.catch(()=>{});return task;
 };
 // Session changes immediately remove scorer controls; RLS remains authoritative.
-Live.client?.auth.onAuthStateChange((event,session)=>{el('authStatus').textContent=session?'Signed in as '+session.user.email:'View publicly or sign in to score';if(!session){owner=false;if(cloudMode&&state){state={...state,events:[],rosters:{}};render();}updateAccess();}});
-(async()=>{if(Live.client){const {data}=await Live.client.auth.getSession();el('authStatus').textContent=data.session?'Signed in as '+data.session.user.email:'View publicly or sign in to score';}const params=new URLSearchParams(location.search);el('localMode').checked=params.get('local')==='1';if(params.get('game'))joinGame(params.get('game'));})();
+Live.client?.auth.onAuthStateChange((event,session)=>{el('authStatus').textContent=session?'Signed in as '+session.user.email:'View publicly or sign in to score';if(!session||(ownerId&&session.user.id!==ownerId)){owner=false;ownerId=null;if(cloudMode&&state){state={...state,events:[],rosters:{}};render();}updateAccess();}});
+(async()=>{if(Live.client){const {data}=await Live.client.auth.getSession();el('authStatus').textContent=data.session?'Signed in as '+data.session.user.email:'View publicly or sign in to score';}const params=new URLSearchParams(location.search);el('localMode').checked=false;if(params.get('local')==='1')syncStatus('Older device game: use My Profile to import it to your account.');else if(params.get('game'))joinGame(params.get('game'));})();

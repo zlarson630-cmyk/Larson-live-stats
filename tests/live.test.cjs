@@ -24,13 +24,7 @@ function cloud(a,{conflicts=0,fail=false}={}){
  a.run("cloudMode=true;owner=true;id='ABC123'");a.ctx.seed=initial;a.run('state=structuredClone(seed)');
  return {row:()=>row,calls:()=>calls};
 }
-test('local game retains scores, assignment, foul, undo, clock and local overlay URL',async()=>{
- const a=app();a.node('localMode').checked=true;await a.run('createGame()');
- await a.run("score('home',2)");await a.run("pickerValue('11')");await a.run("pickerValue('no-assist')");
- assert.equal(a.run('state.scores.home'),2);assert.equal(a.run('state.events[0].scorer'),'11');
- a.run("foul('away');undo();toggleClock()");assert.equal(a.run('state.fouls.away'),0);assert.equal(a.run('state.running'),true);
- assert.match(a.node('overlay').href,/local=1/);
-});
+test('signed-out scorer cannot create or save a device-only game',async()=>{const a=app();a.node('localMode').checked=true;await a.run('createGame()');assert.match(a.node('sync').textContent,/NOT CREATED/);assert.equal(a.run('state'),null);assert.equal(await a.run('write(()=>{})'),false);});
 test('cloud saves serialize and retry a conflicting update without losing points',async()=>{
  const a=app(), db=cloud(a,{conflicts:1});
  await a.run("Promise.all([write(s=>s.scores.home+=2),write(s=>s.scores.away+=3)])");
@@ -54,7 +48,7 @@ test('public subscription catches up on reconnect, polls and cleans up',async()=
 });
 
 test('all missed shot types keep scores, fouls and scoring runs intact; support assignment and undo',async()=>{
- const a=app();a.node('localMode').checked=true;await a.run('createGame()');
+ const a=app();cloud(a);
  await a.run("score('home',2)");a.run('closePicker()');
  for(const [team,points] of [['home',1],['away',2],['home',3]]){
   await a.run(`miss('${team}',${points})`);
@@ -68,7 +62,7 @@ test('all missed shot types keep scores, fouls and scoring runs intact; support 
  assert.equal(a.run('state.scores.home'),2);assert.equal(a.run('state.scores.away'),0);
  assert.equal(a.run('state.fouls.home'),0);assert.match(a.node('run').textContent,/2–0 run/);
  assert.match(a.node('recent').textContent,/Miss 3 PT · #23/);
- a.run('undo()');assert.equal(a.run('state.events.length'),3);assert.equal(a.run('state.scores.home'),2);
+ await a.run('undo()');assert.equal(a.run('state.events.length'),3);assert.equal(a.run('state.scores.home'),2);
  a.run('reload()');assert.equal(a.run('state.events[0].points'),2);
 });
 test('cloud misses save privately without score changes and cannot be recorded by public viewers',async()=>{
