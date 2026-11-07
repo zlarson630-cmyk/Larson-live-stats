@@ -1,0 +1,15 @@
+/* Isolated volleyball prototype: pure event replay, no cloud or existing app dependencies. */
+(function(root,factory){const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;else root.LarsonVolleyball=api;})(typeof globalThis!=="undefined"?globalThis:this,function(){
+"use strict";
+const defaults=Object.freeze({bestOf:5,normalTarget:25,finalTarget:15,winBy:2});
+function rules(input={}){const r={...defaults,...input};for(const k of ["bestOf","normalTarget","finalTarget","winBy"])if(!Number.isInteger(r[k])||r[k]<1)throw Error("Invalid rule "+k);if(r.bestOf%2!==1)throw Error("bestOf must be odd");return r;}
+function initialState(config={}){const r=rules(config.rules);const serve=config.firstServer??"home";if(!["home","away"].includes(serve))throw Error("Invalid first server");return {rules:r,sets:[],points:{home:0,away:0},setsWon:{home:0,away:0},serving:serve,firstServer:serve,completed:false,stats:{home:{},away:{}},eventsApplied:0};}
+function opposite(t){return t==="home"?"away":"home";}
+const statTypes=["kill","assist","ace","dig","block","error"];
+function validate(e){if(!e||typeof e!=="object"||!["rally","stat","timeout"].includes(e.type))throw Error("Unknown event type");if(!["home","away"].includes(e.team))throw Error("Invalid team");if(e.type==="stat"){if(!statTypes.includes(e.stat))throw Error("Invalid statistic");if(typeof e.playerId!=="string"||!e.playerId.trim())throw Error("Player required for statistic");}if(e.type==="rally"&&e.playerId!=null&&typeof e.playerId!=="string")throw Error("Invalid player");}
+function apply(state,event){validate(event);if(state.completed)throw Error("Match already complete");if(event.type==="stat"){const bucket=state.stats[event.team];const id=event.playerId;bucket[id]??={};bucket[id][event.stat]=(bucket[id][event.stat]||0)+1;}else if(event.type==="rally"){state.points[event.team]++;state.serving=event.team;const setIndex=state.sets.length;const target=setIndex===state.rules.bestOf-1?state.rules.finalTarget:state.rules.normalTarget;const p=state.points;const lead=p[event.team]-p[opposite(event.team)];if(p[event.team]>=target&&lead>=state.rules.winBy){state.sets.push({...p,winner:event.team});state.setsWon[event.team]++;state.completed=state.setsWon[event.team]>state.rules.bestOf/2;state.points={home:0,away:0};}}else if(event.type==="timeout"){state.timeouts??={home:0,away:0};state.timeouts[event.team]++;}state.eventsApplied++;return state;}
+function replay(events,config={}){const state=initialState(config);const ids=new Set();for(const e of events){if(typeof e.id!=="string"||!e.id.trim()||ids.has(e.id))throw Error("Missing or duplicate event id");ids.add(e.id);apply(state,e);}return state;}
+function edit(events,id,replacement){if(!events.some(e=>e.id===id))throw Error("Event not found");return events.map(e=>e.id===id?{...replacement,id}:e);}
+function remove(events,id){if(!events.some(e=>e.id===id))throw Error("Event not found");return events.filter(e=>e.id!==id);}
+return {defaults,rules,initialState,replay,edit,remove,statTypes};
+});
