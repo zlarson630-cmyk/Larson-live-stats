@@ -1,7 +1,7 @@
 /* Shared account indicator and private profile dashboard. No private cloud data is cached here. */
 window.ProfileData=(()=>{
  function game(id,state,source,updated){return {id:String(id),state,source,sport:state.sport==='soccer'?'soccer':'basketball',updated:updated||null}}
- function href(g){return (g.sport==='soccer'?'soccer.html':'./')+'?game='+encodeURIComponent(g.id)}
+ function href(g){return (g.sport==='soccer'?'soccer.html':'basketball.html')+'?game='+encodeURIComponent(g.id)}
  function rosterText(value){if(typeof value==='string')return value;return (Array.isArray(value)?value:[]).map(p=>typeof p==='string'?p:[p.number,p.name,p.height,p.year].filter(v=>v!==undefined&&v!=='').join(', ')).join('\n')}
  function rosters(games,library){const out=[];for(const [key,value] of Object.entries(library)){const text=rosterText(value);if(!text.trim())continue;const parts=key.split('|');out.push({team:parts[0]==='soccer'?parts[1]:parts[0],detail:(parts[0]==='soccer'?'Soccer · '+parts.slice(2).join(' · '):'Basketball · '+parts.slice(1).join(' · ')),text,source:'account'})}
   for(const g of games)for(const side of ['home','away']){const text=rosterText(g.state.rosters?.[side]);if(text.trim())out.push({team:g.state[side],detail:g.sport+' · '+g.id+' · Game roster',text,source:g.source})}return out}
