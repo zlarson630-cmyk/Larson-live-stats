@@ -19,7 +19,7 @@ const style=document.createElement('style');style.textContent=`
 `;document.head.append(style);
 if(signOutButton){signOutButton.id='basketballSignOut';signOutButton.hidden=true;auth?.after(signOutButton);}
 let user=null,teams=[],last=0;
-function setSignedIn(isLoggedIn){authBox.hidden=!!isLoggedIn;if(signOutButton)signOutButton.hidden=!isLoggedIn;if(!isLoggedIn){teams=[];updateSelections();}}
+function setSignedIn(isLoggedIn){authBox.hidden=!!isLoggedIn;if(auth)auth.hidden=!!isLoggedIn;if(signOutButton)signOutButton.hidden=true;if(!isLoggedIn){teams=[];updateSelections();}}
 async function inspectSession(){if(!window.Live?.client)return;try{const {data,error}=await Live.client.auth.getSession();if(error)throw error;user=data.session?.user||null;setSignedIn(!!user);if(user){await Promise.allSettled([window.TeamBrands?.connect?.(Live.client),window.CloudLibrary?.connect?.(Live.client)]);updateSelections();}}catch(e){$('teamPickerStatus').textContent='Could not load saved teams: '+e.message;}}
 function collect(){
  const map=new Map();
