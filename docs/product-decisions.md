@@ -28,8 +28,23 @@ Respect legal high-school jersey numbers (0–5, 10–15, etc.). Stage substitut
 ## Broadcast and conference: future, deliberately deferred
 Game Center remains minimal. Broadcast Studio is a separate interface/session consuming the same canonical game events; zero, one, or several broadcasts can attach to a game. Start with OBS browser overlays, pregame matchups, player spotlights and team comparisons; later Illustrator templates, show control, motion graphics, and Stream Deck. Around-the-League aggregates simultaneous conference home games without requiring schools to broadcast; provisional scores must not be presented as verified finals. Test two games before scaling to five or ten. Main tradeoff: keep entry effortless for most schools while permitting advanced production for one or two broadcasters.
 
+## Account, profile and brand decisions
+
+- The user first requested a clear sign-in indicator and one place for teams, brands, rosters and past games. They later requested cloud storage across devices and a way for other users to add prebuilt brands. The original account/device split could hide older brands, and the library was below the editor. The account now owns new saves, and the brand shelf appears before the editor.
+- Older browser records need an explicit import from their original browser. Preserve the cloud record when a matching brand or roster exists, skip duplicate game imports, and keep the browser originals as a backup. This protects existing work when an import is retried or interrupted.
+- Sharing is opt-in per brand. Publish a snapshot of the visual identity, and let another user save an independently editable copy. This lets users reuse a prebuilt identity without linking their edits to its author. Stop sharing removes it from discovery, while recipients keep their copies. Rosters and detailed game history remain private. Imported games follow the existing public scoreboard behavior.
+- Use one account across devices to continue scoring or see the same library. Distinct operators with separate editing permissions are future collaboration work in #6. The cloud library needs a connection to save. Scorers should see an explicit failure and retain the last confirmed game state when a save fails.
+
+### Verification record
+
+| Item | Evidence | Remaining check |
+| --- | --- | --- |
+| My Profile and sign-in indicator | Deployed. Earlier signed-in browser check displayed six saved games. | Verify the expanded cloud library in a second browser. |
+| Brand shelf and discovery | Deployed and visually checked while signed out. Automated tests cover the complete shelf, independent shared copies, and stopping discovery. Database permissions were checked in a rolled-back production transaction. | Retest the originally reported missing brands using the original browser and verify sharing with two real accounts. See #9. |
+| Cloud rosters, games and older-record import | Implemented for basketball and soccer. All 40 release tests passed, including simulated cloud saves, cross-device roster reuse, import retry and ownership checks. | Confirm actual legacy import counts and signed-in production behavior. See #9 and #5. |
+
 ## Current evidence and open verification
-README documents Supabase-backed basketball/soccer, OBS scoreboard, account brands, goalkeeper linked saves, RLS, and simulated tests. index.html includes player picker, game flow, broadcaster tab, staged substitutions, screen-side switch. profile.js exists. athletic-ui.css loads Barlow. User confirmed soccer PDF export worked, though aesthetics were rejected. README explicitly states real authenticated end-to-end scorer writes, realtime and OBS rendering require manual verification. Treat other reported fixes as unverified until tested.
+README documents Supabase-backed basketball/soccer, OBS scoreboard, account brands, goalkeeper linked saves, RLS, and simulated tests. index.html includes player picker, game flow, broadcaster tab, staged substitutions, screen-side switch. athletic-ui.css loads Barlow. User confirmed soccer PDF export worked, though aesthetics were rejected. Signed-in scorer writes, realtime delivery and OBS rendering still need end-to-end checks with the deployed app. Treat other reported fixes as unverified until tested.
 
 ## Issue index
 #4 basic/advanced completeness; #5 cloud reliability; #6 multi-operator; #7 soccer; #8 basketball; #9 profile/brands; #10 reports; #11 broadcast/conference future.
