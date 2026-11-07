@@ -1,7 +1,7 @@
 # Larson Live Stats — visual design standard
 
 ## Approved identity
-Use the angular Z symbol inside the nine-sided badge from the owner's original artwork. Repository asset: `assets/brand/larson-z-mark.svg` (trace of owner-supplied mark). Main brand palette: red (#C91C2B), black/charcoal, and white. Do not use Jefferson school branding. The product lockup is the red Z badge followed by **LIVE STATS**.
+Use the owner-supplied official red Z mark, provided November 7, 2026 (source image `ZL LOGO - LIVE RED.png`). Shared vector rendering: `assets/brand/larson-z-mark.svg`. Preserve the distinctive nine-sided outline and interior Z cutouts; do not substitute a font-based letter or generic polygon. Official red is **#ED1E26** (RGB 237, 30, 38), combined with charcoal/black and white. The approved lockup uses the logo alongside **LIVE STATS**. Keep Larson branding independent of Jefferson High School branding.
 
 ## Canonical reference: soccer PDF reports
 **The existing soccer report visual language is the standard for all Larson Live Stats sports and documentation.** Reference implementation: `soccer-report.js`. Preserve its compact, high-density box-score presentation, strong condensed headings, legible table text, disciplined spacing, and clear hierarchy. Adapt sport-specific fields rather than forcing identical tables.
