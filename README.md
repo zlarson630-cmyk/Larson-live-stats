@@ -45,9 +45,14 @@ The connected database has the public display updates in `supabase/002_soccer_cl
 - `home.html`: unified navigation. The existing `index.html` remains the basketball entry point.
 - `quick-game.html`: sport launcher. Basketball and soccer retain their existing setup; volleyball accepts team-name prefill.
 - `volleyball.html`: local-only event-replay scoring beta, timeouts, explicit player stats, undo and validated JSON export/import. **Not cloud synchronized, not verified official stats.**
-- `schedule.html`: browser-local game drafts with duplicate warnings and JSON export/import; not a public schedule.
+- `schedule.html`: browser-local drafts with duplicate warnings and JSON export/import, plus authenticated owner-private Supabase scheduling (`scheduled_games`) and explicit local-draft upload. Cloud schedules are not public, and signed-in cross-device behavior still needs manual testing.
 - `games.html`: read-only recent public scoreboard directory, limited to the 40 most recently updated records, with team search and 30-second refresh. The existing public table does not contain sport or official verification state; directory links now open the read-only sport-neutral `view.html` page; sport-specific labels and clock semantics still require a sport-aware public projection.
 - `shared/game-identity.cjs`: conservative possible-duplicate matching. It never merges records automatically.
 - `supabase/PROPOSAL_community_scoring.sql`: **not applied**. Community reporting and moderation are not active.
 
 GitHub Actions runs `node --test tests/*.test.cjs` on pushes and PRs. Verify workflow results before relying on a release. Before a production community-scoring rollout, design the public sport-aware game registry, rate limits, moderation, canonical source selection, official claim workflow, and RLS tests.
+
+
+### Private cloud scheduling (migration 005)
+
+The `scheduled_games` table is deployed with owner-scoped SELECT, INSERT and DELETE policies and no anonymous access. Sign in on `schedule.html`, use **Upload local drafts**, and load the private schedule on a second device using the same account. Local drafts are intentionally retained. Verify another account cannot read/delete entries, anonymous reads fail, duplicate review works, and a failed upload reports partial progress. Cloud schedules are not yet the canonical public game registry and do not grant scorer permissions.
