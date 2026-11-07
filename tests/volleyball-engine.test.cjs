@@ -7,3 +7,7 @@ test("statistics are explicitly attributed",()=>{const s=v.replay([ev("1","away"
 test("corrections replay without stale points",()=>{const events=[ev("1","home"),ev("2","away")];assert.deepEqual(v.replay(v.edit(events,"2",ev("x","home"))).points,{home:2,away:0});assert.deepEqual(v.replay(v.remove(events,"1")).points,{home:0,away:1});});
 test("invalid and duplicate events rejected",()=>{assert.throws(()=>v.replay([ev("1","home"),ev("1","away")]));assert.throws(()=>v.replay([ev("1","other")]));});
 test("no scoring after match end",()=>{let e=[],id=0;for(let set=0;set<3;set++)for(let p=0;p<25;p++)e.push(ev(id++,"home"));assert.throws(()=>v.replay([...e,ev(id,"away")]));});
+
+test("timeouts track each team and can be undone",()=>{const events=[ev("1","home","timeout"),ev("2","away","timeout"),ev("3","home","timeout")];const s=v.replay(events);assert.equal(s.timeouts.home,2);assert.equal(s.timeouts.away,1);const revised=v.replay(v.remove(events,"3"));assert.equal(revised.timeouts.home,1);});
+test("best of three ends after two winning sets",()=>{const events=[];let id=0;for(let set=0;set<2;set++)for(let point=0;point<25;point++)events.push(ev(id++,"away"));const s=v.replay(events,{rules:{bestOf:3}});assert.equal(s.completed,true);assert.equal(s.setsWon.away,2);});
+test("no timeout after completed match",()=>{const events=[];let id=0;for(let set=0;set<3;set++)for(let point=0;point<25;point++)events.push(ev(id++,"home"));assert.throws(()=>v.replay([...events,ev(id,"away","timeout")]));});
