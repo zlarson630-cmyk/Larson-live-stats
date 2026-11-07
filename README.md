@@ -46,7 +46,7 @@ The connected database has the public display updates in `supabase/002_soccer_cl
 - `quick-game.html`: sport launcher. Basketball and soccer retain their existing setup; volleyball accepts team-name prefill.
 - `volleyball.html`: local-only event-replay scoring beta, timeouts, explicit player stats, undo and validated JSON export/import. **Not cloud synchronized, not verified official stats.**
 - `schedule.html`: browser-local game drafts with duplicate warnings and JSON export/import; not a public schedule.
-- `games.html`: read-only recent public scoreboard directory, limited to the 40 most recently updated records, with team search and 30-second refresh. The existing public table does not contain sport or official verification state; directory links currently open the existing basketball route, so soccer-specific viewing needs a sport-aware public projection.
+- `games.html`: read-only recent public scoreboard directory, limited to the 40 most recently updated records, with team search and 30-second refresh. The existing public table does not contain sport or official verification state; directory links now open the read-only sport-neutral `view.html` page; sport-specific labels and clock semantics still require a sport-aware public projection.
 - `shared/game-identity.cjs`: conservative possible-duplicate matching. It never merges records automatically.
 - `supabase/PROPOSAL_community_scoring.sql`: **not applied**. Community reporting and moderation are not active.
 
