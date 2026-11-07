@@ -14,12 +14,12 @@ button,input,select,textarea{font-family:'Barlow',system-ui,sans-serif}
 button{background:#e9edf2;color:#283441;border:1px solid #d3dce5;border-radius:10px;font-weight:700;box-shadow:0 1px 2px rgba(20,35,50,.07);transition:background .12s,border-color .12s,transform .1s,box-shadow .12s}
 button:hover:not(:disabled){background:#dce4ed;border-color:#aab9c8;box-shadow:0 2px 6px rgba(20,35,50,.10)}
 button:active:not(:disabled){transform:scale(.97);filter:brightness(.96)}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #d71936;outline-offset:2px}
-button.primary{background:#d71936;border-color:#b9142c;color:#fff}
-button.primary:hover:not(:disabled){background:#bb1730}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #ED1E26;outline-offset:2px}
+button.primary{background:#ED1E26;border-color:#ED1E26;color:#fff}
+button.primary:hover:not(:disabled){background:#ED1E26}
 button:disabled{opacity:.5}
 input:not([type=color]):not([type=checkbox]):not([type=file]),select,textarea,.seasonGrid select{background:#fff;color:#252b34;border:1px solid #bfcbd7;border-radius:9px}
-input[type=checkbox]{accent-color:#d71936;width:17px;height:17px;vertical-align:middle}
+input[type=checkbox]{accent-color:#ED1E26;width:17px;height:17px;vertical-align:middle}
 input[type=color]{background:#fff;border:1px solid #cbd5e1}
 textarea{background:#fff;color:#252b34}
 .small,.compactBottom,#broadcast .bc-muted{color:#667586}
@@ -41,7 +41,7 @@ details summary{font-weight:700}
 #broadcast{background:#f6f7f9;color:#252b34}
 #broadcast .bc-team,#broadcast .bc-card{background:#fff;color:#252b34;border:1px solid #e0e5eb;box-shadow:0 2px 9px rgba(28,43,61,.045)}
 #broadcast .bc-team{border-top:5px solid var(--jersey)}
-#broadcast .bc-card{border-left:5px solid var(--team-color,#d71936)}
+#broadcast .bc-card{border-left:5px solid var(--team-color,#ED1E26)}
 #broadcast .bc-card h3{color:#252b34}
 #broadcast td,#broadcast th,#broadcast .bc-play{border-bottom-color:#e0e5eb}
 #broadcast th{color:#5a6a7c}
