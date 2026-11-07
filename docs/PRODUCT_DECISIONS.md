@@ -22,3 +22,9 @@
 #4 Basic/Advanced completeness; #5 cloud reliability; #6 two-operator design; #7 soccer regression; #8 basketball regression; #9 account/brand-library verification; #10 reports; #11 broadcast future; #12 goalkeeper stats; #13 postseason edge cases.
 
 Do not alter application code as part of this audit.
+## Conversation management and archival workflow (2026-11-07)
+- Keep approximately **two or three active project conversations** to reduce cognitive overhead: one durable Product HQ, one temporary active development chat, and an optional ideas/design chat. The third chat is optional, not a required silo.
+- Before archiving any temporary chat, invoke the canonical prompt in [CHAT_HANDOFF_PROTOCOL.md](CHAT_HANDOFF_PROTOCOL.md). Inspect existing GitHub Issues and repository documentation, reconcile status, and record reasoning as well as outcomes. Archive only after checking for chat-only context.
+- **Why:** archiving preserves the conversation but does not guarantee that all details will be surfaced in a future chat. GitHub code, issues, and product decisions are more durable than relying on conversational recall. Archiving is preferred over deleting because original history remains available if needed.
+- The handoff protocol is version-controlled and should be fetched afresh from GitHub on invocation, rather than copied into every chat. Future improvements belong in the single canonical file.
+- This workflow is **documented and successfully invoked in this chat**; it does not establish that all future chats will automatically retrieve archived details. Re-run the protocol before each archive.
