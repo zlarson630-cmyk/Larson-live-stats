@@ -48,3 +48,10 @@ README documents Supabase-backed basketball/soccer, OBS scoreboard, account bran
 
 ## Issue index
 #4 basic/advanced completeness; #5 cloud reliability; #6 multi-operator; #7 soccer; #8 basketball; #9 profile/brands; #10 reports; #11 broadcast/conference future.
+
+## Chat and issue management workflow — 2026-11-07
+- Keep one ChatGPT Project for Larson Live Stats; use chats organically rather than requiring a fixed chat-per-sport structure or manual folders. Reason: the organizational overhead distracts from building and testing the product.
+- GitHub Issues are the durable, centralized backlog. During chat audits, distinguish discussed, requested, implemented, and tested; deduplicate against existing issues and update them instead of creating overlapping tasks. Track bugs, deferred ideas, acceptance criteria, and evidence of testing.
+- Keep durable design rules **and the reasons/tradeoffs behind them** in repository documentation. Reason: decisions should survive chat boundaries without repeatedly revisiting earlier debates.
+- After auditing a chat and recording its outstanding items, the user may archive it; archived chats remain historical references. Do not equate archiving with deleting, implementing, or testing a feature.
+- No application-code modifications are implied by a chat audit. Only update issues and documentation, then provide a concise summary of actual changes.
