@@ -38,3 +38,16 @@ Open `brands.html` to save team/school names, nicknames, short names, logos and 
 Soccer shots on goal create a linked save for the other team. Set each current goalkeeper in setup or under **Goalkeepers and team logos**; update it after a keeper substitution. Without a designated keeper, the event form offers the opponent roster. Goals do not create saves. Edit/delete/undo keeps linked shots and saves together.
 
 The connected database has the public display updates in `supabase/002_soccer_clock.sql`, `003_soccer_logos.sql`, and `004_team_brand_display.sql`. New database installations should apply them after `001_live_games.sql`. Public display metadata contains logos and compact names; rosters and goalkeeper assignments stay in private game state.
+
+
+## Multisport beta routes (November 2026)
+
+- `home.html`: unified navigation. The existing `index.html` remains the basketball entry point.
+- `quick-game.html`: sport launcher. Basketball and soccer retain their existing setup; volleyball accepts team-name prefill.
+- `volleyball.html`: local-only event-replay scoring beta, timeouts, explicit player stats, undo and validated JSON export/import. **Not cloud synchronized, not verified official stats.**
+- `schedule.html`: browser-local game drafts with duplicate warnings and JSON export/import; not a public schedule.
+- `games.html`: read-only recent public scoreboard directory, limited to the 40 most recently updated records, with team search and 30-second refresh. The existing public table does not contain sport or official verification state; directory links currently open the existing basketball route, so soccer-specific viewing needs a sport-aware public projection.
+- `shared/game-identity.cjs`: conservative possible-duplicate matching. It never merges records automatically.
+- `supabase/PROPOSAL_community_scoring.sql`: **not applied**. Community reporting and moderation are not active.
+
+GitHub Actions runs `node --test tests/*.test.cjs` on pushes and PRs. Verify workflow results before relying on a release. Before a production community-scoring rollout, design the public sport-aware game registry, rate limits, moderation, canonical source selection, official claim workflow, and RLS tests.
