@@ -1,0 +1,9 @@
+const test=require("node:test"),assert=require("node:assert/strict"),v=require("../volleyball/engine.cjs");
+const ev=(id,team,type="rally",extra={})=>({id:String(id),team,type,...extra});
+test("rally scoring, service transfer, set win",()=>{let e=[];for(let i=0;i<25;i++)e.push(ev(i,"home"));const s=v.replay(e);assert.equal(s.setsWon.home,1);assert.equal(s.sets[0].home,25);assert.equal(s.serving,"home");});
+test("deuce requires two-point lead",()=>{let e=[];for(let i=0;i<24;i++){e.push(ev("h"+i,"home"),ev("a"+i,"away"));}e.push(ev("h24","home"));assert.equal(v.replay(e).sets.length,0);e.push(ev("h25","home"));assert.equal(v.replay(e).sets.length,1);});
+test("best of five deciding set targets fifteen",()=>{let e=[],n=0;let id=0;for(const [index,team] of ["home","away","home","away","home"].entries())for(let p=0;p<(index===4?15:25);p++)e.push(ev(id++,team));const s=v.replay(e);assert.equal(s.completed,true);assert.equal(s.setsWon.home,3);assert.equal(s.sets[4].home,15);});
+test("statistics are explicitly attributed",()=>{const s=v.replay([ev("1","away"),ev("2","home","stat",{playerId:"11",stat:"kill"})]);assert.equal(s.stats.home["11"].kill,1);assert.equal(s.stats.away["11"],undefined);});
+test("corrections replay without stale points",()=>{const events=[ev("1","home"),ev("2","away")];assert.deepEqual(v.replay(v.edit(events,"2",ev("x","home"))).points,{home:2,away:0});assert.deepEqual(v.replay(v.remove(events,"1")).points,{home:0,away:1});});
+test("invalid and duplicate events rejected",()=>{assert.throws(()=>v.replay([ev("1","home"),ev("1","away")]));assert.throws(()=>v.replay([ev("1","other")]));});
+test("no scoring after match end",()=>{let e=[],id=0;for(let set=0;set<3;set++)for(let p=0;p<25;p++)e.push(ev(id++,"home"));assert.throws(()=>v.replay([...e,ev(id,"away")]));});
