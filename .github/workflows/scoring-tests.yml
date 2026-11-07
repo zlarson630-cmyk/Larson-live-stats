@@ -16,5 +16,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          for file in assets/js/*.js shared/*.cjs volleyball/*.cjs; do node --check "$file"; done
+      - name: Check page assets
+        run: node tests/check-page-assets.cjs
       - name: Run scoring regression tests
         run: node --test tests/*.test.cjs
