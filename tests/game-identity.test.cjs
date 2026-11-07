@@ -1,0 +1,11 @@
+const test=require('node:test'),assert=require('node:assert/strict'),g=require('../shared/game-identity.cjs');
+const base={sport:'Basketball',home:'Jefferson J-Hawks',away:'East E-Rabs',level:'Varsity',date:'2026-11-07T19:00:00-06:00',venue:'Main Gym'};
+test('normalizes team punctuation and case',()=>{assert.equal(g.normalize(base).home,'jefferson j hawks');assert.equal(g.normalize({...base,home:' JEFFERSON  J—HAWKS '}).home,'jefferson j hawks');});
+test('identical matchup is a possible match, never automatically merged',()=>{assert.equal(g.compare(base,{...base}).status,'possible-match');});
+test('different levels are not duplicate candidates',()=>{assert.equal(g.compare(base,{...base,level:'Junior Varsity'}).status,'different');});
+test('different days are not duplicate candidates',()=>{assert.equal(g.compare(base,{...base,date:'2026-11-09T19:00:00-06:00'}).status,'different');});
+test('same day but different start times need review for doubleheaders',()=>{assert.equal(g.compare(base,{...base,date:'2026-11-07T21:30:00-06:00'}).status,'review');});
+test('missing level and date require review',()=>{assert.equal(g.compare(base,{sport:'basketball',home:base.home,away:base.away}).status,'review');});
+test('different home-away order does not silently merge',()=>{assert.equal(g.compare(base,{...base,home:base.away,away:base.home}).status,'different');});
+test('candidate filter excludes unrelated games',()=>{const result=g.candidates(base,[{...base,id:'a'},{...base,id:'b',sport:'soccer'}]);assert.equal(result.length,1);assert.equal(result[0].id,'a');});
+test('invalid games rejected',()=>{assert.throws(()=>g.normalize({...base,away:base.home}));assert.throws(()=>g.normalize({...base,date:'bad date'}));});
