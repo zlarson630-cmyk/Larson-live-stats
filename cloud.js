@@ -1,6 +1,6 @@
 let cloudMode=false,owner=false,ownerId=null,stopWatch=null,sessionEpoch=0,writeQueue=Promise.resolve(),pendingWrites=0;
 const localHome=goHome,baseRender=render;
-function syncStatus(message){el('sync').textContent=message;}
+function syncStatus(message){const node=el('sync');if(!node)return;const lobby=!id&&!cloudMode;const neutral=/^(Connecting…|Signed in|Signed out|View publicly|Scorer · saved)$/.test(String(message||''));node.textContent=lobby&&neutral?'':message;}
 function canWrite(){return cloudMode&&owner;}
 function updateAccess(){
   document.querySelectorAll('#score button,#events button,#clockButton,.gameTools button').forEach(b=>b.disabled=!canWrite());
