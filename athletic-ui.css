@@ -6,7 +6,7 @@ main{max-width:1120px}
 header{padding:12px 3px 8px;border-bottom:1px solid #dce2e8}
 header h1{margin:5px 0;font-size:clamp(20px,3vw,29px)}
 .brandHome{display:inline-flex;align-items:center;gap:11px;text-transform:uppercase;font-family:'Barlow Condensed','Barlow',sans-serif;font-style:italic;font-weight:800;letter-spacing:.025em;color:#252b34}
-.brandHome:before{content:'Z';display:inline-grid;place-items:center;width:36px;height:36px;flex:none;background:#d71936;color:white;font-family:'Barlow',sans-serif;font-style:italic;font-size:23px;font-weight:800;clip-path:polygon(50% 0,82% 11%,100% 39%,96% 72%,72% 97%,35% 100%,7% 78%,0 42%,19% 12%)}
+.brandHome:before{content:'';display:inline-block;width:36px;height:36px;flex:none;background:url('assets/brand/larson-z-mark.svg?v=official-20261107') center/contain no-repeat}
 section{background:#fff;color:#252b34;border:1px solid #e0e5eb;border-radius:15px;box-shadow:0 2px 9px rgba(28,43,61,.045)}
 h1,h2,h3{color:#252b34}h2,h3{font-family:'Barlow Condensed','Barlow',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:.035em}
 h2{font-size:clamp(22px,3vw,29px);margin-top:0}
@@ -48,7 +48,7 @@ details summary{font-weight:700}
 #broadcast .bc-head a{background:#27394b;color:#fff}
 #broadcast .bc-card.bc-player h3{color:var(--team-ink,#fff)}
 #broadcast .bc-compare-head{color:#fff}
-@media(max-width:600px){header h1{font-size:19px}.brandHome{gap:7px}.brandHome:before{width:28px;height:28px;font-size:18px}section{box-shadow:none}button{min-height:39px}}
+@media(max-width:600px){header h1{font-size:19px}.brandHome{gap:7px}.brandHome:before{width:28px;height:28px}section{box-shadow:none}button{min-height:39px}}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
 
 /* Mobile lobby repair: isolate auth fields and prevent overlapping controls */
