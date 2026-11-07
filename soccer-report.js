@@ -59,7 +59,7 @@ window.SoccerReport=(()=>{
   const ordered=SoccerClock.order(events,match);
   table(['HALF / TIME','TEAM','GOAL / ASSIST'],[80,150,306],ordered.filter(e=>e.kind==='Goal'||e.kind==='Own goal').map(e=>['H'+e.period+' '+SoccerClock.timeLabel(e,fmt),match[e.team],(e.kind==='Own goal'?'Own goal: ':'')+(e.player||'Unassigned')+(e.assist?' / Assist: '+e.assist:'')]));
   for(const t of ['home','away']){
-   section((t==='home'?'Home':'Visitor')+' player statistics — '+match[t]);
+   section((t==='home'?'Home':'Visitor')+' player statistics');text(match[t],m,y+10,10,bold,muted);y+=16;
    const names=[...new Set([...(match.rosters?.[t]||[]),...events.filter(e=>e.team===t).flatMap(e=>[e.player,e.assist]).filter(Boolean)])];
    table(['PLAYER','G','A','SOG','OFF','SV','F','YC','RC'],[232,32,32,44,44,40,40,40,40],names.map(p=>{
     const n=k=>events.filter(e=>e.team===t&&e.player===p&&e.kind===k).length;
