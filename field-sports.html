@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>Larson Live Stats · Scoring</title>
+<link rel="icon" href="assets/brand/larson-z-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="field-sports/ui.css">
+<script defer src="field-sports/engine.js"></script>
+<script defer src="field-sports/app.js"></script>
+</head>
+<body>
+<header class="mast"><div class="wrap mast-inner">
+<a class="brand" href="./"><img src="assets/brand/larson-z-mark.svg" alt=""> Larson <span>Live Stats</span></a>
+<nav aria-label="Sports"><a href="basketball-home.html">Basketball</a><a href="?sport=football">Football</a><a href="?sport=baseball">Baseball</a><a href="?sport=softball">Softball</a></nav>
+</div></header>
+<main class="wrap">
+<div class="title">
+<div><p class="eyebrow" id="sportLabel">Scorer beta</p><h1 id="title">Scorekeeper</h1></div>
+<div class="actions" id="topActions" hidden><a class="button primary" id="broadcastLink" target="_blank" rel="noopener">Broadcast Center ↗</a><button id="pdf">Export PDF box score</button></div>
+</div>
+<p id="notice" role="status"></p>
+<section class="panel" id="setup" hidden aria-labelledby="setupTitle">
+<h2 id="setupTitle">Game setup</h2>
+<p class="muted">Set team names and jersey colors. Games are saved in this browser. Open the Broadcast Center in another tab on this device.</p>
+<form id="setupForm">
+<div class="teams-form">
+<div><label>Visitor team <input name="away" maxlength="60" required value="Visitor"></label><label>Visitor color <input name="awayColor" type="color" value="#c62828"></label></div>
+<div><label>Home team <input name="home" maxlength="60" required value="Home"></label><label>Home color <input name="homeColor" type="color" value="#efefef"></label></div>
+</div>
+<label id="minutesField">Minutes per period <input name="minutes" type="number" min="1" max="30" value="12" required></label>
+<div class="actions"><button class="primary">Create game</button><button type="button" id="resume" hidden>Return to current game</button></div>
+</form>
+</section>
+<div id="game" hidden>
+<section id="scoreboard" class="board" aria-label="Scoreboard">
+<div id="awayCard" class="team-card"><span>VISITOR</span><h2 id="awayName"></h2><strong id="awayScore"></strong></div>
+<div class="game-state">
+<span id="phase"></span><strong id="detail"></strong><span id="situation"></span>
+<div id="diamond" class="diamond" aria-label="Bases"><i></i><i></i><i></i></div>
+</div>
+<div id="homeCard" class="team-card"><span>HOME</span><h2 id="homeName"></h2><strong id="homeScore"></strong></div>
+</section>
+<div class="layout">
+<div>
+<section class="panel" id="controls" aria-labelledby="entryTitle">
+<div class="panel-head"><h2 id="entryTitle">Score a play</h2><button id="undo" type="button">Undo</button></div>
+<form id="footballEntry">
+<div class="input-row"><label>Team <select id="footballTeam"><option value="away">Visitor</option><option value="home">Home</option></select></label><label>Player / jersey <input id="footballPlayer" maxlength="45" placeholder="Optional"></label></div>
+<div id="footballButtons" class="action-grid"></div>
+<p class="muted">Record yardage and defensive stats separately from scoring plays.</p>
+<div class="input-row"><label>Stat <select id="footballStat"></select></label><label>Yards <input id="yards" type="number" value="0" min="-99" max="99" required></label><button type="submit">Record stat</button></div>
+</form>
+<form id="diamondEntry">
+<div class="input-row"><label>Batter / jersey <input id="batter" maxlength="45" placeholder="Optional"></label><label>Pitcher / jersey <input id="pitcher" maxlength="45" placeholder="Optional"></label><label>Result <select id="outcome"></select></label></div>
+<div id="pitchButtons" class="actions"><button type="button" data-pitch="Ball">Ball</button><button type="button" data-pitch="Strike">Strike</button><button type="button" data-pitch="Foul">Foul</button></div>
+<p class="muted">Review the suggested runner advances and runs before saving the play.</p>
+<div class="input-row numbers"><label>Runs <input type="number" id="runs" min="0" max="4" required></label><label>RBI <input type="number" id="rbi" min="0" max="4" required></label><label>Outs on play <input type="number" id="outs" min="0" max="3" required></label></div>
+<fieldset class="bases"><legend>Bases occupied after play</legend><label><input type="checkbox" id="base1"> First</label><label><input type="checkbox" id="base2"> Second</label><label><input type="checkbox" id="base3"> Third</label></fieldset>
+<button class="primary" type="submit">Record play</button>
+</form>
+<details id="gameTools"><summary>Game controls</summary>
+<div id="footballTools">
+<div class="actions"><button id="clockToggle">Start clock</button><label>Clock <input id="clockSet" placeholder="12:00" inputmode="text" size="7"></label><button id="applyClock">Set clock</button></div>
+<form id="possessionForm" class="input-row">
+<label>Possession <select id="possession"><option value="away">Visitor</option><option value="home">Home</option></select></label>
+<label>Down <input id="down" type="number" value="1" min="1" max="4" required></label>
+<label>Yards to go <input id="distance" type="number" value="10" min="1" max="99" required></label>
+<label>Ball on <input id="spot" placeholder="e.g. HOME 35" maxlength="20"></label>
+<button>Apply situation</button>
+</form>
+</div>
+<div class="actions"><button id="period">Next period</button><button id="finish">Mark final</button><button id="newGame">New game</button></div>
+</details>
+</section>
+<section class="panel"><h2 id="lineTitle">Line score</h2><div class="table-wrap" id="lineScore"></div></section>
+<section class="panel"><h2>Player box score</h2><div class="player-grid" id="playerStats"></div><div class="player-grid" id="pitchingStats"></div></section>
+</div>
+<aside>
+<section class="panel" id="leadersPanel" hidden><h2>Game leaders</h2><div class="leader-grid" id="leaders"></div></section>
+<section class="panel comparison"><h2>Team comparison</h2><div class="table-wrap" id="comparison"></div></section>
+<section class="panel"><h2>Game flow</h2><ol id="playLog" class="feed"></ol></section>
+</aside>
+</div>
+</div>
+</main>
+<footer class="wrap">Larson Live Stats · Local scoring beta</footer>
+</body>
+</html>

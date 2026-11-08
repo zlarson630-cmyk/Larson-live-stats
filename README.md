@@ -64,3 +64,11 @@ Home shows Larson Live Stats public games. The default is My Teams, using saved 
 In Basketball or Soccer setup, enter an optional **Public scheduled start** before creating the cloud game. Starting the clock or recording a score moves it into Live. Use the sport's existing final action to finish it. In Volleyball, sign in through My Profile and use **Publish scoreboard**. Publish a scheduled start or a match that has begun, then keep scoring on the same device to update public sets won. Completed volleyball matches publish as finals automatically. Player stats remain on the scorer's device.
 
 The public feed uses the allowlisted projection in `supabase/008_game_center.sql`. It refreshes every five seconds and shows upcoming games and finals within seven days. Live entries leave the home feed after 12 hours without an update. Private schedules and legacy imports are excluded.
+
+## Football, baseball and softball betas
+
+Open a sport from Home and create a game. Use one scorer tab and keep its Broadcast Center open in another tab in the same browser. Broadcast links reference the saved game on that device. Export a branded PDF box score from either view.
+
+- Football includes the game clock, quarter and overtime progression, manual down and distance, scoring plays, and separately entered passing, rushing, receiving, and defensive stats.
+- Baseball and softball include inning line scores, pitch counts, outs, occupied bases, batting, and pitcher totals. Check the suggested runner movements and edit runs, RBI, outs and occupied bases before saving each play. The scorer advances the half after three outs and marks final when appropriate for the competition.
+- Player stats include plays entered with a player or pitcher identifier. Team totals include all recorded plays. The betas save to this browser and do not publish to the public Game Center.
