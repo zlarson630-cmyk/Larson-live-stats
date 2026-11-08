@@ -29,5 +29,5 @@ window.Live = (() => {
     return ()=>{stopped=true;generation++;clearInterval(timer);if(channel)viewer.removeChannel(channel);window.removeEventListener('online',refresh);document.removeEventListener('visibilitychange',refresh);};
   }
   function publicState(row){return {id:row.id,home:row.home,away:row.away,scores:{home:row.home_score,away:row.away_score},period:row.period,seconds:row.seconds,running:row.running,startedAt:row.started_at,colors:{home:row.home_color,away:row.away_color},fouls:{home:'—',away:'—'},timeouts:{home:'—',away:'—'},events:[],rosters:{}};}
-  return {client,read,watch,publicState};
+  return {client,viewer,read,watch,publicState};
 })();

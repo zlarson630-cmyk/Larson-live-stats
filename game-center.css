@@ -1,0 +1,18 @@
+#gameCenter { margin-bottom: 45px; }
+#gameCenter h1 { margin: 5px 0; font: italic 800 clamp(48px, 8vw, 82px)/1 'Barlow Condensed', Barlow, sans-serif; text-transform: uppercase; }
+.game-intro { color: #b3bac6; margin: 8px 0 20px; }
+.game-filters { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
+.game-filters[hidden] { display: none; }
+.game-filters label { display: grid; gap: 5px; color: #d6d9e0; font-weight: 700; }
+.game-filters select { background: #252a34; color: #f5f6f8; border: 1px solid #666d7a; border-radius: 8px; padding: 10px 12px; font: inherit; }
+.game-group { border-top: 1px solid #383d46; padding: 14px 0; }
+.game-group h2 { font: 800 26px 'Barlow Condensed', Barlow, sans-serif; text-transform: uppercase; margin: 0 0 10px; }
+.game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 235px), 1fr)); gap: 12px; }
+.game-card { display: grid; gap: 7px; background: #20252e; border: 1px solid #484d58; border-radius: 12px; padding: 14px; }
+.game-meta, #gameNotice { color: #b9c1ce; margin: 0; }
+#gameNotice:not(:empty) { margin-bottom: 14px; }
+.game-meta { font-size: 14px; }
+.game-team { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 18px; overflow-wrap: anywhere; }
+.game-team strong { font-size: 21px; font-variant-numeric: tabular-nums; }
+.game-card a, .game-back { color: #ffc5c9; width: fit-content; text-decoration: underline; text-underline-offset: 3px; padding: 6px 0; }
+.game-back:not([hidden]) { display: inline-block; margin-bottom: 12px; }

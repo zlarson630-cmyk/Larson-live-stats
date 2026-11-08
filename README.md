@@ -56,3 +56,11 @@ GitHub Actions runs `node --test tests/*.test.cjs` on pushes and PRs. Verify wor
 ### Private cloud scheduling (migration 005)
 
 The `scheduled_games` table is deployed with owner-scoped SELECT, INSERT and DELETE policies and no anonymous access. Sign in on `schedule.html`, use **Upload local drafts**, and load the private schedule on a second device using the same account. Local drafts are intentionally retained. Verify another account cannot read/delete entries, anonymous reads fail, duplicate review works, and a failed upload reports partial progress. Cloud schedules are not yet the canonical public game registry and do not grant scorer permissions.
+
+## Home Game Center
+
+Home shows Larson Live Stats public games. The default is My Teams, using saved account brands or Jefferson when the library is empty. Conference and association scopes come from editable brand affiliations, with NIC-10 and IHSA as the Jefferson defaults. Unbranded NIC-10 team names are matched against the member-school list. Scope choices are remembered per account on the current browser.
+
+In Basketball or Soccer setup, enter an optional **Public scheduled start** before creating the cloud game. Starting the clock or recording a score moves it into Live. Use the sport's existing final action to finish it. In Volleyball, sign in through My Profile and use **Publish scoreboard**. Publish a scheduled start or a match that has begun, then keep scoring on the same device to update public sets won. Completed volleyball matches publish as finals automatically. Player stats remain on the scorer's device.
+
+The public feed uses the allowlisted projection in `supabase/008_game_center.sql`. It refreshes every five seconds and shows upcoming games and finals within seven days. Live entries leave the home feed after 12 hours without an update. Private schedules and legacy imports are excluded.

@@ -6,22 +6,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800&display=swap');
 :root{font-family:Barlow,system-ui,sans-serif;color:#ecedf1;background:#11151b}*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at 80% 0%,#242027 0%,transparent 48%),#11151b}a{color:inherit;text-decoration:none}a:focus-visible{outline:3px solid #f4b6c1;outline-offset:4px}
 header{border-bottom:1px solid #34373f;background:#12161bc9}header .inner{max-width:1120px;margin:auto;padding:17px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{display:flex;align-items:center;gap:13px;font-family:'Barlow Condensed',Barlow,sans-serif;font-size:clamp(23px,4vw,30px);font-weight:800;font-style:italic;letter-spacing:.025em;text-transform:uppercase}.brand img{width:49px;height:49px;object-fit:contain}.brand em{color:#ED1E26;font-style:inherit}header .tag{color:#aab0bc;font-size:13px;font-weight:600}
-main{max-width:1120px;margin:auto;padding:42px 24px 90px}.eyebrow{font-size:13px;color:#ED1E26;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.hero h1{font-family:'Barlow Condensed',Barlow,sans-serif;text-transform:uppercase;font-weight:800;font-style:italic;line-height:.95;letter-spacing:.01em;font-size:clamp(50px,8vw,93px);margin:12px 0 18px}.hero h1 span{color:#ED1E26}.hero p{font-size:clamp(16px,2.4vw,19px);color:#aeb6c3;max-width:650px;line-height:1.55;margin:0 0 36px}
+main{max-width:1120px;margin:auto;padding:42px 24px 90px}.eyebrow{font-size:13px;color:#ED1E26;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
 .sectionheading{display:flex;align-items:end;justify-content:space-between;gap:10px;border-bottom:1px solid #42454e;padding-bottom:12px;margin-bottom:18px}.sectionheading h2{font-family:'Barlow Condensed',Barlow,sans-serif;font-size:28px;text-transform:uppercase;font-weight:800;margin:0}.sectionheading span{font-size:12px;color:#9aa2b0}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.tile{position:relative;display:flex;flex-direction:column;min-height:208px;border:1px solid #44474f;border-radius:15px;background:linear-gradient(150deg,#292e38,#191e26);padding:25px;overflow:hidden;transition:transform .15s,border-color .15s,background .15s}.tile:hover{transform:translateY(-3px);border-color:#ED1E26;background:linear-gradient(150deg,#34303b,#1e222c)}.tile::after{content:'';position:absolute;bottom:0;left:0;right:0;height:5px;background:#ED1E26}.tile .symbol{font-size:36px;line-height:1;margin-bottom:auto}.tile h3{font-family:'Barlow Condensed',Barlow,sans-serif;text-transform:uppercase;font-size:33px;line-height:1;margin:18px 0 5px;font-weight:800}.tile p{color:#b3bac6;font-size:14px;margin:0}.tile .arrow{position:absolute;right:23px;bottom:22px;color:#ED1E26;font-size:25px}.tile.soccer::after{background:#ED1E26}.tile.volleyball::after{background:#ED1E26}.tile.brands::after{background:#ED1E26}.tile.brands{background:linear-gradient(135deg,#26232a,#1b2028)}.tile .beta{display:inline-block;margin-left:8px;font:700 10px Barlow,system-ui,sans-serif;vertical-align:middle;letter-spacing:.07em;border:1px solid #777987;border-radius:30px;padding:4px 7px;color:#d4d8e0}
 footer{max-width:1120px;margin:auto;padding:23px 24px;color:#858e9c;font-size:12px;border-top:1px solid #30343d}
-@media(max-width:650px){header .inner{padding:12px 16px}header .tag{display:none}main{padding:29px 16px 60px}.hero p{margin-bottom:27px}.grid{gap:10px}.tile{min-height:185px;padding:16px}.tile h3{font-size:29px}.tile .arrow{right:14px;bottom:14px}.tile p{padding-right:20px;font-size:12px}.tile .symbol{font-size:30px}}
+@media(max-width:650px){header .inner{padding:12px 16px}header .tag{display:none}main{padding:29px 16px 60px}.grid{gap:10px}.tile{min-height:185px;padding:16px}.tile h3{font-size:29px}.tile .arrow{right:14px;bottom:14px}.tile p{padding-right:20px;font-size:12px}.tile .symbol{font-size:30px}}
 </style>
+<link rel="stylesheet" href="game-center.css">
 <script>/* Preserve existing root basketball deep links after the home-page migration. */(function(){const q=new URLSearchParams(location.search);if(q.has('game')||q.has('local'))location.replace('basketball.html'+location.search+location.hash)})();</script>
 </head><body>
 <header><div class="inner"><a class="brand" href="./" aria-label="Larson Live Stats home"><img src="assets/brand/larson-z-mark.svg?v=official-20261107" alt=""><span>LARSON <em>LIVE STATS</em></span></a><span class="tag">ONE PLATFORM. EVERY GAME.</span></div></header>
 <main>
-<div class="hero"><div class="eyebrow">Your multisport scoring platform</div><h1>EVERY GAME.<br><span>ONE HOME.</span></h1><p>Choose your sport to start scorekeeping, or manage the team identities you use from game to game.</p></div>
+<section id="gameCenter" aria-labelledby="gameTitle">
+<div class="eyebrow">Larson Live Stats</div>
+<h1 id="gameTitle">Game Center</h1>
+<p class="game-intro">Live scores, upcoming games and recent finals published on Larson Live Stats.</p>
+<a class="game-back" href="./" hidden>Back to Game Center</a>
+<div class="game-filters" id="gameFilters">
+  <label>Game scope <select id="gameScope">
+    <option value="mine">My Teams</option><option value="conference">NIC-10</option>
+    <option value="association">IHSA</option><option value="all">All Games</option>
+  </select></label>
+  <label>Sport <select id="gameSport">
+    <option value="all">All Sports</option><option value="basketball">Basketball</option>
+    <option value="soccer">Soccer</option><option value="volleyball">Volleyball</option>
+  </select></label>
+  <a class="game-back" href="profile.html">My profile</a>
+</div>
+<p id="gameNotice" role="status">Loading public games…</p>
+<div id="gameSections"></div>
+<noscript>Enable JavaScript to load public game scores.</noscript>
+</section>
 <div class="sectionheading"><h2>Choose a destination</h2><span>4 destinations</span></div>
 <div class="grid">
 <a class="tile basketball" href="basketball-home.html"><span class="symbol" aria-hidden="true">🏀</span><h3>Basketball</h3><p>Live scoring, player stats &amp; Quick Roster Editor</p><span class="arrow" aria-hidden="true">↗</span></a>
 <a class="tile soccer" href="soccer.html"><span class="symbol" aria-hidden="true">⚽</span><h3>Soccer</h3><p>Live matches, game events &amp; reports</p><span class="arrow" aria-hidden="true">↗</span></a>
-<a class="tile volleyball" href="volleyball.html"><span class="symbol" aria-hidden="true">🏐</span><h3>Volleyball <span class="beta">BETA</span></h3><p>Rally scoring &amp; sets · saved on this device</p><span class="arrow" aria-hidden="true">↗</span></a>
+<a class="tile volleyball" href="volleyball.html"><span class="symbol" aria-hidden="true">🏐</span><h3>Volleyball <span class="beta">BETA</span></h3><p>Rally scoring, sets &amp; optional public scores</p><span class="arrow" aria-hidden="true">↗</span></a>
 <a class="tile brands" href="brands.html"><span class="symbol" aria-hidden="true">🛡️</span><h3>Team Brands</h3><p>Team logos, colors &amp; reusable identities</p><span class="arrow" aria-hidden="true">↗</span></a>
 </div></main><footer>Larson Live Stats · Designed for the game.</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
+<script src="live.js?v=game-center"></script><script src="affiliations.js"></script>
+<script src="team-brands.js?v=game-center"></script><script src="game-center.js"></script>
 </body></html>
