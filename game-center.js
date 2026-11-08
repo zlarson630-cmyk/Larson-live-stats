@@ -5,6 +5,7 @@
   const sport = document.getElementById('gameSport');
   const notice = document.getElementById('gameNotice');
   const sections = document.getElementById('gameSections');
+  const ticker = document.getElementById('tickerGames');
   const requestedMatch = new URLSearchParams(location.search).get('match');
   const detail = /^[A-Z0-9]{6}$/.test(requestedMatch || '') ? requestedMatch : '';
   const sports = {basketball:'Basketball', soccer:'Soccer', volleyball:'Volleyball'};
@@ -16,6 +17,8 @@
   const fields = 'id,sport,status,teams,home_score,away_score,period,scheduled_at,final_at,updated_at';
   const week = 7 * 86400000;
   const date = new Intl.DateTimeFormat(undefined, {dateStyle:'medium', timeStyle:'short'});
+  const day = new Intl.DateTimeFormat(undefined, {dateStyle:'short'});
+  const time = new Intl.DateTimeFormat(undefined, {timeStyle:'short'});
   const defaults = {name:'Jefferson', conference:'NIC-10', association:'IHSA'};
   let rows = [];
   let account = '';
@@ -50,6 +53,39 @@
     )));
   }
 
+  function gameLink(game) {
+    const path = game.status === 'upcoming' || game.sport === 'volleyball' ? './?match=' :
+      game.sport === 'soccer' ? 'soccer-broadcast.html?game=' : 'basketball.html?game=';
+    return path + encodeURIComponent(game.id);
+  }
+
+  function renderTicker(games) {
+    const items = games.map(game => {
+      const matchup = game.status === 'upcoming'
+        ? game.teams.away.name + ' at ' + game.teams.home.name
+        : game.teams.away.name + ' ' + game.away_score + ' · ' + game.teams.home.name + ' ' + game.home_score;
+      const label = game.status === 'live' ? 'LIVE' : game.status === 'final' ? 'Final' : time.format(new Date(game.scheduled_at));
+      const link = element('a', '', 'ticker-game');
+      link.href = gameLink(game);
+      link.dataset.game = game.id;
+      link.append(element('span', label, game.status === 'live' ? 'live-label' : ''),
+        element('span', sports[game.sport]), element('strong', matchup));
+      return link;
+    });
+    const offset = ticker.scrollLeft;
+    const focused = ticker.contains(document.activeElement) ? document.activeElement.dataset.game : '';
+    ticker.replaceChildren(...items);
+    if (!items.length) {
+      ticker.textContent = loadError && !loaded ? 'Scores temporarily unavailable' :
+        !loaded ? 'Loading scores…' : 'No live games or scores today';
+    }
+    if (focused) {
+      const next = items.find(item => item.dataset.game === focused);
+      (next || ticker).focus({preventScroll:true});
+    }
+    ticker.scrollLeft = offset;
+  }
+
   function card(game) {
     const article = element('article', '', 'game-card');
     const info = [sports[game.sport]];
@@ -69,9 +105,7 @@
     }
     if (!detail) {
       const link = element('a', game.status === 'upcoming' ? 'Game details' : 'View scoreboard');
-      const path = game.status === 'upcoming' || game.sport === 'volleyball' ? './?match=' :
-        game.sport === 'soccer' ? 'soccer-broadcast.html?game=' : 'basketball.html?game=';
-      link.href = path+encodeURIComponent(game.id);
+      link.href = gameLink(game);
       article.append(link);
     } else if (game.status !== 'upcoming' && game.sport !== 'volleyball') {
       const link = element('a', 'Open scoreboard');
@@ -83,9 +117,15 @@
 
   function render() {
     const visible = detail ? rows : rows.filter(matches);
-    const signature = JSON.stringify([visible, loaded, loadError, scope.value, sport.value]);
+    const today = day.format(new Date());
+    const signature = JSON.stringify([visible, loaded, loadError, scope.value, sport.value, today]);
     if (signature === lastRender) return;
     lastRender = signature;
+    if (!detail) renderTicker(visible.filter(game => {
+      if (game.status === 'live') return true;
+      const timestamp = game.status === 'upcoming' ? game.scheduled_at : game.final_at;
+      return timestamp && day.format(new Date(timestamp)) === today;
+    }));
     notice.textContent = loadError ? (loaded ? 'Refresh failed. Last loaded scores are shown.' : 'Scores are temporarily unavailable. Retrying…') :
       !loaded ? 'Loading public games…' : !visible.length ?
       (detail ? 'This public game is unavailable.' : 'No public games match these filters.') : '';
@@ -173,10 +213,18 @@
 
   if (detail) {
     filters.hidden = true;
-    host.querySelector('h1').textContent = 'Public scoreboard';
+    host.open = true;
+    host.querySelector('summary').hidden = true;
+    document.getElementById('scoreTicker').hidden = true;
+    document.getElementById('destinations').hidden = true;
+    document.getElementById('gameTitle').hidden = false;
     host.querySelector('.game-intro').textContent = 'Published by a Larson Live Stats scorer.';
     host.querySelector('.game-back').hidden = false;
   } else {
+    if (location.hash === '#gameCenter') host.open = true;
+    document.getElementById('browseScores').addEventListener('click', () => {
+      host.open = true;
+    });
     try { scope.value = localStorage.getItem(storageKey()) || 'mine'; } catch {}
     TeamBrands.subscribe(applyBrands);
     TeamBrands.connect(Live.client);
