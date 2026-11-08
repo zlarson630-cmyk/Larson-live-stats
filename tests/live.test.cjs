@@ -208,3 +208,27 @@ test('picker reports when a second scorer removes its play before assignment',as
  assert.equal(a.run('pickerEvent'),null);
  assert.match(a.node('scorerToast').textContent,/play was removed/);
 });
+
+test('a stale scorer cannot edit a game finalized or trashed by another tab',async()=>{
+ for(const status of ['completed','trash']){
+  const a=app(),db=cloud(a);
+  db.row().libraryStatus=status;
+  db.row().version++;
+  assert.equal(await a.run('write(s=>s.scores.home+=2)'),false);
+  assert.equal(db.calls(),0);
+  assert.equal(a.run('state.libraryStatus'),status);
+ }
+});
+
+test('clock ticks update both clocks without rebuilding the scoring controls',()=>{
+ const a=app();
+ cloud(a,{game:{...initial,running:true,startedAt:1000}});
+ a.ctx.Date=class extends Date{static now(){return 5000}};
+ a.node('scoreControls').innerHTML='unchanged controls';
+ a.node('events').innerHTML='unchanged flow';
+ a.run('tickBasketballClock()');
+ assert.equal(a.node('clock').textContent,'7:56');
+ assert.equal(a.node('bc-clock').textContent,'7:56');
+ assert.equal(a.node('scoreControls').innerHTML,'unchanged controls');
+ assert.equal(a.node('events').innerHTML,'unchanged flow');
+});

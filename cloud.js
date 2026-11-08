@@ -2,9 +2,16 @@ let cloudMode=false,owner=false,ownerId=null,stopWatch=null,sessionEpoch=0,write
 const localHome=goHome,baseRender=render;
 function syncStatus(message){const node=el('sync');if(!node)return;const text=String(message||'');const routine=/^(Connecting…|Signed in|Signed out|View publicly|Scorer · saved|Scorer · Live|Read only · Live)/.test(text);const alert=!routine&&!!text&&!/^(Scorer · |Read only · )?(Live · |Reconnecting)/.test(text);node.textContent=alert?text:'';node.classList.toggle('hide',!alert);if(alert&&id&&typeof scorerToast==='function')scorerToast(text,true);}
 function canWrite(){return cloudMode&&owner;}
+function gameLocked(game){return game?.libraryStatus==='completed'||game?.libraryStatus==='trash';}
+function tickBasketballClock(){
+ if(!state?.running)return;
+ const value=stamp(state), broadcast=el('bc-clock');
+ el('clock').textContent=value;
+ if(broadcast)broadcast.textContent=value;
+}
 function updateAccess(){
-  document.querySelectorAll('#score button,#events button,#clockButton,.gameTools button').forEach(b=>b.disabled=!canWrite()||state?.libraryStatus==='completed'||state?.libraryStatus==='trash');
-  if(!canWrite())closePicker();
+  document.querySelectorAll('#score button,#events button,#clockButton,#bcClockButton,.gameTools button').forEach(b=>b.disabled=!canWrite()||gameLocked(state));
+  if(!canWrite()||gameLocked(state))closePicker();
 }
 render=function(){baseRender();updateAccess();if(cloudMode)el('overlay').href='overlay.html?game='+id;else el('overlay').href='overlay.html?game='+id+'&local=1';};
 function stopCloud(){sessionEpoch++;stopWatch?.();stopWatch=null;cloudMode=false;owner=false;ownerId=null;}
@@ -29,10 +36,21 @@ joinGame=async function(code){
   id=next;owner=!!privateRow;ownerId=privateRow?.owner_id||null;state=privateRow?.state||Live.publicState(row);
   history.replaceState({},'',location.pathname+'?game='+id);
   el('lobby').classList.add('hide');el('app').classList.remove('hide');render();
-  clockTimer=setInterval(()=>{if(state?.running)render()},250);
+  clockTimer=setInterval(tickBasketballClock,250);
   stopWatch=Live.watch(id,async publicRow=>{
    if(epoch!==sessionEpoch||!publicRow||pendingWrites)return;
-   if(owner){try{const fresh=await Live.read(Live.client,'live_games',next);if(epoch===sessionEpoch&&!pendingWrites){if(fresh)state=fresh.state;else{owner=false;state=Live.publicState(publicRow);}render();}}catch(e){syncStatus('Scorer refresh failed · retrying');}}
+   if(owner){
+    const before=state;
+    try{
+     const fresh=await Live.read(Live.client,'live_games',next);
+     if(epoch!==sessionEpoch||pendingWrites||!owner||state!==before)return;
+     if(fresh){
+      if(fresh.state.version!=null&&fresh.state.version===state?.version)return;
+      state=fresh.state;
+     }else{owner=false;state=Live.publicState(publicRow);}
+     render();
+    }catch(e){if(epoch===sessionEpoch)syncStatus('Scorer refresh failed · retrying');}
+   }
    else{state=Live.publicState(publicRow);render();}
   },message=>{if(epoch===sessionEpoch)syncStatus((owner?'Scorer · ':'Read only · ')+message);});
  }catch(e){if(epoch===sessionEpoch){owner=false;syncStatus(e.message);updateAccess();}}
@@ -41,13 +59,18 @@ goHome=function(event){if(pendingWrites){event?.preventDefault();alert('Wait for
 reload=function(){};
 write=function(fn){
  if(!cloudMode){syncStatus('Open a cloud game before scoring.');return Promise.resolve(false);}
- if(!owner){syncStatus('Read only · sign in as the game owner to score');return Promise.resolve(false);}if(state?.libraryStatus==='completed'||state?.libraryStatus==='trash'){syncStatus('Game is final or trashed · move it to Active to edit');return Promise.resolve(false);}
+ if(!owner){syncStatus('Read only · sign in as the game owner to score');return Promise.resolve(false);}if(gameLocked(state)){syncStatus('Game is final or trashed · move it to Active to edit');return Promise.resolve(false);}
  const game=id,epoch=sessionEpoch;pendingWrites++;
  const task=writeQueue.then(async()=>{
   if(epoch!==sessionEpoch) return false;
   try{
    for(let attempt=0;attempt<5;attempt++){
     const row=await Live.read(Live.client,'live_games',game);if(!row)throw Error('Scorer access expired. Sign in again.');
+    if(gameLocked(row.state)){
+     if(epoch===sessionEpoch){state=row.state;render();}
+     syncStatus('Game is final or trashed · move it to Active to edit');
+     return false;
+    }
     const previousVersion=row.state.version;
     const next=structuredClone(row.state);fn(next);
     next.version=Math.max(Date.now(),Math.floor(Number(previousVersion)||0)+1);

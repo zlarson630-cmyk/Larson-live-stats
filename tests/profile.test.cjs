@@ -12,3 +12,23 @@ test('signed-out profile does not list old browser-only games as account history
 test('account games use owner-filtered paginated reads, correct sport links and account status',async()=>{const h=harness({user:{id:'A',email:'z@example.com'},rows:[{id:'ABC123',state:{sport:'soccer',home:'Home',away:'Away',scores:{home:1,away:0}},updated_at:'2026-11-06T12:00:00Z'}]});await h.flush();assert.deepEqual(h.queryCalls,[['live_games','owner_id','A']]);assert.equal(h.node('gamesCount').textContent,1);assert.match(h.node('profileIdentity').textContent,/Signed in as z@example.com/);assert.equal(h.ctx.ProfileData.href({id:'ABC123',sport:'soccer',source:'account'}),'soccer.html?game=ABC123');assert.equal(h.node('profileLogin').hidden,true);});
 test('signing out hides private games and an in-flight read cannot restore them',async()=>{let release;const pending=new Promise(r=>release=r);const h=harness({user:{id:'A',email:'a@example.com'},deferred:pending});await h.flush();await h.signOut();release({data:[{id:'SECRET',state:{home:'Private',away:'Hidden'}}]});await h.flush();assert.equal(h.node('gamesCount').textContent,0);assert.match(h.node('profileIdentity').textContent,/Signed out/);});
 test('search filters cloud game history',async()=>{const h=harness({user:{id:'A'},rows:[{id:'ABC123',state:{home:'Safe',away:'Team'}}]});await h.flush();assert.equal(h.node('gamesCount').textContent,1);h.node('profileSearch').value='missing';h.node('profileSearch').input();assert.equal(h.node('profileGames').children[0].textContent,'No matching games.');});
+
+test('history labels final and unpublished games correctly and filters volleyball',async()=>{
+ const state={home:'Home',away:'Away',scores:{home:2,away:0}};
+ const h=harness({user:{id:'A'},rows:[
+  {id:'BASKET',state:{...state,libraryStatus:'completed'}},
+  {id:'VOLLEY',state:{...state,sport:'volleyball',finished:true}},
+  {id:'VTRASH',state:{...state,sport:'volleyball',libraryStatus:'trash'}}
+ ]});
+ await h.flush();
+ const cards=h.node('profileGames').children;
+ assert.ok(cards.find(card=>card.children.some(child=>child.textContent==='Game BASKET')).children.some(child=>child.textContent==='0 – 2 · Final'));
+ h.node('profileSport').value='volleyball';
+ h.node('profileSport').change();
+ const volleyball=h.node('profileGames').children;
+ assert.equal(volleyball.length,2);
+ assert.ok(volleyball.every(card=>card.children.some(child=>child.textContent==='Volleyball')));
+ const unpublished=volleyball.find(card=>card.children.some(child=>child.textContent.includes('Unpublished')));
+ assert.ok(unpublished);
+ assert.ok(!unpublished.children.some(child=>child.href));
+});
