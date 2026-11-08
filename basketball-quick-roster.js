@@ -39,10 +39,11 @@ async function save(){
  // Jersey numbers are the event identifiers in the current basketball schema.
  // Never silently reassign existing scoring/foul attribution.
  const used=new Set((state.events||[]).filter(e=>e.team===side).flatMap(e=>[e.scorer,e.assist,e.player,...String(e.out||'').split(', '),...String(e.in||'').split(', ')]).filter(v=>/^\d{1,2}$/.test(String(v??''))).map(String));
+ for(const number of state.startingLineups?.[side]||[])used.add(number);
  const oldNums=new Set(old.map(p=>String(p.number)));
  const newNums=new Set(next.map(p=>p.number));
  const removed=[...used].filter(n=>oldNums.has(n)&&!newNums.has(n));
- if(removed.length){status('Cannot remove #'+removed.join(', #')+' because game events reference them. Keep those jersey numbers to preserve statistics.',true);return}
+ if(removed.length){status('Cannot remove #'+removed.join(', #')+' because they started or appear in game events. Keep those jersey numbers to preserve the lineup and statistics.',true);return}
  busy=true;panel.querySelectorAll('button').forEach(b=>b.disabled=true);status('Saving game roster…');
  try{
   const ok=await write(s=>{s.rosters=s.rosters||{};s.rosters[side]=next});

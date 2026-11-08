@@ -31,6 +31,22 @@ test('basketball saves separate season rosters and applies game-day edits only t
  assert.equal(a.ctx.CloudLibrary.rosters()['jefferson|boys|2026–27'],'11, Player One');
  assert.deepEqual(a.writes,[]);
 });
+test('basketball snapshots five starters and updates the on-court lineup after substitutions',async()=>{
+ const a=fixtureApp();a.file('soccer-brand.js');a.html('basketball.html');a.file('cloud.js');await a.ready();
+ a.node('homeRoster').value='1, One\n2, Two\n3, Three\n4, Four\n5, Five\n6, Six';
+ a.run("editGameRoster('home')");
+ for(const value of ['1','2','3','4','5'])a.node('homeStarterChoices').onchange({target:{value,checked:true}});
+ assert.match(a.node('homeStarterSummary').textContent,/5\/5/);
+ await a.run('createGame()');
+ assert.deepEqual(a.db.tables.live_games[0].state.startingLineups.home,['1','2','3','4','5']);
+ assert.equal(a.db.tables.account_roster_libraries.length,0);
+ await a.run("write(s=>s.pendingSubs=[{id:'sub',team:'home',out:['1'],in:['6']}])");
+ await a.run("confirmBasketballSubs('sub');writeQueue");
+ assert.equal(a.run("basketballOnCourt(state,'home').has('6')"),true);
+ assert.equal(a.run("basketballOnCourt(state,'home').has('1')"),false);
+ await a.run('undo()');
+ assert.equal(a.run("basketballOnCourt(state,'home').has('1')"),true);
+});
 test('basketball can import and review a PDF before loading a season',async()=>{
  const a=fixtureApp();a.html('basketball.html');
  a.ctx.pdfjsLib={GlobalWorkerOptions:{},getDocument:()=>({promise:Promise.resolve({
