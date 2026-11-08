@@ -163,3 +163,23 @@ test('space toggles the clock once per press and shortcuts ignore other inputs a
  await a.press(' ');
  assert.equal(db.calls(),2);
 });
+
+test('broadcast groups live stats, period scores, and recent plays without exposing untracked stats',async()=>{
+ const a=app();
+ const game={...initial,period:2,scores:{home:5,away:2},events:[
+  {team:'home',kind:'score',points:3,period:2,time:'3:00',scorer:'11',assist:'23'},
+  {team:'home',kind:'score',points:2,period:1,time:'1:00',scorer:'12',assist:'no-assist'},
+  {team:'away',kind:'score',points:2,period:1,time:'2:00',scorer:'4',assist:null}
+ ]};
+ cloud(a,{game});
+ a.run('render()');
+ const html=a.node('bc-dashboard').innerHTML;
+ assert.match(html,/bc-players/);
+ assert.match(html,/Score by period/);
+ assert.match(html,/<th scope="row">Home<\/th><td>2<\/td><td>3<\/td><td>5<\/td>/);
+ assert.match(html,/Full game flow/);
+ assert.match(html,/Home 5–0/);
+ assert.doesNotMatch(html,/#no-assist|#na|Rebounds/);
+ a.run("id='NEW123';state={...state,events:[]};render()");
+ assert.match(a.node('bc-dashboard').innerHTML,/<th scope="row">Home<\/th><td>—<\/td><td>—<\/td><td>5<\/td>/);
+});
