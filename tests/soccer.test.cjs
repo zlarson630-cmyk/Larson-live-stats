@@ -95,3 +95,48 @@ test('named soccer alternate keeps the original team and roster in its cloud sna
  a.run('reopenFixture()');
  assert.equal(a.node('homeName').textContent,'The Parks');
 });
+
+test('PDF reconciles an own goal, saved penalty and shootout against the match ledger',async()=>{
+ const a=app(),printed=[];
+ class Doc {
+  setFont(){} setFontSize(){} setTextColor(){} setFillColor(){} setProperties(){} rect(){}
+  addPage(){this.pages++;} setPage(){} getNumberOfPages(){return this.pages||1;}
+  pages=1;
+  splitTextToSize(v){return [String(v)];}
+  text(value,x,y){printed.push({value:String(value),x,y});}
+ }
+ a.ctx.jspdf={jsPDF:Doc};
+ a.ctx.fetch=async()=>{throw Error('offline');};
+ vm.runInContext(fs.readFileSync('soccer-report.js','utf8'),a.ctx);
+ a.run("s.trackedStats.push('Penalty kick','Own goal');s.goalkeepers.away='1, Alex';choose('Own goal','home')");
+ assert.deepEqual(a.node('players').children.map(button=>button.textContent),['1, Alex']);
+ a.node('players').children[0].onclick();
+ a.run('saveEvent();nextPeriod();');
+ a.run("choose('Goal','away')");
+ a.node('player').value='1, Alex';
+ a.run('saveEvent()');
+ a.run("choose('Penalty kick','home')");
+ a.node('player').value='9, Jordan';
+ a.node('penaltyResult').value='saved';
+ a.run('saveEvent();endMatch()');
+ const prompts=['1, Alex','goal','9, Jordan','saved','7, Casey','goal','9, Jordan','goal'];
+ a.ctx.prompt=()=>prompts.shift();
+ a.run("recordShootout('away');recordShootout('home');recordShootout('away');recordShootout('home')");
+ await a.run('SoccerReport.build(s)');
+
+ function stat(label){
+  const index=printed.findIndex(entry=>entry.value===label);
+  assert.ok(index>0,label);
+  return printed.slice(index-1,index+2).map(entry=>entry.value);
+ }
+ assert.deepEqual(stat('Goals'),['1','Goals','1']);
+ assert.deepEqual(stat('Total shots'),['1','Total shots','1']);
+ assert.deepEqual(stat('Shots on goal'),['1','Shots on goal','1']);
+ assert.deepEqual(stat('Saves'),['1','Saves','0']);
+ assert.deepEqual(stat('Penalty kicks'),['0','Penalty kicks','1']);
+ assert.deepEqual(stat('Own goals'),['0','Own goals','1']);
+ assert.ok(printed.some(entry=>entry.value==='Shootout score: 2 – 1'));
+ assert.ok(printed.some(entry=>entry.value==='Penalty kick (saved) / 9, Jordan'));
+ assert.equal(printed.filter(entry=>entry.value==='1, Alex'&&entry.x===45).length,1,
+  'the own-goal player should appear only in the visitor player table');
+});

@@ -79,11 +79,13 @@ function choose(k,t=team,correcting=false){
  $('entryTitle').textContent=k+' · '+SoccerBrand.name(s,team);
  $('eventTimeLabel').textContent=SoccerClock.mode(s)==='down'?'Time remaining':'Time elapsed';
  setEventTime(seconds());$('player').value='';$('assist').value='';
+ if(k==='Penalty kick'){$('penaltyResult').value='goal';$('penaltyKeeper').value='';}
  $('assistBox').classList.toggle('hide',k!=='Goal');$('penaltyFields').classList.toggle('hide',k!=='Penalty kick');$('ownGoalHint').classList.toggle('hide',k!=='Own goal');
  $('substitutionFields').classList.toggle('hide',k!=='Substitution');
  $('recordButton').textContent=k==='Substitution'?'Prepare substitution':'Record event';
  $('players').innerHTML='';
- for(const r of s.rosters[team]||[]){const b=document.createElement('button');b.textContent=r;b.onclick=()=>{$('player').value=r;b.classList.add('selected')};$('players').append(b)}
+ const playerTeam=k==='Own goal'?(team==='home'?'away':'home'):team;
+ for(const r of s.rosters[playerTeam]||[]){const b=document.createElement('button');b.textContent=r;b.onclick=()=>{$('player').value=r;b.classList.add('selected')};$('players').append(b)}
  prepareSaveEntry();$('entry').scrollTop=0;
 }
 function saveEvent(){

@@ -258,7 +258,7 @@ let scoringBusy=false,toastTimer=null;
 function scorerToast(message,isError=false){const t=el('scorerToast');if(!t)return;t.textContent=message;t.classList.toggle('error',isError);t.classList.remove('hide');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.add('hide'),isError?5500:1800);}
 function scorerLock(on){scoringBusy=on;el('scoreControls')?.classList.toggle('scorer-saving',on);el('recent').textContent=on?'Saving play…':el('recent').textContent;}
 async function recordShot(team,points,kind){
- if(scoringBusy||!canWrite())return;
+ if(scoringBusy||pickerEvent||!canWrite())return;
  const eid=makeId()+Date.now();scorerLock(true);
  try{
   const ok=await write(s=>{if(s.events.some(e=>e.id===eid))return;if(kind==='score')s.scores[team]+=points;s.events.unshift({id:eid,kind,team,points,period:s.period,time:stamp(s),scorer:null,...(kind==='score'?{assist:points===1?'na':null}:{})});});
@@ -289,7 +289,14 @@ async function pickerValue(value){
  el('pickerHint').textContent='Saving selection…';
  try{
   if(value!==null){
-   const ok=await write(s=>{const e=s.events.find(x=>x.id===eid);if(e)e[field]=value;});
+   let playRemoved=false;
+   const ok=await write(s=>{
+    const play=s.events.find(event=>event.id===eid);
+    if(!play){playRemoved=true;throw Error('This play was removed before the selection saved');}
+    play[field]=value;
+   });
+   if(pickerEvent!==eid||pickerField!==field)return;
+   if(playRemoved){closePicker();scorerToast('This play was removed before the selection saved',true);return;}
    if(!ok){el('pickerHint').textContent='Not saved. Please tap the player again.';scorerToast('Player selection not saved',true);return;}
   }
   if(next){

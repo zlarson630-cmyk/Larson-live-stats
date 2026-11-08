@@ -183,3 +183,28 @@ test('broadcast groups live stats, period scores, and recent plays without expos
  a.run("id='NEW123';state={...state,events:[]};render()");
  assert.match(a.node('bc-dashboard').innerHTML,/<th scope="row">Home<\/th><td>—<\/td><td>—<\/td><td>5<\/td>/);
 });
+
+test('a second shot tap cannot replace the open scorer picker',async()=>{
+ const a=app(),db=cloud(a);
+ await a.run("Promise.all([score('home',2),score('home',2)])");
+ const id=db.row().events[0].id;
+ await a.run("score('home',2)");
+ assert.equal(db.row().scores.home,2);
+ assert.equal(db.row().events.length,1);
+ assert.equal(a.run('pickerEvent'),id);
+ await a.run("pickerValue('11')");
+ assert.equal(db.row().events[0].scorer,'11');
+ assert.equal(a.run('pickerField'),'assist');
+});
+
+test('picker reports when a second scorer removes its play before assignment',async()=>{
+ const a=app(),db=cloud(a);
+ await a.run("score('home',2)");
+ db.row().events=[];
+ db.row().scores.home=0;
+ db.row().version++;
+ await a.run("pickerValue('11')");
+ assert.equal(db.calls(),1);
+ assert.equal(a.run('pickerEvent'),null);
+ assert.match(a.node('scorerToast').textContent,/play was removed/);
+});
