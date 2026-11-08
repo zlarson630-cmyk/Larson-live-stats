@@ -121,6 +121,9 @@ test('keyboard records shots by visible side and assigns jersey numbers and assi
   assert.equal(a.run('state.events[0].kind'),kind,key);
   a.press('Escape');
  }
+ assert.match(a.run("shotButton('home',3,'score')"),/aria-keyshortcuts="J"/);
+ assert.match(a.run("shotButton('away',2,'miss')"),/aria-keyshortcuts="A"/);
+ assert.doesNotMatch(a.run("shotButton('home',1,'score')"),/aria-keyshortcuts/);
  await a.press('j');
  a.press('0');
  assert.equal(a.node('pickerJersey').value,'0');
@@ -132,6 +135,7 @@ test('keyboard records shots by visible side and assigns jersey numbers and assi
  assert.equal(a.run('state.events[0].assist'),'no-assist');
 
  await a.run('write(s=>s.screenSidesSwapped=true)');
+ assert.match(a.run("shotButton('home',3,'score')"),/aria-keyshortcuts="F"/);
  await a.press('d');
  assert.equal(a.run('state.events[0].team'),'home');
  a.press('Escape');
