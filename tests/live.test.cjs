@@ -5,7 +5,7 @@ const fs=require('node:fs');
 function app(){
  const nodes=new Map(), storage=new Map(),listeners=new Map();
  let activeElement=null;
- const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',parentElement:{style:{}},style:{},classList:{add(){},remove(){},toggle(){},contains(c){return c==='hide'&&id==='subSheet'}},focus(){activeElement=this},blur(){activeElement=null},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',parentElement:{style:{}},style:{},setAttribute(k,v){this[k]=v},classList:{add(){},remove(){},toggle(){},contains(c){return c==='hide'&&id==='subSheet'}},focus(){activeElement=this},blur(){activeElement=null},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
  const ctx=vm.createContext({console,structuredClone,URLSearchParams,Date,Math,Promise,
  document:{getElementById:node,get activeElement(){return activeElement},querySelectorAll:()=>[],addEventListener(type,handler){listeners.set(type,handler)},removeEventListener(){}},
  localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},
