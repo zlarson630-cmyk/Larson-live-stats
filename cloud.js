@@ -3,7 +3,7 @@ const localHome=goHome,baseRender=render;
 function syncStatus(message){const node=el('sync');if(!node)return;const text=String(message||'');const routine=/^(Connecting…|Signed in|Signed out|View publicly|Scorer · saved|Scorer · Live|Read only · Live)/.test(text);const alert=!routine&&!!text&&!/^(Scorer · |Read only · )?(Live · |Reconnecting)/.test(text);node.textContent=alert?text:'';node.classList.toggle('hide',!alert);if(alert&&id&&typeof scorerToast==='function')scorerToast(text,true);}
 function canWrite(){return cloudMode&&owner;}
 function updateAccess(){
-  document.querySelectorAll('#score button,#events button,#clockButton,.gameTools button').forEach(b=>b.disabled=!canWrite());
+  document.querySelectorAll('#score button,#events button,#clockButton,.gameTools button').forEach(b=>b.disabled=!canWrite()||state?.libraryStatus==='completed'||state?.libraryStatus==='trash');
   if(!canWrite())closePicker();
 }
 render=function(){baseRender();updateAccess();if(cloudMode)el('overlay').href='overlay.html?game='+id;else el('overlay').href='overlay.html?game='+id+'&local=1';};
@@ -41,7 +41,7 @@ goHome=function(event){if(pendingWrites){event?.preventDefault();alert('Wait for
 reload=function(){};
 write=function(fn){
  if(!cloudMode){syncStatus('Open a cloud game before scoring.');return Promise.resolve(false);}
- if(!owner){syncStatus('Read only · sign in as the game owner to score');return Promise.resolve(false);}
+ if(!owner){syncStatus('Read only · sign in as the game owner to score');return Promise.resolve(false);}if(state?.libraryStatus==='completed'||state?.libraryStatus==='trash'){syncStatus('Game is final or trashed · move it to Active to edit');return Promise.resolve(false);}
  const game=id,epoch=sessionEpoch;pendingWrites++;
  const task=writeQueue.then(async()=>{
   if(epoch!==sessionEpoch) return false;
