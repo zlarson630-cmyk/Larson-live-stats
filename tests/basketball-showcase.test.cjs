@@ -60,6 +60,7 @@ test('PDF presets honor the selected sections and keep large compact rosters on 
  game.rosters.home=Array.from({length:50},(_,i)=>({number:String(i+1),name:'Home Player '+(i+1)}));
  assert.equal(context.basketballBoxScorePdf(game,'4:12','one').getNumberOfPages(),1);
  assert.ok(labels.includes('#50 Home Player 50'));
+ for(const label of ['Team comparison','FG','3PT','FT','AST','FOULS','TO LEFT'])assert.ok(labels.includes(label));
  assert.ok(!labels.includes('Play-by-play'));
  labels=[];
  context.basketballBoxScorePdf(game,'4:12','selected',['charts']);
@@ -69,3 +70,4 @@ test('PDF presets honor the selected sections and keep large compact rosters on 
  context.basketballBoxScorePdf(game,'4:12','full');
  for(const section of ['Score by period','Team comparison','Shot charts','Substitution log','Play-by-play'])assert.ok(labels.includes(section));
 });
+

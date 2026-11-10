@@ -109,7 +109,7 @@ async function saveBasketballShotLocation(clear=false){
 
 function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
  const compact=preset==='one',full=preset==='full';
- const include=section=>full||(compact?['periods','players'].includes(section):selected.includes(section));
+ const include=section=>full||(compact?['periods','teams','players'].includes(section):selected.includes(section));
  const {fresh,totals,teams,periods}=basketballBoxScore(game);
  const doc=new window.jspdf.jsPDF({unit:'pt',format:'letter',orientation:compact?'landscape':'portrait',compress:true});
  const pageWidth=doc.internal.pageSize.getWidth(),pageHeight=doc.internal.pageSize.getHeight();
@@ -209,20 +209,25 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
    return;
   }
   const start=y,half=(width-14)/2;
-  const height=Math.min(18,(bottom-start-23)/(Math.max(1,...order.map(t=>rows[t].length))+2));
+  const height=Math.min(18,(bottom-start-23)/(Math.max(1,...order.map(t=>rows[t].length))+1));
   const size=Math.min(10,height*.65);
   const widths=[half-225,34,53,53,53,32];
   order.forEach((t,i)=>{
    y=start;
    const x=margin+i*(half+14);
-   text(heading(t),x,y+12,{size:10,bold:true,maxWidth:half});
+   text(name(t)+' · Player box score',x,y+12,{size:10,bold:true,maxWidth:half});
    y+=20;
    row(headers,widths,{x,size,height,header:true});
    (rows[t].length?rows[t]:[['None recorded']]).forEach((values,j)=>row(values,widths,{x,size,height,stripe:j%2===0}));
-   row(total(t),widths,{x,size:Math.min(size,8),height,total:true});
   });
  }
  function teamComparison(){
+  if(compact){
+   const widths=[.26,.08,.13,.13,.13,.07,.09,.11].map(fraction=>width*fraction);
+   const rows=order.map(t=>[name(t),score(t),...statCells(teams[t],true).slice(1),game.fouls?.[t]??'-',game.timeouts?.[t]??'-']);
+   table('Team comparison',['TEAM','PTS','FG','3PT','FT','AST','FOULS','TO LEFT'],widths,rows);
+   return;
+  }
   const rows=[
    ['Score',t=>score(t)],['Field goals',t=>shot(teams[t].fgm,teams[t].fga,true)],
    ['Three-pointers',t=>shot(teams[t].tm,teams[t].ta,true)],['Free throws',t=>shot(teams[t].ftm,teams[t].fta,true)],
@@ -288,8 +293,9 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
  }
  page();
  if(include('periods'))byPeriod();
+ if(compact&&include('teams'))teamComparison();
  if(include('players'))players();
- if(include('teams'))teamComparison();
+ if(!compact&&include('teams'))teamComparison();
  if(include('charts'))shotCharts();
  if(include('lineups'))lineups();
  if(include('log'))playByPlay();
