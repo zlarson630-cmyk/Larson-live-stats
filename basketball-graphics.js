@@ -11,14 +11,22 @@ function basketballGraphicChoices(game){
  const seconds=at?.period===game.period?at.time?.match(/^(\d+):([0-5]\d)$/):null;
  const run=current&&{headline:points+'–0 scoring run',detail:SoccerBrand.name(game,current.team),
   run_clock:seconds?{period:game.period,seconds:Number(seconds[1])*60+Number(seconds[2])}:null};
- const {totals}=basketballBoxScore(game);
+ const {totals,teams}=basketballBoxScore(game);
  const leaders=['home','away'].flatMap(t=>Object.entries(totals[t]).filter(([n,p])=>n!=='Unassigned'&&p.pts>0)
   .map(([n,p])=>({t,n,points:p.pts,name:(game.rosters?.[t]||[]).find(player=>String(player.number)===n)?.name})))
   .sort((a,b)=>b.points-a.points);
  const top=leaders[0];
  const leader=top&&{headline:(top.name?'#'+top.n+' '+top.name:'#'+top.n)+' · '+top.points+' PTS',
   detail:(leaders[1]?.points===top.points?'Co-leading scorer':'Leading scorer')+' · '+SoccerBrand.name(game,top.t)};
- return {run,leader};
+ const shooting=(made,attempted)=>made+'–'+attempted+(attempted?' ('+Math.round(100*made/attempted)+'%)':'');
+ const comparison=['away','home'].map(t=>{
+  const s=teams[t];
+  return {
+   name:String(game.teamBrands?.[t]?.shortName||SoccerBrand.name(game,t)).slice(0,100),
+   values:[game.scores?.[t],shooting(s.fgm,s.fga),shooting(s.tm,s.ta),shooting(s.ftm,s.fta),s.ast,game.fouls?.[t],game.timeouts?.[t]],
+  };
+ });
+ return {run,leader,comparison:{headline:'Team stats comparison',detail:'Basketball',comparison}};
 }
 function basketballGraphicDetail(graphic,period,clockSeconds){
  const anchor=graphic.run_clock;
@@ -30,6 +38,14 @@ function renderBasketballGraphics(){
  const panel=el('basketballGraphicControls');
  panel.hidden=!canWrite();
  if(panel.hidden)return;
+ const share=el('basketballOperatorShare');
+ share.hidden=!!state.demo||state.libraryStatus==='trash';
+ if(share.dataset.game!==id){
+  share.dataset.game=id;
+  el('basketballOperatorLinkLabel').hidden=true;
+  el('basketballOperatorLink').value='';
+  el('basketballOperatorShareStatus').textContent='';
+ }
  const choices=basketballGraphicChoices(state);
  el('basketballGraphicRun').disabled=!choices.run;
  el('basketballGraphicLeader').disabled=!choices.leader;
@@ -44,7 +60,7 @@ async function publishBasketballGraphic(kind){
  const status=el('basketballGraphicStatus'),gameId=id;
  const graphic={game_id:gameId,position:el('basketballGraphicPosition').value,kind:kind||null,
   headline:selected?.headline.slice(0,120)??null,detail:selected?.detail.slice(0,180)??null,
-  run_clock:selected?.run_clock??null,expires_at:new Date(Date.now()+12000).toISOString()};
+  run_clock:selected?.run_clock??null,comparison:selected?.comparison??null,expires_at:new Date(Date.now()+12000).toISOString()};
  basketballGraphicSending=true;
  status.textContent=kind?'Sending graphic…':'Clearing graphic…';
  try{
@@ -58,4 +74,28 @@ async function publishBasketballGraphic(kind){
   console.error('Basketball broadcast graphic failed',error);
   if(id===gameId)status.textContent='Could not update the scorebug. Try again.';
  }finally{basketballGraphicSending=false;}
+}
+
+let basketballOperatorSharing=false;
+async function updateBasketballOperatorInvite(create){
+ if(!state||!canWrite()||state.demo||state.libraryStatus==='trash'||basketballOperatorSharing)return;
+ const game=id,status=el('basketballOperatorShareStatus');
+ basketballOperatorSharing=true;
+ status.textContent=create?'Creating invite…':'Revoking access…';
+ try{
+  const table=Live.client.from('basketball_graphic_operators');
+  const invite=create?crypto.randomUUID():null;
+  const {error}=create
+   ?await table.upsert({game_id:game,invite_code:invite,operator_id:null},{onConflict:'game_id'})
+   :await table.delete().eq('game_id',game);
+  if(error)throw error;
+  if(id!==game)return;
+  el('basketballOperatorLinkLabel').hidden=!create;
+  el('basketballOperatorLink').value=create
+   ?new URL('basketball-operator.html?game='+encodeURIComponent(game)+'#invite='+invite,location.href).href:'';
+  status.textContent=create?'Copy the link and share it with your operator.':'Operator access revoked.';
+ }catch(error){
+  if(id===game)status.textContent='Could not change operator access. Try again.';
+  console.error('Basketball operator invite failed',error);
+ }finally{basketballOperatorSharing=false;}
 }

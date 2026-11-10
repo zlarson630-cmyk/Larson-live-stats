@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Basketball Broadcast Operator · Larson Live Stats</title>
+<link rel="stylesheet" href="athletic-ui.css">
+<style>
+body{margin:0;padding:24px;font-family:system-ui,sans-serif}main{max-width:630px;margin:auto}
+section{margin-top:16px;padding:16px;border-radius:12px}
+label{display:block;margin:8px 0}input{display:block;width:min(100%,340px)}
+</style></head><body><main>
+<a href="./">Larson Live Stats</a><h1>Basketball Broadcast Operator</h1>
+<p>Use your own account to show or clear the team comparison on this game’s OBS scorebug.</p>
+<form id="operatorLogin" hidden>
+ <label>Email <input type="email" name="email" autocomplete="username" required></label>
+ <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+ <button type="submit">Sign in</button>
+</form>
+<button id="operatorSwitch" type="button" hidden>Switch account</button>
+<section id="operatorControls" hidden>
+ <h2 id="operatorMatch"></h2>
+ <button id="operatorShow" type="button" class="primary">Show team comparison</button>
+ <button id="operatorClear" type="button">Clear comparison</button>
+ <p><a id="operatorOverlay" target="_blank" rel="noopener">Open OBS scorebug</a></p>
+</section>
+<p id="operatorStatus" role="status">Connecting…</p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
+<script src="live.js"></script><script src="basketball-operator.js"></script>
+</body></html>

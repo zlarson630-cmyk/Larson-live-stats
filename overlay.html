@@ -9,6 +9,21 @@ html,body{margin:0;background:transparent;font:700 25px system-ui;color:#fff}
 <style>
 #bug #away,#bug #home{font-family:'Barlow Condensed',Barlow,system-ui,sans-serif;text-transform:uppercase}
 #basketballGraphic small{font-variant-numeric:tabular-nums}
+#bug{transition:opacity .24s ease}
+#overlayGroup.show-comparison #bug{opacity:0}
+#teamComparison{position:absolute;left:0;bottom:0;width:min(555px,calc(100vw - 70px));
+ box-sizing:border-box;overflow:hidden;border:1px solid #d2d7dd;border-bottom:5px solid #d71936;border-radius:10px;
+ background:#fff;color:#172332;box-shadow:0 3px 18px #252b3420;opacity:0;visibility:hidden;transform:translateY(6px);
+ transition:opacity .24s,transform .24s,visibility .24s}
+#overlayGroup.show-comparison #teamComparison{opacity:1;visibility:visible;transform:translateY(0)}
+#teamComparison h2{font-size:21px;margin:0;padding:10px 14px;background:#172332;color:#fff}
+#teamComparison table{width:100%;border-collapse:collapse;table-layout:fixed;font:700 15px Barlow,system-ui,sans-serif;font-variant-numeric:tabular-nums;text-align:center}
+#teamComparison thead th{font:700 20px 'Barlow Condensed',Barlow,sans-serif;text-transform:uppercase;overflow-wrap:anywhere;background:#ebedf1;padding:7px 5px}
+#teamComparison tbody th{color:#475569;font-size:13px}
+#teamComparison td,#teamComparison tbody th{padding:5px 3px}
+#teamComparison tbody tr:nth-child(even){background:#f4f6f8}
+@media(max-width:600px){#teamComparison{width:calc(100vw - 16px)}}
+@media(prefers-reduced-motion:reduce){#bug,#teamComparison{transition:none}}
 #overlayGroup{position:absolute;bottom:35px;left:35px;transition:bottom .24s ease}
 #overlayGroup[data-position=below]{bottom:121px}
 #basketballGraphic{position:absolute;bottom:calc(100% + 8px);left:0;box-sizing:border-box;
@@ -27,19 +42,47 @@ html,body{margin:0;background:transparent;font:700 25px system-ui;color:#fff}
 <div id="overlayGroup">
  <div id="bug"><img class="brandMark" src="assets/brand/larson-z-mark.svg" alt="Larson Live Stats"><span class="logoSlot" id="awayLogoSlot">V</span><span id="away">VISITOR</span><span id="as">0</span><span id="clock">Q1 8:00</span><span id="hs">0</span><span class="logoSlot" id="homeLogoSlot">H</span><span id="home">HOME</span></div>
  <div id="basketballGraphic"><strong id="graphicHeadline"></strong><small id="graphicDetail"></small></div>
+ <section id="teamComparison" aria-label="Team stats comparison">
+  <h2>Team Stats Comparison</h2>
+  <table><thead><tr><th id="comparisonAway" scope="col"></th><th scope="col">Stat</th><th id="comparisonHome" scope="col"></th></tr></thead>
+   <tbody id="comparisonRows"></tbody></table>
+ </section>
 </div>
 <div id="status" style="position:absolute;bottom:5px;left:35px;font:12px system-ui;color:#fbbf24" role="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
-<script src="live.js"></script><script src="soccer-brand.js"></script><script src="basketball-demo.js?v=showcase-1"></script><script src="basketball-graphics.js?v=run-clock"></script>
+<script src="live.js"></script><script src="soccer-brand.js"></script><script src="basketball-demo.js?v=showcase-1"></script><script src="basketball-graphics.js?v=team-comparison"></script>
 <script>
 const params=new URLSearchParams(location.search),id=(params.get('game')||'').trim().toUpperCase();
 const get=id=>document.getElementById(id),status=get('status'),graphicBox=get('basketballGraphic'),group=get('overlayGroup');
-let state=null,graphic=null;
+let state=null,graphic=null,renderedComparison=null;
+function drawComparison(teams){
+ const [away,home]=teams;
+ get('comparisonAway').textContent=away?.name||'Visitor';
+ get('comparisonHome').textContent=home?.name||'Home';
+ const labels=['Score','Field goals','3-pointers','Free throws','Assists','Team fouls','Timeouts left'];
+ const rows=labels.map((label,index)=>{
+  const row=document.createElement('tr'),left=document.createElement('td'),stat=document.createElement('th'),right=document.createElement('td');
+  stat.scope='row';
+  left.textContent=away?.values?.[index]??'–';
+  stat.textContent=label;
+  right.textContent=home?.values?.[index]??'–';
+  row.append(left,stat,right);
+  return row;
+ });
+ get('comparisonRows').replaceChildren(...rows);
+}
 function drawGraphic(period,clockSeconds){
  const active=graphic?.kind&&Date.parse(graphic.expires_at)>Date.now();
- graphicBox.classList.toggle('is-live',!!active);
- group.dataset.position=active&&['above','below','side'].includes(graphic.position)?graphic.position:'above';
- if(active){
+ const comparison=active&&graphic.kind==='comparison'&&Array.isArray(graphic.comparison)&&graphic.comparison.length===2;
+ group.classList.toggle('show-comparison',!!comparison);
+ graphicBox.classList.toggle('is-live',!!active&&!comparison);
+ group.dataset.position=active&&!comparison&&['above','below','side'].includes(graphic.position)?graphic.position:'above';
+ if(comparison){
+  if(renderedComparison!==graphic){
+   renderedComparison=graphic;
+   drawComparison(graphic.comparison);
+  }
+ }else if(active){
   get('graphicHeadline').textContent=graphic.headline;
   get('graphicDetail').textContent=basketballGraphicDetail(graphic,period,clockSeconds);
  }
@@ -78,7 +121,7 @@ if(demo&&/^(1|[a-f0-9-]{36})$/i.test(demo)){
   reading=true;
   try{
    if(!Live.viewer)return;
-   const {data,error}=await Live.viewer.from('basketball_broadcast_graphics').select('kind,position,headline,detail,expires_at,run_clock').eq('game_id',id).maybeSingle();
+   const {data,error}=await Live.viewer.from('basketball_broadcast_graphics').select('kind,position,headline,detail,expires_at,run_clock,comparison').eq('game_id',id).maybeSingle();
    if(error)throw error;
    graphic=data;
    draw();

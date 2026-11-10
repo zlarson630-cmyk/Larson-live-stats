@@ -28,7 +28,9 @@ test('the demo reconciles its score, fouls, substitutions, shots and OBS callout
   assert.ok(plays.filter(e=>[2,3].includes(e.points)).every(context.basketballShotLocation));
   assert.equal(run('basketballOnCourt(createBasketballDemo(),'+JSON.stringify(t)+').size'),5);
  }
- const {run:streak,leader}=context.basketballGraphicChoices(game);
+ const {run:streak,leader,comparison}=context.basketballGraphicChoices(game);
+ assert.deepEqual(Array.from(comparison.comparison,t=>[t.name,t.values[0]]),[['Guilford',37],['Jefferson',39]]);
+ assert.equal(comparison.comparison[0].values.length,7);
  assert.equal(streak.headline,'7–0 scoring run');
  assert.equal(context.basketballGraphicDetail(streak,3,252),'Jefferson J-Hawks · Last 2:01');
  assert.equal(context.basketballGraphicDetail(streak,3,245),'Jefferson J-Hawks · Last 2:08');
