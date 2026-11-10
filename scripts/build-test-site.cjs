@@ -38,6 +38,8 @@ const testLive = live.replace(config, () =>
 const label = offline ? 'TEST · cloud disabled' : 'TEST · synthetic data only';
 const banner = `<div style="position:fixed;bottom:0;right:0;z-index:2147483647;pointer-events:none;background:#fce08a;color:#211900;padding:.3rem .5rem;font:700 13px system-ui">${label}</div>`;
 
+const tint = '<style id="test-background-tint">body { min-height: 100vh; background-image: linear-gradient(rgb(26 174 76 / 20%), rgb(26 174 76 / 20%)) !important; }</style>';
+
 const textAssets = new Map();
 for (const file of files) {
   const source = join(root, file);
@@ -45,6 +47,8 @@ for (const file of files) {
   if (!/\.(?:html|js|css|cjs|svg|json)$/.test(file)) continue;
   let content = file === 'live.js' ? testLive : readFileSync(source, 'utf8');
   if (file.endsWith('.html')) {
+    if (!/<\/head>/i.test(content)) throw Error(`Missing head close tag: ${file}`);
+    content = content.replace(/<\/head>/i, `${tint}\n</head>`);
     if (!/<\/body>/i.test(content)) throw Error(`Missing body close tag: ${file}`);
     content = content.replace(/<\/body>/i, `${banner}\n</body>`);
   }
