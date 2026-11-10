@@ -109,7 +109,7 @@ test('switching possession saves a large legacy cloud game and preserves its dat
 });
 
 test('Full keyboard records Presto-style attempts, results, jerseys and assists',async()=>{
- const a=app(),db=cloud(a,{game:{...initial,rosters:{home:[{number:'00',name:'Casey'}]}}});
+ const a=app(),db=cloud(a,{game:{...initial,rosters:{home:[{number:'00',name:'Casey'},{number:'2',name:'Jordan'}]}}});
  await a.press('v');
  a.press('y');
  assert.equal(db.row().events.length,0);
@@ -123,11 +123,13 @@ test('Full keyboard records Presto-style attempts, results, jerseys and assists'
  a.press('j');
  await a.press('g');
  assert.equal(db.row().scores.home,2);
- a.node('pickerJersey').value='00';
- await a.press('Enter');
+ await a.press('0');
+ assert.equal(db.row().events[0].scorer,null);
+ await a.press('0');
  assert.equal(db.row().events[0].scorer,'00');
- await a.press('n');
- assert.equal(db.row().events[0].assist,'no-assist');
+ await a.press('0');
+ await a.press('2');
+ assert.equal(db.row().events[0].assist,'2');
 
  a.press('e');
  a.press('F10');
@@ -135,7 +137,10 @@ test('Full keyboard records Presto-style attempts, results, jerseys and assists'
  assert.equal(db.row().scores.home,2);
  await a.press('e');
  assert.equal(db.row().scores.home,3);
- a.press('Escape');
+ await a.press('2');
+ assert.equal(db.row().events[0].scorer,null);
+ await a.press('Enter');
+ assert.equal(db.row().events[0].scorer,'2');
  a.press('r');
  await a.press('m');
  assert.equal(db.row().events[0].kind,'rebound');
