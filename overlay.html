@@ -1,14 +1,90 @@
-<!doctype html><html class="overlay"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;background:transparent;font:700 25px system-ui;color:#fff}#bug{position:absolute;bottom:35px;left:35px;display:flex;border-radius:8px;overflow:hidden;background:#14243ee8}span{padding:12px 18px;border-right:1px solid #718096}#clock{background:#a52a40}.overlay #bug>.logoSlot{grid-template:minmax(0,1fr)/minmax(0,1fr)}</style><link rel="stylesheet" href="soccer-broadcast.css?v=official-overlay-mark"></head><body class="overlay"><div id="bug"><img class="brandMark" src="assets/brand/larson-z-mark.svg" alt="Larson Live Stats"><span class="logoSlot" id="awayLogoSlot">V</span><span id="away">VISITOR</span><span id="as">0</span><span id="clock">Q1 8:00</span><span id="hs">0</span><span class="logoSlot" id="homeLogoSlot">H</span><span id="home">HOME</span></div><div id="status" style="position:absolute;bottom:5px;left:35px;font:12px system-ui;color:#fbbf24" role="status"></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script><script src="live.js"></script><script src="soccer-brand.js"></script><script>
+<!doctype html>
+<html class="overlay"><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html,body{margin:0;background:transparent;font:700 25px system-ui;color:#fff}
+#bug{display:flex;border-radius:8px;overflow:hidden;background:#14243ee8;width:max-content}
+#bug>span{padding:12px 18px;border-right:1px solid #718096}#clock{background:#a52a40}
+.overlay #bug>.logoSlot{grid-template:minmax(0,1fr)/minmax(0,1fr)}
+</style><link rel="stylesheet" href="soccer-broadcast.css?v=official-overlay-mark">
+<style>
+#overlayGroup{position:absolute;bottom:35px;left:35px;transition:bottom .24s ease}
+#overlayGroup[data-position=below]{bottom:121px}
+#basketballGraphic{position:absolute;bottom:calc(100% + 8px);left:0;box-sizing:border-box;
+ min-width:270px;width:max-content;max-width:min(440px,calc(100vw - 70px));padding:10px 18px 12px;
+ border-radius:8px;border-left:5px solid #e3425c;background:linear-gradient(115deg,#101827,#263c59);
+ box-shadow:0 3px 18px #131d3240;color:#fff;opacity:0;visibility:hidden;transform:translateY(6px);
+ transition:opacity .24s,transform .24s,visibility .24s}
+#basketballGraphic.is-live{opacity:1;visibility:visible;transform:translate(0,0)}
+#basketballGraphic strong{display:block;font-size:22px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#basketballGraphic small{display:block;margin-top:4px;color:#d6e0f3;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#overlayGroup[data-position=below] #basketballGraphic{top:calc(100% + 8px);bottom:auto}
+@media(min-width:1000px){#overlayGroup[data-position=side] #basketballGraphic{bottom:0;left:calc(100% + 9px)}}
+@media(max-width:600px){#overlayGroup{left:8px;bottom:25px}#overlayGroup[data-position=below]{bottom:109px}}
+@media(prefers-reduced-motion:reduce){#overlayGroup,#basketballGraphic{transition:none}}
+</style></head><body class="overlay">
+<div id="overlayGroup">
+ <div id="bug"><img class="brandMark" src="assets/brand/larson-z-mark.svg" alt="Larson Live Stats"><span class="logoSlot" id="awayLogoSlot">V</span><span id="away">VISITOR</span><span id="as">0</span><span id="clock">Q1 8:00</span><span id="hs">0</span><span class="logoSlot" id="homeLogoSlot">H</span><span id="home">HOME</span></div>
+ <div id="basketballGraphic"><strong id="graphicHeadline"></strong><small id="graphicDetail"></small></div>
+</div>
+<div id="status" style="position:absolute;bottom:5px;left:35px;font:12px system-ui;color:#fbbf24" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
+<script src="live.js"></script><script src="soccer-brand.js"></script><script src="basketball-demo.js?v=showcase-1"></script>
+<script>
 const params=new URLSearchParams(location.search),id=(params.get('game')||'').trim().toUpperCase();
-let state=null;
-const status=document.getElementById('status');
-function draw(){if(!state)return;const s=state;for(const t of ['home','away'])SoccerBrand.logo(t+'LogoSlot',SoccerBrand.graphicName(s,t),s.logos?.[t]||s.teamBrands?.[t]?.logo);for(const t of ['home','away'])document.getElementById(t).textContent=SoccerBrand.graphicName(s,t);document.getElementById('as').textContent=s.scores.away;document.getElementById('hs').textContent=s.scores.home;const n=s.running?Math.max(0,s.seconds-Math.floor((Date.now()-s.startedAt)/1000)):s.seconds;document.getElementById('clock').textContent='Q'+s.period+' '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0');}
-if(!/^[A-Z0-9]{6}$/.test(id)){status.textContent='Provide a valid ?game=ABC123';document.getElementById('bug').style.display='none';}
-else if(params.get('local')==='1'){
- const reload=()=>{try{state=JSON.parse(localStorage.getItem('lls-game-'+id));status.textContent=state?'Local only · same browser':'Local game not found';draw();}catch(e){status.textContent='Local game unavailable';}};
+const get=id=>document.getElementById(id),status=get('status'),graphicBox=get('basketballGraphic'),group=get('overlayGroup');
+let state=null,graphic=null;
+function drawGraphic(){
+ const active=graphic?.kind&&Date.parse(graphic.expires_at)>Date.now();
+ graphicBox.classList.toggle('is-live',!!active);
+ group.dataset.position=active&&['above','below','side'].includes(graphic.position)?graphic.position:'above';
+ if(active){
+  get('graphicHeadline').textContent=graphic.headline;
+  get('graphicDetail').textContent=graphic.detail;
+ }
+}
+function draw(){
+ if(state){
+  const s=state;
+  for(const t of ['home','away']){
+   const name=SoccerBrand.graphicName(s,t);
+   SoccerBrand.logo(t+'LogoSlot',name,s.logos?.[t]||s.teamBrands?.[t]?.logo);
+   get(t).textContent=name;
+  }
+  get('as').textContent=s.scores.away;get('hs').textContent=s.scores.home;
+  const n=s.running?Math.max(0,s.seconds-Math.floor((Date.now()-s.startedAt)/1000)):s.seconds;
+  get('clock').textContent='Q'+s.period+' '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0');
+ }
+ drawGraphic();
+}
+const demo=params.get('demo');
+if(demo&&/^(1|[a-f0-9-]{36})$/i.test(demo)){
+ basketballDemoSession=demo;
+ const reload=()=>{state=basketballDemoRead('game')||createBasketballDemo();graphic=basketballDemoRead('graphic');draw();};
+ window.addEventListener('storage',reload);reload();
+}else if(!/^[A-Z0-9]{6}$/.test(id)){
+ status.textContent='Provide a valid ?game=ABC123';get('bug').style.display='none';
+}else if(params.get('local')==='1'){
+ const reload=()=>{try{state=JSON.parse(localStorage.getItem('lls-game-'+id));status.textContent=state?'Local only · same browser':'Local game not found';draw();}catch{status.textContent='Local game unavailable';}};
  window.addEventListener('storage',reload);setInterval(reload,1000);reload();
 }else{
- status.textContent='Connecting…';Live.watch(id,row=>{if(row){state={...Live.publicState(row),logos:row.logos||{}};draw();}},message=>{status.textContent=message.startsWith('Live')?'':message;});
+ status.textContent='Connecting…';
+ Live.watch(id,row=>{if(row){state={...Live.publicState(row),logos:row.logos||{}};draw();}},message=>{status.textContent=message.startsWith('Live')?'':message;});
+ let reading=false;
+ async function refreshGraphic(){
+  if(reading)return;
+  reading=true;
+  try{
+   if(!Live.viewer)return;
+   const {data,error}=await Live.viewer.from('basketball_broadcast_graphics').select('kind,position,headline,detail,expires_at').eq('game_id',id).maybeSingle();
+   if(error)throw error;
+   graphic=data;
+   drawGraphic();
+  }catch{}finally{reading=false;}
+ }
+ // A short poll also handles expired graphics and recovers missed realtime messages.
+ Live.viewer?.channel('basketball-graphic-'+id).on('postgres_changes',
+  {event:'*',schema:'public',table:'basketball_broadcast_graphics',filter:'game_id=eq.'+id},refreshGraphic).subscribe();
+ setInterval(refreshGraphic,2000);refreshGraphic();
 }
 setInterval(draw,250);
 </script></body></html>

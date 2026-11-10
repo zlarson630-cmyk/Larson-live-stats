@@ -43,7 +43,57 @@ body:has(#broadcast:not(.hide)) main{max-width:1440px}
  #broadcast .bc-team strong{grid-column:2;grid-row:2}
  #broadcast .bc-players{grid-template-columns:1fr}
 }
-</style><link rel="stylesheet" href="site-nav.css"></head><body data-sport="basketball"><main><header class="row"><h1><a class="brandHome" href="./" onclick="return goHome(event)" aria-label="Larson Live Stats — return to game lobby">Live Stats</a> <span class="small">Basketball · V0.5 preview</span></h1></header><nav class="navHierarchy" aria-label="Site"><a href="./">Home</a><details><summary>Sports <span>· Basketball</span></summary><div class="sportsMenu"><a href="basketball.html" aria-current="page">Basketball</a><a href="soccer.html">Soccer</a><a href="volleyball.html">Volleyball</a></div></details><a href="brands.html">Team Brands</a></nav><nav class="sportNav" aria-label="Basketball"><a id="lobbyNavLink" href="basketball.html" aria-current="page">Game Lobby</a><a id="teamsNavLink" href="basketball.html#teams">Teams</a></nav><section id="teams" class="hide"><h2>Basketball Teams</h2><p>Save a roster once for each team and season. Boys and girls are separate teams and can share the same Team Brand.</p><div class="seasonGrid"><div><label>Team or school <input id="seasonTeam" list="seasonTeams" maxlength="100" placeholder="Type or choose a team"></label><datalist id="seasonTeams"></datalist><p class="small">Choose an existing Team Brand or enter a team name. <a href="profile.html">Sign in to manage your rosters</a>.</p></div><div><label>Program <select id="seasonProgram"><option value="boys">Boys Basketball</option><option value="girls">Girls Basketball</option></select></label><label>Season <select id="seasonYear"></select></label></div></div><button type="button" onclick="loadManagedRoster()">Load season</button><button type="button" onclick="loadManagedRoster(true)">Copy previous season</button><p id="seasonEditing" class="small">Paste or import a roster below. To edit a saved roster, choose its team and season and click Load season.</p><fieldset id="seasonEditor"><label>Season roster<textarea id="seasonRoster" placeholder="11, Jordan Robinson, 6-1, Senior"></textarea></label><p class="small">One player per line. Enter jersey number, name, height and year. Height and year are optional.</p><label class="pdfUpload">Import roster PDF<input type="file" accept=".pdf,application/pdf" onchange="importPdf(this)"></label><p id="seasonPdfStatus" role="status"></p><div id="pdfReview" class="hide" role="region" aria-label="Review PDF roster"><h3>Review extracted roster</h3><p id="pdfReviewInfo" class="small"></p><textarea id="pdfReviewText" aria-label="Editable extracted roster"></textarea><div class="row"><button type="button" class="primary" onclick="applyPdfRoster()">Use as roster draft</button><button type="button" onclick="cancelPdfRoster()">Cancel</button></div></div><button class="primary" id="seasonSave" type="button" onclick="saveManagedRoster()">Save season roster</button></fieldset><p id="rosterSaveStatus" role="status"></p><p><a href="basketball.html">Back to Game Lobby</a></p></section><section id="lobby"><h2>Game lobby</h2><p><a href="#teams">Teams · Season rosters</a></p><p id="sync" class="notice hide" role="status" aria-live="polite"></p><div id="teamBrandPicker" hidden></div><p class="brandLibraryLink"><a href="brands.html">Build or edit reusable team brands</a> · Your brands, rosters and games are saved to your account.</p><p id="authStatus" role="status">View publicly or sign in to score</p><label>Email <input id="email" type="email" autocomplete="username"></label><label>Password <input id="password" type="password" autocomplete="current-password"></label><button onclick="signIn()">Sign in</button><button onclick="signOut()">Sign out</button><input id="localMode" type="checkbox" hidden disabled><p class="small">All games and season rosters save to your cloud account. Sign in to score.</p><div class="seasonGrid lobbyTeams"><div class="lobbyTeam"><h3>Home</h3><label>Home team <select id="homeTeam"><option value="">Enter team manually</option></select></label><label id="homeManualName">Team name <input id="home" value="Jefferson"></label><div id="homeUniform"></div><label>Jersey color <input type="color" id="homeColor" value="#ffffff"></label><label>Program <select id="homeProgram" onchange="loadSeason('home')"><option value="boys">Boys Basketball</option><option value="girls">Girls Basketball</option></select></label><label>Season <select id="homeSeason" onchange="loadSeason('home')"></select></label><details open><summary id="homeRosterPreview">Edit roster for this game</summary><label>Home game roster<textarea id="homeRoster" oninput="editGameRoster('home')" placeholder="11, Jordan Robinson, 6-1, Senior"></textarea></label></details><details><summary id="homeStarterSummary">Starting lineup · optional</summary><div id="homeStarterChoices" class="starterChoices"></div></details></div><div class="lobbyTeam"><h3>Visitor</h3><label>Visitor team <select id="awayTeam"><option value="">Enter team manually</option></select></label><label id="awayManualName">Team name <input id="away" value="Visitor"></label><div id="awayUniform"></div><label>Jersey color <input type="color" id="awayColor" value="#c62828"></label><label>Program <select id="awayProgram" onchange="loadSeason('away')"><option value="boys">Boys Basketball</option><option value="girls">Girls Basketball</option></select></label><label>Season <select id="awaySeason" onchange="loadSeason('away')"></select></label><details open><summary id="awayRosterPreview">Edit roster for this game</summary><label>Visitor game roster<textarea id="awayRoster" oninput="editGameRoster('away')" placeholder="11, Jordan Robinson, 6-1, Senior"></textarea></label></details><details><summary id="awayStarterSummary">Starting lineup · optional</summary><div id="awayStarterChoices" class="starterChoices"></div></details></div></div><p class="small" id="teamPickerStatus" role="status"></p><p class="small">Roster edits here apply only to this game.</p><label>Public scheduled start (optional) <input type="datetime-local" id="publicStart"></label><button class="primary" onclick="createGame()">Create game</button><p>Join a game by ID:</p><input id="gameId" placeholder="Game ID" aria-label="Game ID"><button onclick="joinGame(document.getElementById('gameId').value)">Join</button><p class="small">Cloud games work across browsers. Only the signed-in creator can score. Local-only games stay in this browser.</p></section><div id="app" class="hide"><section><div class="row"><b id="gameTitle"></b><div><span class="small" id="gameCode"></span> <button id="basketballPdfButton" type="button" class="hide" onclick="downloadBasketballPdf()">Download PDF</button></div></div><div class="scoreboard"><div id="awayTile" class="teamTile"><b id="awayLabel"></b><div class="big" id="awayScore"></div><div class="small" id="awayStatus"></div></div><div><b id="period"></b><div class="big" id="clock"></div><button onclick="toggleClock()" id="clockButton" aria-keyshortcuts="Space"><span id="clockButtonLabel">Start</span> <kbd class="shortcutKey" aria-hidden="true">Space</kbd></button></div><div id="homeTile" class="teamTile"><b id="homeLabel"></b><div class="big" id="homeScore"></div><div class="small" id="homeStatus"></div></div></div><details class="gameTools"><summary>Game controls</summary><div class="row"><button onclick="changePeriod()">Next period</button><button onclick="setClock()">Set clock</button><button onclick="togglePossession()">Switch possession</button><button onclick="switchBasketballSides()">⇄ Switch screen sides</button><button id="markFinalButton" onclick="markBasketballFinal()">Mark Final</button></div></details></section><div class="row"><button onclick="showTab('score')">Scoring</button><button onclick="showTab('flow')">Game Flow</button><button onclick="showTab('broadcast')">Broadcaster</button></div><section id="score"><div class="row"><button onclick="openBasketballSubs('home')">Prepare home substitutions</button><button onclick="openBasketballSubs('away')">Prepare visitor substitutions</button></div><div id="basketballPending"></div><div id="scoreControls"></div><div class="compactBottom"><div id="recent"></div><button onclick="undo()">↶ Undo</button></div></section><section id="flow" class="hide"><h2>Game Flow</h2><p class="small">Tap a bubble to fill in or change a player.</p><div id="events"></div></section><section id="broadcast" class="hide" data-broadcast-panel="overview"><div class="bc-head"><div><h2 style="margin:0">Broadcast Center</h2></div><a id="overlay" target="_blank" rel="noopener">Open OBS score bug</a></div><div class="bc-mobile-nav" aria-label="Broadcast sections"><button type="button" aria-pressed="true" onclick="showBroadcastPanel(this,'overview')">Overview</button><button type="button" aria-pressed="false" onclick="showBroadcastPanel(this,'players')">Players</button><button type="button" aria-pressed="false" onclick="showBroadcastPanel(this,'periods')">By period</button></div><div id="bc-dashboard"></div><div id="leaders" class="hide"></div><div id="run" class="hide"></div></section></div></main><div id="subSheet" class="subSheet hide" role="dialog" aria-modal="true" aria-label="Prepare basketball substitutions"><div class="subPanel"><div class="row"><h2 id="subTitle">Prepare substitutions</h2><button onclick="closeBasketballSubs()">✕</button></div><p class="small">Select players leaving and entering. Nothing is recorded until Confirm at the scorer's table.</p><div class="subGrid"><div><h3>Coming out</h3><div class="subChoices" id="subOutChoices"></div></div><div><h3>Coming in</h3><div class="subChoices" id="subInChoices"></div></div></div><p id="subSummary" class="small"></p><div class="row"><button class="primary" onclick="stageBasketballSubs()">Stage substitutions</button><button onclick="closeBasketballSubs()">Cancel</button></div></div></div><div id="scorerToast" class="scorer-toast hide" role="status" aria-live="polite"></div><div id="picker" class="picker hide" role="dialog" aria-modal="true" aria-label="Player assignment"><div class="pickerPanel"><div class="row"><h2 id="pickerTitle">Select player</h2><button onclick="closePicker()">✕</button></div><p id="pickerHint" class="small" role="status"></p><label>Jersey number <input id="pickerJersey" type="text" inputmode="numeric" autocomplete="off" maxlength="2" size="3"></label><p id="pickerKeyboardHint" class="small"></p><div class="numberGrid" id="numbers"></div><div class="pickerActions" id="pickerActions"></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script>
+
+.basketball-dialog{width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;
+ border:1px solid #526580;border-radius:14px;background:#202e45;color:#f8fafc;padding:18px}
+.basketball-dialog::backdrop{background:#080f1bbb}
+.basketball-dialog h2{margin:0 0 8px}
+.basketball-dialog fieldset{margin:14px 0 10px;padding:10px;border:1px solid #526580;border-radius:8px}
+.basketball-dialog fieldset label{display:flex;gap:9px;align-items:center;padding:5px 0}
+.basketball-dialog input[type=checkbox]{width:17px;height:17px;accent-color:#ed4e65}
+#shotCourt{display:block;width:min(100%,315px);aspect-ratio:50/47;margin:10px auto;background:#f2d5a9;cursor:crosshair}
+#shotCourt polyline{fill:none;stroke:#3e4655;stroke-width:.22}
+#shotCourtMarker{fill:#b6243d;stroke:#fff;stroke-width:.25}
+#basketballDemoBanner{background:#27364d;border-left:4px solid #e5b94f;color:#f8fafc}
+#basketballDemoBanner a{color:#f5d57e}
+#basketballGraphicControls{padding:10px;border:1px solid #526580;border-radius:9px;margin:10px 0}
+#basketballGraphicControls label{display:flex;align-items:center;gap:8px;margin-top:10px}
+#basketballGraphicControls summary{cursor:pointer;font-weight:700}
+.graphic-choice{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+</style><link rel="stylesheet" href="site-nav.css"></head><body data-sport="basketball"><main><header class="row"><h1><a class="brandHome" href="./" onclick="return goHome(event)" aria-label="Larson Live Stats — return to game lobby">Live Stats</a> <span class="small">Basketball · V0.5 preview</span></h1></header><nav class="navHierarchy" aria-label="Site"><a href="./">Home</a><details><summary>Sports <span>· Basketball</span></summary><div class="sportsMenu"><a href="basketball.html" aria-current="page">Basketball</a><a href="soccer.html">Soccer</a><a href="volleyball.html">Volleyball</a></div></details><a href="brands.html">Team Brands</a></nav><nav class="sportNav" aria-label="Basketball"><a id="lobbyNavLink" href="basketball.html" aria-current="page">Game Lobby</a><a id="teamsNavLink" href="basketball.html#teams">Teams</a></nav><section id="teams" class="hide"><h2>Basketball Teams</h2><p>Save a roster once for each team and season. Boys and girls are separate teams and can share the same Team Brand.</p><div class="seasonGrid"><div><label>Team or school <input id="seasonTeam" list="seasonTeams" maxlength="100" placeholder="Type or choose a team"></label><datalist id="seasonTeams"></datalist><p class="small">Choose an existing Team Brand or enter a team name. <a href="profile.html">Sign in to manage your rosters</a>.</p></div><div><label>Program <select id="seasonProgram"><option value="boys">Boys Basketball</option><option value="girls">Girls Basketball</option></select></label><label>Season <select id="seasonYear"></select></label></div></div><button type="button" onclick="loadManagedRoster()">Load season</button><button type="button" onclick="loadManagedRoster(true)">Copy previous season</button><p id="seasonEditing" class="small">Paste or import a roster below. To edit a saved roster, choose its team and season and click Load season.</p><fieldset id="seasonEditor"><label>Season roster<textarea id="seasonRoster" placeholder="11, Jordan Robinson, 6-1, Senior"></textarea></label><p class="small">One player per line. Enter jersey number, name, height and year. Height and year are optional.</p><label class="pdfUpload">Import roster PDF<input type="file" accept=".pdf,application/pdf" onchange="importPdf(this)"></label><p id="seasonPdfStatus" role="status"></p><div id="pdfReview" class="hide" role="region" aria-label="Review PDF roster"><h3>Review extracted roster</h3><p id="pdfReviewInfo" class="small"></p><textarea id="pdfReviewText" aria-label="Editable extracted roster"></textarea><div class="row"><button type="button" class="primary" onclick="applyPdfRoster()">Use as roster draft</button><button type="button" onclick="cancelPdfRoster()">Cancel</button></div></div><button class="primary" id="seasonSave" type="button" onclick="saveManagedRoster()">Save season roster</button></fieldset><p id="rosterSaveStatus" role="status"></p><p><a href="basketball.html">Back to Game Lobby</a></p></section><section id="lobby"><h2>Game lobby</h2><p><a href="#teams">Teams · Season rosters</a></p><p id="sync" class="notice hide" role="status" aria-live="polite"></p><div id="teamBrandPicker" hidden></div><p class="brandLibraryLink"><a href="brands.html">Build or edit reusable team brands</a> · Your brands, rosters and games are saved to your account.</p><p id="authStatus" role="status">View publicly or sign in to score</p><label>Email <input id="email" type="email" autocomplete="username"></label><label>Password <input id="password" type="password" autocomplete="current-password"></label><button onclick="signIn()">Sign in</button><button onclick="signOut()">Sign out</button><input id="localMode" type="checkbox" hidden disabled><p class="small">All games and season rosters save to your cloud account. Sign in to score.</p><div class="seasonGrid lobbyTeams"><div class="lobbyTeam"><h3>Home</h3><label>Home team <select id="homeTeam"><option value="">Enter team manually</option></select></label><label id="homeManualName">Team name <input id="home" value="Jefferson"></label><div id="homeUniform"></div><label>Jersey color <input type="color" id="homeColor" value="#ffffff"></label><label>Program <select id="homeProgram" onchange="loadSeason('home')"><option value="boys">Boys Basketball</option><option value="girls">Girls Basketball</option></select></label><label>Season <select id="homeSeason" onchange="loadSeason('home')"></select></label><details open><summary id="homeRosterPreview">Edit roster for this game</summary><label>Home game roster<textarea id="homeRoster" oninput="editGameRoster('home')" placeholder="11, Jordan Robinson, 6-1, Senior"></textarea></label></details><details><summary id="homeStarterSummary">Starting lineup · optional</summary><div id="homeStarterChoices" class="starterChoices"></div></details></div><div class="lobbyTeam"><h3>Visitor</h3><label>Visitor team <select id="awayTeam"><option value="">Enter team manually</option></select></label><label id="awayManualName">Team name <input id="away" value="Visitor"></label><div id="awayUniform"></div><label>Jersey color <input type="color" id="awayColor" value="#c62828"></label><label>Program <select id="awayProgram" onchange="loadSeason('away')"><option value="boys">Boys Basketball</option><option value="girls">Girls Basketball</option></select></label><label>Season <select id="awaySeason" onchange="loadSeason('away')"></select></label><details open><summary id="awayRosterPreview">Edit roster for this game</summary><label>Visitor game roster<textarea id="awayRoster" oninput="editGameRoster('away')" placeholder="11, Jordan Robinson, 6-1, Senior"></textarea></label></details><details><summary id="awayStarterSummary">Starting lineup · optional</summary><div id="awayStarterChoices" class="starterChoices"></div></details></div></div><p class="small" id="teamPickerStatus" role="status"></p><p class="small">Roster edits here apply only to this game.</p><label>Public scheduled start (optional) <input type="datetime-local" id="publicStart"></label><button class="primary" onclick="createGame()">Create game</button><p>Join a game by ID:</p><input id="gameId" placeholder="Game ID" aria-label="Game ID"><button onclick="joinGame(document.getElementById('gameId').value)">Join</button><p class="small">Cloud games work across browsers. Only the signed-in creator can score. Local-only games stay in this browser.</p></section><div id="app" class="hide"><section id="basketballDemoBanner" class="row hide"><div><b>Basketball test game</b> <span class="small">· Fictional rosters · Q3 showcase</span></div><div><a href="basketball.html?demo=1">Reset test game</a> · <a href="basketball-home.html">Exit test game</a></div></section><section><div class="row"><b id="gameTitle"></b><div><span class="small" id="gameCode"></span> <button id="basketballPdfButton" type="button" class="hide" onclick="openBasketballPdf()">Download PDF</button></div></div><div class="scoreboard"><div id="awayTile" class="teamTile"><b id="awayLabel"></b><div class="big" id="awayScore"></div><div class="small" id="awayStatus"></div></div><div><b id="period"></b><div class="big" id="clock"></div><button onclick="toggleClock()" id="clockButton" aria-keyshortcuts="Space"><span id="clockButtonLabel">Start</span> <kbd class="shortcutKey" aria-hidden="true">Space</kbd></button></div><div id="homeTile" class="teamTile"><b id="homeLabel"></b><div class="big" id="homeScore"></div><div class="small" id="homeStatus"></div></div></div><details class="gameTools"><summary>Game controls</summary><div class="row"><button onclick="changePeriod()">Next period</button><button onclick="setClock()">Set clock</button><button onclick="togglePossession()">Switch possession</button><button onclick="switchBasketballSides()">⇄ Switch screen sides</button><button id="markFinalButton" onclick="markBasketballFinal()">Mark Final</button></div></details></section><div class="row"><button onclick="showTab('score')">Scoring</button><button onclick="showTab('flow')">Game Flow</button><button onclick="showTab('broadcast')">Broadcaster</button></div><section id="score"><div class="row"><button onclick="openBasketballSubs('home')">Prepare home substitutions</button><button onclick="openBasketballSubs('away')">Prepare visitor substitutions</button></div><div id="basketballPending"></div><div id="scoreControls"></div><div class="compactBottom"><div id="recent"></div><button onclick="undo()">↶ Undo</button></div></section><section id="flow" class="hide"><h2>Game Flow</h2><p class="small">Tap a bubble to fill in or change a player.</p><p class="small">Use Shot location on a field-goal attempt to plot it on the PDF shot chart.</p><div id="events"></div></section><section id="broadcast" class="hide" data-broadcast-panel="overview"><div class="bc-head"><div><h2 style="margin:0">Broadcast Center</h2></div><a id="overlay" target="_blank" rel="noopener">Open OBS score bug</a></div><details id="basketballGraphicControls" hidden>
+ <summary>OBS graphics</summary>
+ <p class="small">Send a graphic to your OBS scorebug for 12 seconds.</p>
+ <label>Placement <select id="basketballGraphicPosition"><option value="above">Above scorebug</option><option value="below">Below scorebug</option><option value="side">Beside scorebug</option></select></label>
+ <div class="graphic-choice"><button id="basketballGraphicRun" type="button" onclick="publishBasketballGraphic('run')">Show scoring run</button><span id="basketballGraphicRunPreview" class="small"></span></div>
+ <div class="graphic-choice"><button id="basketballGraphicLeader" type="button" onclick="publishBasketballGraphic('leader')">Show leading scorer</button><span id="basketballGraphicLeaderPreview" class="small"></span></div>
+ <button type="button" onclick="publishBasketballGraphic(null)">Clear graphic</button><p id="basketballGraphicStatus" class="small" role="status"></p>
+</details><div class="bc-mobile-nav" aria-label="Broadcast sections"><button type="button" aria-pressed="true" onclick="showBroadcastPanel(this,'overview')">Overview</button><button type="button" aria-pressed="false" onclick="showBroadcastPanel(this,'players')">Players</button><button type="button" aria-pressed="false" onclick="showBroadcastPanel(this,'periods')">By period</button></div><div id="bc-dashboard"></div><div id="leaders" class="hide"></div><div id="run" class="hide"></div></section></div></main><div id="subSheet" class="subSheet hide" role="dialog" aria-modal="true" aria-label="Prepare basketball substitutions"><div class="subPanel"><div class="row"><h2 id="subTitle">Prepare substitutions</h2><button onclick="closeBasketballSubs()">✕</button></div><p class="small">Select players leaving and entering. Nothing is recorded until Confirm at the scorer's table.</p><div class="subGrid"><div><h3>Coming out</h3><div class="subChoices" id="subOutChoices"></div></div><div><h3>Coming in</h3><div class="subChoices" id="subInChoices"></div></div></div><p id="subSummary" class="small"></p><div class="row"><button class="primary" onclick="stageBasketballSubs()">Stage substitutions</button><button onclick="closeBasketballSubs()">Cancel</button></div></div></div><dialog id="basketballPdfDialog" class="basketball-dialog" aria-labelledby="basketballPdfTitle">
+ <h2 id="basketballPdfTitle">Download basketball PDF</h2>
+ <p class="small">Print a quick timeout sheet or choose what to include in the game report.</p>
+ <div><button class="primary" type="button" onclick="downloadBasketballPdf('one')">One-page box score</button>
+ <button type="button" onclick="downloadBasketballPdf('full')">Full report</button></div>
+ <fieldset id="basketballPdfOptions"><legend>Customize your report</legend>
+  <label><input type="checkbox" value="periods" checked> Score by period</label>
+  <label><input type="checkbox" value="players" checked> Player box scores and team totals</label>
+  <label><input type="checkbox" value="teams"> Team comparison</label>
+  <label><input type="checkbox" value="charts"> Shot charts</label>
+  <label><input type="checkbox" value="lineups"> Lineups and substitutions</label>
+  <label><input type="checkbox" value="log"> Play-by-play log</label>
+ </fieldset>
+ <button type="button" onclick="downloadBasketballPdf('selected')">Download selected</button>
+ <button type="button" onclick="this.closest('dialog').close()">Close</button>
+ <p id="basketballPdfStatus" class="small" role="status"></p>
+</dialog>
+<dialog id="shotLocationDialog" class="basketball-dialog" aria-labelledby="shotLocationHeading">
+ <h2 id="shotLocationHeading">Shot location</h2><p id="shotLocationTitle"></p>
+ <p class="small" id="shotLocationHelp">Tap the spot on the court, or use the arrow keys to move the marker.</p>
+ <svg id="shotCourt" viewBox="0 0 50 47" tabindex="0" aria-label="Half court" aria-describedby="shotLocationHelp"
+  onclick="pickBasketballShotPoint(event)" onkeydown="basketballShotKeys(event)"></svg>
+ <button id="shotLocationSave" type="button" class="primary" onclick="saveBasketballShotLocation()">Save location</button>
+ <button id="shotLocationRemove" type="button" onclick="saveBasketballShotLocation(true)">Remove location</button>
+ <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+ <p class="small" id="shotLocationStatus" role="status"></p>
+</dialog><div id="scorerToast" class="scorer-toast hide" role="status" aria-live="polite"></div><div id="picker" class="picker hide" role="dialog" aria-modal="true" aria-label="Player assignment"><div class="pickerPanel"><div class="row"><h2 id="pickerTitle">Select player</h2><button onclick="closePicker()">✕</button></div><p id="pickerHint" class="small" role="status"></p><label>Jersey number <input id="pickerJersey" type="text" inputmode="numeric" autocomplete="off" maxlength="2" size="3"></label><p id="pickerKeyboardHint" class="small"></p><div class="numberGrid" id="numbers"></div><div class="pickerActions" id="pickerActions"></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script>
 let id='',state=null,channel=null,clockTimer=null;
 const el=x=>document.getElementById(x),key=x=>'lls-game-'+x;
 function makeId(){return Math.floor(Math.random()*36**6).toString(36).padStart(6,'0').toUpperCase()}
@@ -269,7 +319,7 @@ async function recordShot(team,points,kind){
 }
 async function score(team,points){return recordShot(team,points,'score')}
 async function miss(team,points){return recordShot(team,points,'miss')}
-function playLabel(e){if(e.kind==='injury-timeout')return 'Injury timeout'+(e.player?' · #'+e.player:'');if(e.kind==='substitution')return 'Substitution: '+(e.out||'—')+' → '+(e.in||'—');return e.kind==='score'?'+'+e.points:e.kind==='miss'?'Miss '+(e.points===1?'FT':e.points+' PT'):'foul'}
+function playLabel(e){if(e.kind==='timeout')return 'Timeout';if(e.kind==='injury-timeout')return 'Injury timeout'+(e.player?' · #'+e.player:'');if(e.kind==='substitution')return 'Substitution: '+(e.out||'—')+' → '+(e.in||'—');return e.kind==='score'?'+'+e.points:e.kind==='miss'?'Miss '+(e.points===1?'FT':e.points+' PT'):'foul'}
 
 let pickerEvent=null,pickerField='scorer',pickerNext=false;
 function assign(eid,field,thenAssist=false){if(!canWrite())return;pickerEvent=eid;pickerField=field;pickerNext=thenAssist;renderPicker()}
@@ -335,7 +385,7 @@ function shotButton(team,points,kind){
 }
 function basketballKeydown(event){
  if(event.defaultPrevented||event.isComposing||event.altKey||event.ctrlKey||event.metaKey||
-    !state||!canWrite()||el('app').classList.contains('hide')||!el('subSheet').classList.contains('hide'))return;
+    !state||!canWrite()||el('basketballPdfDialog').open||el('shotLocationDialog').open||el('app').classList.contains('hide')||!el('subSheet').classList.contains('hide'))return;
  const jersey=el('pickerJersey'),key=event.key.toLowerCase();
  if(event.target!==jersey&&event.target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])'))return;
  if(key===' '){
@@ -390,25 +440,31 @@ function renderPicker(){
  el('pickerActions').innerHTML=(pickerField==='assist'?'<button type="button" aria-keyshortcuts="N" onclick="pickerValue(\'no-assist\')">No assist <kbd class="shortcutKey" aria-hidden="true">N</kbd></button>':'')+'<button type="button" class="primary" onclick="pickerValue(null)">Assign later</button>';
 }
 function foul(team){write(s=>{s.fouls[team]++;s.events.unshift({id:makeId()+Date.now(),kind:'foul',team,period:s.period,time:stamp(s)})})}
-function timeout(team){write(s=>s.timeouts[team]=Math.max(0,s.timeouts[team]-1))}
+function timeout(team){return write(s=>{
+ if(s.timeouts[team]<=0)return;
+ s.timeouts[team]--;
+ s.events.unshift({id:makeId()+Date.now(),kind:'timeout',team,period:s.period,time:stamp(s)});
+})}
 function injuryTimeout(team){if(!state)return;const player=prompt('Injury timeout · '+SoccerBrand.name(state,team)+'\nPlayer jersey # (optional). Leave blank if unknown.','');if(player===null)return;write(s=>s.events.unshift({id:makeId()+Date.now(),kind:'injury-timeout',team,period:s.period,time:stamp(s),player:player.trim()}))}
-async function undo(){if(!canWrite()||scoringBusy)return;const e=state.events[0];if(!e){scorerToast('Nothing to undo');return;}const ok=await write(s=>{const idx=s.events.findIndex(x=>x.id===e.id);if(idx<0)return;const removed=s.events.splice(idx,1)[0];if(removed.kind==='score')s.scores[removed.team]=Math.max(0,s.scores[removed.team]-removed.points);if(removed.kind==='foul')s.fouls[removed.team]=Math.max(0,s.fouls[removed.team]-1);});scorerToast(ok?'Last play undone':'Undo not saved',!ok);}
+async function undo(){if(!canWrite()||scoringBusy)return;const e=state.events[0];if(!e){scorerToast('Nothing to undo');return;}const ok=await write(s=>{const idx=s.events.findIndex(x=>x.id===e.id);if(idx<0)return;const removed=s.events.splice(idx,1)[0];if(removed.kind==='score')s.scores[removed.team]=Math.max(0,s.scores[removed.team]-removed.points);if(removed.kind==='foul')s.fouls[removed.team]=Math.max(0,s.fouls[removed.team]-1);if(removed.kind==='timeout')s.timeouts[removed.team]++;});scorerToast(ok?'Last play undone':'Undo not saved',!ok);}
 async function correctEvent(eid){
  if(!canWrite()||scoringBusy)return;
  const e=state.events.find(x=>x.id===eid);if(!e)return;
- const choices=['substitution','injury-timeout'].includes(e.kind)?'delete':e.kind==='score'?'1, 2, 3, miss, delete':'score, 1, 2, 3, delete';
+ const removeOnly=['substitution','injury-timeout','timeout','foul'].includes(e.kind);
+ const choices=removeOnly?'delete':e.kind==='score'?'1, 2, 3, miss, delete':'score, 1, 2, 3, delete';
  const answer=prompt('Correct '+SoccerBrand.name(state,e.team)+' Q'+e.period+' '+e.time+' ('+playLabel(e)+')\nEnter: '+choices,'');
  if(answer===null)return;
  const a=answer.trim().toLowerCase();
- if((['substitution','injury-timeout'].includes(e.kind)&&a!=='delete')||!['1','2','3','score','miss','delete'].includes(a))return alert('Choose '+choices);
+ if((removeOnly&&a!=='delete')||!['1','2','3','score','miss','delete'].includes(a))return alert('Choose '+choices);
  if(a==='delete'&&!confirm('Remove this play and adjust the score?'))return;
  const ok=await write(s=>{
   const i=s.events.findIndex(x=>x.id===eid);if(i<0)return;
   const old=s.events[i];if(old.kind==='score')s.scores[old.team]=Math.max(0,s.scores[old.team]-old.points);
   if(old.kind==='foul')s.fouls[old.team]=Math.max(0,s.fouls[old.team]-1);
-  if(a==='delete'){s.events.splice(i,1);return;}
+  if(a==='delete'){if(old.kind==='timeout')s.timeouts[old.team]++;s.events.splice(i,1);return;}
   const wasScore=old.kind==='score';old.kind=a==='miss'?'miss':a==='score'?'score':old.kind;
   if(['1','2','3'].includes(a)){old.points=Number(a);old.kind=wasScore?'score':'miss';}
+  if(Number(old.points)===1)delete old.shotLocation;
   if(old.kind==='score'){s.scores[old.team]+=old.points;old.assist=old.points===1?'na':(old.assist==='na'?null:old.assist??null);}else delete old.assist;
  });
  scorerToast(ok?'Play corrected':'Correction not saved',!ok);
@@ -438,7 +494,7 @@ function cancelBasketballSubs(pid){write(s=>{s.pendingSubs=(s.pendingSubs||[]).f
 function showTab(t){['score','flow','broadcast'].forEach(x=>el(x).classList.toggle('hide',x!==t))}
 function eventHtml(e){
  const shot=e.kind==='score'||e.kind==='miss',eid=escapeHtml(e.id);
- return '<div class="event"><b>Q'+e.period+' '+e.time+' · '+escapeHtml(SoccerBrand.name(state,e.team))+' '+playLabel(e)+'</b> '+(shot?'<div><button class="'+(e.scorer===null?'pending':'')+'" onclick="assign(\''+eid+'\',\'scorer\')">'+(e.kind==='miss'?'Shooter':'Scorer')+': '+(e.scorer===null?'Assign later':'#'+escapeHtml(e.scorer))+'</button>'+(e.kind==='score'&&e.points>1?'<button class="'+(e.assist===null?'pending':'')+'" onclick="assign(\''+eid+'\',\'assist\')">Assist: '+(e.assist===null?'Assign later':e.assist==='no-assist'?'No assist':'#'+escapeHtml(e.assist))+'</button>':'')+'</div>':'')+'<button class="eventEdit" onclick="correctEvent(\''+eid+'\')">Edit / remove</button></div>';
+ return '<div class="event"><b>Q'+e.period+' '+e.time+' · '+escapeHtml(SoccerBrand.name(state,e.team))+' '+playLabel(e)+'</b> '+(shot?'<div><button class="'+(e.scorer===null?'pending':'')+'" onclick="assign(\''+eid+'\',\'scorer\')">'+(e.kind==='miss'?'Shooter':'Scorer')+': '+(e.scorer===null?'Assign later':'#'+escapeHtml(e.scorer))+'</button>'+(e.kind==='score'&&e.points>1?'<button class="'+(e.assist===null?'pending':'')+'" onclick="assign(\''+eid+'\',\'assist\')">Assist: '+(e.assist===null?'Assign later':e.assist==='no-assist'?'No assist':'#'+escapeHtml(e.assist))+'</button>':'')+(Number(e.points)>1?'<button onclick="openBasketballShotLocation(\''+eid+'\')">'+(e.shotLocation?'Edit shot location':'Shot location')+'</button>':'')+'</div>':'')+'<button class="eventEdit" onclick="correctEvent(\''+eid+'\')">Edit / remove</button></div>';
 }
 
 function escapeHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
@@ -474,110 +530,6 @@ function basketballBoxScore(s){
   if(made&&points>1&&/^\d{1,2}$/.test(String(e.assist))){const a=String(e.assist);(totals[e.team][a]||(totals[e.team][a]=fresh())).ast++;teams[e.team].ast++;}
  }
  return {fresh,totals,teams,periods};
-}
-function downloadBasketballPdf(){
- if(!state||!canWrite())return;
- if(!window.jspdf?.jsPDF){
-  scorerToast('PDF export unavailable. Check your connection and refresh.',true);
-  return;
- }
- const game=state,gameClock=stamp(game);
- try{
-  basketballBoxScorePdf(game,gameClock).save('basketball-box-score-'+id+'-q'+game.period+'-'+gameClock.replace(':','-')+'.pdf');
- }catch(error){
-  console.error('Basketball PDF export failed',error);
-  scorerToast('Could not download the box score. Try again.',true);
- }
-}
-function basketballBoxScorePdf(game,gameClock){
- const {fresh,totals,teams,periods}=basketballBoxScore(game);
- const doc=new window.jspdf.jsPDF({unit:'pt',format:'letter',compress:true});
- const order=game.screenSidesSwapped?['home','away']:['away','home'];
- const margin=32,width=548,bottom=748;
- const name=t=>SoccerBrand.name(game,t);
- let y;
- function text(value,x,baseline,{size=10,bold=false,color='#172033',align='left',maxWidth}={}){
-  doc.setFont('helvetica',bold?'bold':'normal').setFontSize(size).setTextColor(color);
-  doc.text(String(value??'').replace(/[\u0000-\u001f]/g,' '),x,baseline,{align,maxWidth});
- }
- function fill(top,height,color){doc.setFillColor(color).rect(margin,top,width,height,'F')}
- function page(){
-  if(y!==undefined)doc.addPage();
-  doc.setFillColor('#ffffff').rect(0,0,612,792,'F');
-  fill(28,3,'#b62d43');
-  text('LARSON LIVE STATS',margin,47,{size:11,bold:true});
-  text('BASKETBALL BOX SCORE',margin+width,47,{size:10,bold:true,align:'right'});
-  text(game.libraryStatus==='completed'?'FINAL':'IN PROGRESS  /  Q'+game.period+'  '+gameClock,margin,65,{size:9,color:'#49566a'});
-  text('Game '+game.id,margin+width,65,{size:9,color:'#49566a',align:'right'});
-  y=84;
- }
- function row(cells,widths,{header=false,total=false,shade=false}={}){
-  doc.setFont('helvetica',header||total?'bold':'normal').setFontSize(9);
-  const label=String(cells[0]).replace(/[\u0000-\u001f]/g,' ');
-  const lines=doc.splitTextToSize(label,widths[0]-14);
-  if(lines.length>3)lines.splice(2,lines.length-2,'...');
-  const height=4+9*Math.max(1,lines.length);
-  if(header||total||shade)fill(y,height,header?'#e4e9f1':total?'#edf0f5':'#f6f8fa');
-  lines.forEach((line,index)=>text(line,margin+7,y+10+9*index,{size:9,bold:header||total}));
-  let x=margin+widths[0];
-  cells.slice(1).forEach((value,i)=>{
-   const colWidth=widths[i+1];
-   text(value,x+colWidth/2,y+10,{size:9,bold:header||total,align:'center'});
-   x+=colWidth;
-  });
-  y+=height;
- }
- const shot=(made,attempted,percentage=false)=>made+'-'+attempted+
-  (percentage&&attempted?' ('+Math.round(100*made/attempted)+'%)':'');
- const cells=(p,total=false)=>[p.pts,shot(p.fgm,p.fga,total),shot(p.tm,p.ta,total),shot(p.ftm,p.fta,total),p.ast];
- const playerWidths=[215,53,76,76,76,52];
- page();
- const quarterCount=Math.max(1,Number(game.period)||1);
- const recordedScore=t=>Object.values(periods[t]).reduce((sum,points)=>sum+points,0)===(game.scores?.[t]??0);
- for(let first=1;first<=quarterCount;first+=8){
-  if(y+76>bottom)page();
-  const count=Math.min(8,quarterCount-first+1);
-  const quarters=Array.from({length:count},(_,i)=>first+i);
-  const scoreWidths=[215,...Array(count+1).fill((width-215)/(count+1))];
-  row(['SCORE BY PERIOD',...quarters.map(q=>'Q'+q),'TOTAL'],scoreWidths,{header:true});
-  order.forEach((t,i)=>row([name(t),...quarters.map(q=>recordedScore(t)?periods[t][q]||0:'-'),game.scores?.[t]??0],scoreWidths,{shade:i===0}));
-  y+=8;
- }
- if(order.some(t=>!recordedScore(t))){
-  text('Period scoring is unavailable where the play log and scoreboard differ.',margin,y+8,{size:9,color:'#49566a'});
-  y+=15;
- }
- text('Possession arrow: '+(game.possession?name(game.possession):'-'),margin,y+9,{size:9,color:'#49566a',maxWidth:width});
- y+=28;
- for(const t of order){
-  const roster=new Map((game.rosters?.[t]||[]).map(p=>[String(p.number),p.name]));
-  const players=[...new Set([...roster.keys(),...Object.keys(totals[t])])].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
-  const rows=players.map(k=>[k==='Unassigned'?k:('#'+k+' '+(roster.get(k)||'')).trim(),...cells(totals[t][k]||fresh())]);
-  if(!rows.length)rows.push(['No player stats recorded']);
-  function teamHeader(continued=false){
-   text(name(t)+(continued?' (continued)':''),margin,y+12,{size:12,bold:true,maxWidth:width});
-   y+=28;
-   text('Team fouls: '+(game.fouls?.[t]??'-')+'   |   Timeouts left: '+(game.timeouts?.[t]??'-'),margin,y,{size:9,color:'#49566a'});
-   y+=8;
-   row(['PLAYER','PTS','FG','3PT','FT','AST'],playerWidths,{header:true});
-  }
-  if(y+100>bottom)page();
-  teamHeader();
-  rows.forEach((values,i)=>{
-   if(y+31>bottom){page();teamHeader(true);}
-   row(values,playerWidths,{shade:i%2===0});
-  });
-  if(y+13>bottom){page();teamHeader(true);}
-  row(['Recorded team totals',...cells(teams[t],true)],playerWidths,{total:true});
-  y+=14;
- }
- const pages=doc.getNumberOfPages();
- for(let p=1;p<=pages;p++){
-  doc.setPage(p);
-  text('Shooting columns show makes-attempts from recorded plays.',margin,766,{size:8,color:'#49566a'});
-  text(p+' / '+pages,margin+width,766,{size:8,color:'#49566a',align:'right'});
- }
- return doc;
 }
 function broadcastDashboard(s){
  if(s===broadcastState&&id===broadcastGame){
@@ -639,7 +591,7 @@ function broadcastDashboard(s){
  for(const t of order)window.SoccerBrand?.logo('bc-logo-'+t,SoccerBrand.name(s,t),s.logos?.[t]||s.teamBrands?.[t]?.logo);
 
 }
-function render(){if(!state)return;el('basketballPdfButton').classList.toggle('hide',!canWrite());renderBasketballPending();let s=state;el('awayTile').style.order=s.screenSidesSwapped?'3':'1';el('homeTile').style.order=s.screenSidesSwapped?'1':'3';el('clock').parentElement.style.order='2';el('gameTitle').textContent=SoccerBrand.name(s,'home')+' vs '+SoccerBrand.name(s,'away');el('gameCode').textContent='Game '+id;['home','away'].forEach(t=>{el(t+'Label').textContent=SoccerBrand.name(s,t);const tile=el(t+'Tile');tile.style.background=uniform(t);tile.style.color=uniformInk(t);tile.style.borderColor=state.teamBrands?.[t]?uniformAccent(t):uniform(t)==='#ffffff'?'#a8b3c4':uniform(t);el(t+'Score').textContent=s.scores[t];el(t+'Status').textContent='Fouls '+s.fouls[t]+' · TO '+s.timeouts[t]+(s.possession===t?' · ◀':'')});el('period').textContent='Q'+s.period;el('clock').textContent=stamp(s);el('clockButtonLabel').textContent=s.libraryStatus==='completed'?'FINAL':s.running?'Stop':'Start';const finalButton=el('markFinalButton');if(finalButton){finalButton.disabled=s.libraryStatus==='completed';finalButton.textContent=s.libraryStatus==='completed'?'Game Final':'Mark Final';}el('scoreControls').innerHTML=(s.screenSidesSwapped?['home','away']:['away','home']).map(t=>{const color=uniform(t),ink=uniformInk(t),safeName=SoccerBrand.name(s,t).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');return '<div class="scoreTeam" style="border-color:'+color+'"><h3><span class="jerseyBadge" style="background:'+color+';color:'+ink+'">JERSEY</span>'+safeName+'</h3>'+[1,2,3].map(n=>shotButton(t,n,'score')).join('')+'<div class="secondaryRow missRow">'+[1,2,3].map(n=>shotButton(t,n,'miss')).join('')+'</div><div class="secondaryRow"><button class="secondaryAction" onclick="foul(\''+t+'\')">Foul</button><button class="secondaryAction" onclick="timeout(\''+t+'\')">Timeout</button><button class="secondaryAction" onclick="injuryTimeout(\''+t+'\')">Injury TO</button></div></div>'}).join('');el('recent').textContent=s.events.length?(SoccerBrand.name(s,s.events[0].team)+' '+playLabel(s.events[0])+(['score','miss'].includes(s.events[0].kind)&&s.events[0].scorer!==null?' · #'+s.events[0].scorer:'')):'No plays yet';el('events').innerHTML=s.events.map(eventHtml).join('')||'No plays yet';const totals={home:{},away:{}};for(const e of s.events)if(e.kind==='score'&&e.scorer){const teamTotals=totals[e.team];teamTotals[e.scorer]=(teamTotals[e.scorer]||0)+e.points}const leaders=['home','away'].flatMap(t=>Object.entries(totals[t]).map(([number,points])=>({t,number,points})));el('leaders').innerHTML='<h3>Leading scorers</h3>'+leaders.sort((a,b)=>b.points-a.points).slice(0,5).map(({t,number,points})=>'<p>'+escapeHtml(SoccerBrand.name(s,t)+' #'+number)+': '+points+' pts</p>').join('');let t=null,n=0;for(let e of s.events){if(e.kind!=='score')continue;if(t&&e.team!==t)break;t=e.team;n+=e.points}el('run').textContent=t?s[t]+' on a '+n+'–0 run':'No scoring run';el('overlay').href='overlay.html?game='+id;broadcastDashboard(s)}
+function render(){if(!state)return;el('basketballPdfButton').classList.toggle('hide',!canWrite());renderBasketballPending();let s=state;el('awayTile').style.order=s.screenSidesSwapped?'3':'1';el('homeTile').style.order=s.screenSidesSwapped?'1':'3';el('clock').parentElement.style.order='2';el('gameTitle').textContent=SoccerBrand.name(s,'home')+' vs '+SoccerBrand.name(s,'away');el('gameCode').textContent='Game '+id;['home','away'].forEach(t=>{el(t+'Label').textContent=SoccerBrand.name(s,t);const tile=el(t+'Tile');tile.style.background=uniform(t);tile.style.color=uniformInk(t);tile.style.borderColor=state.teamBrands?.[t]?uniformAccent(t):uniform(t)==='#ffffff'?'#a8b3c4':uniform(t);el(t+'Score').textContent=s.scores[t];el(t+'Status').textContent='Fouls '+s.fouls[t]+' · TO '+s.timeouts[t]+(s.possession===t?' · ◀':'')});el('period').textContent='Q'+s.period;el('clock').textContent=stamp(s);el('clockButtonLabel').textContent=s.libraryStatus==='completed'?'FINAL':s.running?'Stop':'Start';const finalButton=el('markFinalButton');if(finalButton){finalButton.disabled=s.libraryStatus==='completed';finalButton.textContent=s.libraryStatus==='completed'?'Game Final':'Mark Final';}el('scoreControls').innerHTML=(s.screenSidesSwapped?['home','away']:['away','home']).map(t=>{const color=uniform(t),ink=uniformInk(t),safeName=SoccerBrand.name(s,t).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');return '<div class="scoreTeam" style="border-color:'+color+'"><h3><span class="jerseyBadge" style="background:'+color+';color:'+ink+'">JERSEY</span>'+safeName+'</h3>'+[1,2,3].map(n=>shotButton(t,n,'score')).join('')+'<div class="secondaryRow missRow">'+[1,2,3].map(n=>shotButton(t,n,'miss')).join('')+'</div><div class="secondaryRow"><button class="secondaryAction" onclick="foul(\''+t+'\')">Foul</button><button class="secondaryAction" onclick="timeout(\''+t+'\')">Timeout</button><button class="secondaryAction" onclick="injuryTimeout(\''+t+'\')">Injury TO</button></div></div>'}).join('');el('recent').textContent=s.events.length?(SoccerBrand.name(s,s.events[0].team)+' '+playLabel(s.events[0])+(['score','miss'].includes(s.events[0].kind)&&s.events[0].scorer!==null?' · #'+s.events[0].scorer:'')):'No plays yet';el('events').innerHTML=s.events.map(eventHtml).join('')||'No plays yet';const totals={home:{},away:{}};for(const e of s.events)if(e.kind==='score'&&e.scorer){const teamTotals=totals[e.team];teamTotals[e.scorer]=(teamTotals[e.scorer]||0)+e.points}const leaders=['home','away'].flatMap(t=>Object.entries(totals[t]).map(([number,points])=>({t,number,points})));el('leaders').innerHTML='<h3>Leading scorers</h3>'+leaders.sort((a,b)=>b.points-a.points).slice(0,5).map(({t,number,points})=>'<p>'+escapeHtml(SoccerBrand.name(s,t)+' #'+number)+': '+points+' pts</p>').join('');let t=null,n=0;for(let e of s.events){if(e.kind!=='score')continue;if(t&&e.team!==t)break;t=e.team;n+=e.points}el('run').textContent=t?s[t]+' on a '+n+'–0 run':'No scoring run';el('overlay').href='overlay.html?game='+id;broadcastDashboard(s);window.renderBasketballGraphics?.()}
 initSeasons();
 (function prefillQuickMatch(){
  const q=new URLSearchParams(location.search);
@@ -677,4 +629,5 @@ function listSeasonTeams(){
 }
 window.addEventListener('hashchange',showBasketballSetup);
 showBasketballSetup();
-</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script><script src="live.js"></script><script src="cloud.js"></script><script src="basketball-quick-roster.js?v=starters-20261107"></script><script src="cloud-library.js"></script><script src="profile.js"></script><script src="basketball-setup.js?v=lobby-20261107"></script><script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script></body></html>
+</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script><script src="live.js"></script><script src="cloud.js"></script><script src="basketball-quick-roster.js?v=starters-20261107"></script><script src="cloud-library.js"></script><script src="profile.js"></script><script src="basketball-setup.js?v=lobby-20261107"></script><script src="basketball-report.js?v=showcase-1"></script><script src="basketball-demo.js?v=showcase-1"></script><script src="basketball-graphics.js?v=showcase-1"></script><script>startBasketballDemo();</script><script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script></body></html>
+

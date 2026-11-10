@@ -32,3 +32,38 @@ test('history labels final and unpublished games correctly and filters volleybal
  assert.ok(unpublished);
  assert.ok(!unpublished.children.some(child=>child.href));
 });
+
+test('trash and restore preserve final status, stop a running clock, and retry a concurrent score',async()=>{
+ const {ctx}=harness();
+ let state={home:'Home',away:'Away',scores:{home:1,away:0},seconds:120,running:true,startedAt:Date.now()-2000,version:1};
+ let conflicts=1,writes=0;
+ const client={from(){
+  let pending;
+  const q={eq(){return q},is(){return q},update({state}){pending=state;return q;},
+   maybeSingle:async()=>({data:{state}}),
+   select(){
+    if(!pending)return q;
+    writes++;
+    if(conflicts-- >0){
+     state={...state,scores:{home:3,away:0},version:2};
+     return Promise.resolve({data:[]});
+    }
+    state=pending;
+    return Promise.resolve({data:[{state}]});
+   }};
+  return q;
+ }};
+ const action=trash=>ctx.ProfileData.setBasketballTrash(client,'A','ABC123',trash,()=>true);
+ await action(true);
+ assert.equal(writes,2);
+ assert.equal(state.libraryStatus,'trash');
+ assert.equal(state.scores.home,3);
+ assert.equal(state.running,false);
+ assert.ok(state.seconds<=118);
+ await action(false);
+ assert.equal(state.libraryStatus,'active');
+ state={...state,libraryStatus:'completed'};
+ await action(true);
+ await action(false);
+ assert.equal(state.libraryStatus,'completed');
+});

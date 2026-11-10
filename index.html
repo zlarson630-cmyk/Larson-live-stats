@@ -3,6 +3,7 @@
 <meta name="theme-color" content="#f3f4f6"><title>Larson Live Stats | Home</title>
 <link rel="icon" href="assets/brand/larson-z-mark.svg?v=official-20261107" type="image/svg+xml">
 <link rel="stylesheet" href="game-center.css?v=light-ticker">
+<style>#management .sectionheading h2{font:700 clamp(2rem,4vw,3rem)/1 "Barlow Condensed",sans-serif;text-transform:uppercase;margin:0}</style>
 <script>/* Preserve existing root basketball deep links after the home-page migration. */(function(){const q=new URLSearchParams(location.search);if(q.has('game')||q.has('local'))location.replace('basketball.html'+location.search+location.hash)})();</script>
 </head><body>
 <header><div class="inner"><a class="brand" href="./" aria-label="Larson Live Stats home"><img src="assets/brand/larson-z-mark.svg?v=official-20261107" alt=""><span>LARSON <em>LIVE STATS</em></span></a><a class="profile-link" href="profile.html">My profile</a></div></header>
@@ -13,7 +14,7 @@
   <a href="#gameCenter" id="browseScores">Browse scores</a>
 </section>
 <section id="destinations" aria-labelledby="destinationTitle">
-<div class="sectionheading"><h1 id="destinationTitle">Choose a destination</h1><p>Open a sport to start scoring, or manage your team brands.</p></div>
+<div class="sectionheading"><h1 id="destinationTitle">Choose a sport</h1><p>Open a sport to start scoring or view its tools.</p></div>
 <div class="grid">
 <a class="tile basketball" href="basketball-home.html"><span class="symbol" aria-hidden="true">🏀</span><h2>Basketball</h2><p>Live scoring, player stats &amp; Quick Roster Editor</p><span class="arrow" aria-hidden="true">↗</span></a>
 <a class="tile soccer" href="soccer.html"><span class="symbol" aria-hidden="true">⚽</span><h2>Soccer</h2><p>Live matches, game events &amp; reports</p><span class="arrow" aria-hidden="true">↗</span></a>
@@ -21,6 +22,13 @@
 <a class="tile football" href="field-sports.html?sport=football"><span class="symbol" aria-hidden="true">🏈</span><h2>Football <span class="beta">BETA</span></h2><p>Game clock, scoring plays &amp; player stats</p><span class="arrow" aria-hidden="true">↗</span></a>
 <a class="tile baseball" href="field-sports.html?sport=baseball"><span class="symbol" aria-hidden="true">⚾</span><h2>Baseball <span class="beta">BETA</span></h2><p>Innings, batting &amp; pitching box scores</p><span class="arrow" aria-hidden="true">↗</span></a>
 <a class="tile softball" href="field-sports.html?sport=softball"><span class="symbol" aria-hidden="true">🥎</span><h2>Softball <span class="beta">BETA</span></h2><p>Innings, batting &amp; pitching box scores</p><span class="arrow" aria-hidden="true">↗</span></a>
+</div>
+</section>
+<section id="management" aria-labelledby="managementTitle">
+<div class="sectionheading"><h2 id="managementTitle">Management</h2><p>Find saved games and manage your teams, rosters, and brands.</p></div>
+<div class="grid">
+<a class="tile games" href="profile.html?view=games#games"><span class="symbol" aria-hidden="true">▤</span><h2>My Games</h2><p>Search, filter, and organize saved games</p><span class="arrow" aria-hidden="true">↗</span></a>
+<a class="tile teams" href="profile.html?view=teams#teams"><span class="symbol" aria-hidden="true">👥</span><h2>My Teams</h2><p>Browse your teams and season rosters</p><span class="arrow" aria-hidden="true">↗</span></a>
 <a class="tile brands" href="brands.html"><span class="symbol" aria-hidden="true">🛡️</span><h2>Team Brands</h2><p>Team logos, colors &amp; reusable identities</p><span class="arrow" aria-hidden="true">↗</span></a>
 </div>
 </section>
