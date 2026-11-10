@@ -16,6 +16,7 @@
  get('sportPrompt').textContent = 'What would you like to do?';
  get('newGameLink').href = setup||scorer+'&setup=1';
  get('resumeGameLink').href = resume||scorer;
+ get('testGameLink').href = setup?setup.split('#')[0]+'?demo=1':scorer+'&demo=1';
  get('newGameHint').textContent = newHint||'Set teams and game options';
  get('resumeGameHint').textContent = resumeHint||'Return to the game saved on this device';
  get('sportChoices').hidden = false;

@@ -1,6 +1,6 @@
 'use strict';
 
-(function(){'use strict';const v=window.LarsonVolleyball;const key='lls-volleyball-beta-v1';const el=id=>document.getElementById(id);let data={events:[],home:'Home',away:'Away',bestOf:5,firstServer:'home'};try{const saved=JSON.parse(localStorage.getItem(key));if(saved&&Array.isArray(saved.events)&&saved.events.length<100000&&[3,5].includes(saved.bestOf)&&['home','away'].includes(saved.firstServer))data={...data,...saved};}catch(e){}
+(function(){'use strict';const v=window.LarsonVolleyball;const key='lls-volleyball-beta-v1';const el=id=>document.getElementById(id);const demo=new URLSearchParams(location.search).get('demo')==='1';let data={events:[],home:'Home',away:'Away',bestOf:5,firstServer:'home'};if(demo){data=SportDemo.volleyball();el('setup').hidden=true;el('volleyballPublish').hidden=true;el('sportDemoBanner').hidden=false;}else try{const saved=JSON.parse(localStorage.getItem(key));if(saved&&Array.isArray(saved.events)&&saved.events.length<100000&&[3,5].includes(saved.bestOf)&&['home','away'].includes(saved.firstServer))data={...data,...saved};}catch(e){}
 const query=new URLSearchParams(location.search);if(!data.events.length){for(const side of ['home','away']){const value=query.get(side);if(value&&value.trim())data[side]=value.trim().slice(0,60);}}let serial=0;const newId=()=>String(Date.now())+'-'+String(++serial)+'-'+Math.random().toString(36).slice(2,7);
 function config(){return {rules:{bestOf:Number(data.bestOf)},firstServer:data.firstServer};}
 function state(){return v.replay(data.events,config());}
@@ -14,7 +14,7 @@ function downloadPdf(full){
 }
 el('volleyballPdf').addEventListener('click',()=>downloadPdf(false));
 el('volleyballPdfFull').addEventListener('click',()=>downloadPdf(true));
-function save(){try{localStorage.setItem(key,JSON.stringify(data));}catch(e){el('feedback').textContent='Could not save locally. Storage may be full or disabled.';}}
+function save(){if(demo)return;try{localStorage.setItem(key,JSON.stringify(data));}catch(e){el('feedback').textContent='Could not save locally. Storage may be full or disabled.';}}
 let publishing = false;
 let queuedPublication = false;
 let lastPublished = '';
@@ -31,6 +31,7 @@ function publicationControls() {
 }
 
 async function publishScore({withdraw=false}={}) {
+ if(demo)return;
  if(publishing){queuedPublication=true;return;}
  const s = state();
  const share = data.publicShare;
@@ -97,7 +98,7 @@ el('homeLabel').textContent=data.home||'Home';el('awayLabel').textContent=data.a
 el('phase').textContent=s.completed?'MATCH FINAL · '+(s.setsWon.home>s.setsWon.away?data.home:data.away)+' wins':'Set '+(s.sets.length+1);el('setHistory').textContent=s.sets.length?'Completed sets: '+s.sets.map((x,i)=>(i+1)+': '+x.home+'–'+x.away).join(' · '):'No completed sets';el('homePoint').disabled=s.completed;el('awayPoint').disabled=s.completed;el('addStat').disabled=s.completed;el('undo').disabled=!data.events.length;el('homeTimeout').disabled=s.completed;el('awayTimeout').disabled=s.completed;el('timeouts').textContent='Timeouts recorded: '+data.home+' '+(s.timeouts?.home||0)+' · '+data.away+' '+(s.timeouts?.away||0);
 el('homePoint').textContent='+1 '+(data.home||'Home')+' rally';el('awayPoint').textContent='+1 '+(data.away||'Away')+' rally';el('statSummary').textContent=['home','away'].map(t=>{const entries=Object.entries(s.stats[t]).map(([id,stats])=>'#'+id+' '+Object.entries(stats).map(([k,n])=>k+': '+n).join(', '));return (t==='home'?data.home:data.away)+': '+(entries.join(' | ')||'No stats yet');}).join(' • ');
 const list=el('history');list.replaceChildren();data.events.slice(-12).reverse().forEach(e=>{const li=document.createElement('li');li.dataset.team=e.team;li.textContent=(e.team==='home'?data.home:data.away)+' · '+(e.type==='rally'?'Rally point':e.type==='stat'?'#'+e.playerId+' '+e.stat:e.type==='timeout'?'Timeout':e.type);list.append(li);});publicationControls();if(data.publicShare?.published)void publishScore();}
-function commit(event){try{const next=[...data.events,{...event,id:newId()}];v.replay(next,config());data.events=next;save();el('feedback').textContent='Saved to this browser.';display();}catch(e){el('feedback').textContent=e.message;}}
+function commit(event){try{const next=[...data.events,{...event,id:newId()}];v.replay(next,config());data.events=next;save();el('feedback').textContent=demo?'Test game updated.':'Saved to this browser.';display();}catch(e){el('feedback').textContent=e.message;}}
 ['home','away'].forEach(t=>{el(t+'Point').addEventListener('click',()=>commit({type:'rally',team:t}));el(t+'Timeout').addEventListener('click',()=>commit({type:'timeout',team:t}));});
 el('addStat').addEventListener('click',()=>{const id=el('player').value.trim();if(!id){el('feedback').textContent='Enter a player number or ID.';return;}commit({type:'stat',team:el('statTeam').value,playerId:id,stat:el('statType').value});});
 el('export').addEventListener('click',()=>{const payload={format:'larson-volleyball-beta-v1',exportedAt:new Date().toISOString(),home:data.home,away:data.away,bestOf:data.bestOf,firstServer:data.firstServer,events:data.events};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='larson-volleyball-match.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);el('feedback').textContent='Match event history exported.';});

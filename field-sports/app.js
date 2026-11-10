@@ -5,10 +5,11 @@
   const config=E.sports[sport], football=sport==='football';
   const isBroadcast=params.get('view')==='broadcast';
   const requested=params.get('game')||'';
+  const demo=params.get('demo')==='1';
   const activeKey='lls-field-active-'+sport;
-  const key=id=>'lls-field-game-'+sport+'-'+id;
+  const key=id=>(demo?'lls-field-demo-':'lls-field-game-')+sport+'-'+id;
   const fieldNames=['first','second','third'];
-  let game=null, state=null, editingSetup=!isBroadcast&&!requested&&params.get('setup')==='1', pendingPDF=null;
+  let game=null, state=null, editingSetup=!demo&&!isBroadcast&&!requested&&params.get('setup')==='1', pendingPDF=null;
 
   function read(id) {
     if(!/^[a-f0-9-]{36}$/.test(id||''))return null;
@@ -64,7 +65,7 @@
   function save(next, create=false) {
     try {
       localStorage.setItem(key(next.id),JSON.stringify(next));
-      if(create)localStorage.setItem(activeKey,next.id);
+      if(create&&!demo)localStorage.setItem(activeKey,next.id);
     } catch {
       say('Could not save on this device. Check available browser storage.');
       return false;
@@ -132,8 +133,9 @@
     $('game').hidden=!game||editingSetup;
     $('topActions').hidden=!game||editingSetup;
     if(!game||editingSetup)return;
-    const broadcastURL='?sport='+sport+'&view=broadcast&game='+game.id;
-    $('broadcastLink').href=isBroadcast?'?sport='+sport+'&game='+game.id:broadcastURL;
+    const demoQuery=demo?'&demo=1':'';
+    const broadcastURL='?sport='+sport+'&view=broadcast&game='+game.id+demoQuery;
+    $('broadcastLink').href=isBroadcast?(demo?'?sport='+sport+demoQuery+'&game='+game.id:'?sport='+sport+'&game='+game.id):broadcastURL;
     $('broadcastLink').textContent=isBroadcast?'Open scorer':'Broadcast Center ↗';
     $('broadcastLink').target=isBroadcast?'_self':'_blank';
     $('phase').textContent=state.final?'FINAL':football?
@@ -204,7 +206,7 @@
       if(game?.id===next.id)history.replaceState(null,'','?sport='+sport+'&game='+game.id);
     };
     $('resume').onclick=()=>{editingSetup=false;render();};
-    $('newGame').onclick=()=>{editingSetup=true;render();$('setupTitle').scrollIntoView({block:'start'});};
+    $('newGame').onclick=()=>{if(demo){location.href='?sport='+sport+'&demo=1';return;}editingSetup=true;render();$('setupTitle').scrollIntoView({block:'start'});};
     $('undo').onclick=()=>{
       if(!game?.events.length)return;
       const latest=read(game.id);
@@ -293,6 +295,11 @@
   $('controls').hidden=isBroadcast;
   $('leadersPanel').hidden=!isBroadcast;
   $('period').textContent=football?'Next period':'Next half-inning';
+  if(demo){
+    $('sportDemoBanner').hidden=false;
+    $('sportDemoReset').href='?sport='+sport+'&demo=1';
+    $('sportDemoExit').href=lobby;
+  }
   if(isBroadcast){
     document.body.classList.add('broadcast');
     $('setup').hidden=true;
@@ -303,7 +310,11 @@
     if(!game)say('This broadcast opens on the device and browser that saved the game.');
   } else {
     enableScoring();
-    install(read(requested)||read(active()));
+    if(demo){
+      const saved=read(requested);
+      if(saved)install(saved);
+      else save(window.SportDemo.field(sport,E));
+    }else install(read(requested)||read(active()));
   }
   if(football)setInterval(tick,250);
 })();

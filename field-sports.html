@@ -6,9 +6,10 @@
 <meta name="theme-color" content="#f6f7f9">
 <title>Larson Live Stats · Scoring</title>
 <link rel="icon" href="assets/brand/larson-z-mark.svg" type="image/svg+xml">
-<link rel="stylesheet" href="field-sports/ui.css"><link rel="stylesheet" href="athletic-ui.css"><link rel="stylesheet" href="site-nav.css"><link rel="stylesheet" href="sport-scorer.css">
+<link rel="stylesheet" href="field-sports/ui.css"><link rel="stylesheet" href="athletic-ui.css"><link rel="stylesheet" href="site-nav.css"><link rel="stylesheet" href="sport-scorer.css?v=test-games">
 <script defer src="field-sports/engine.js"></script>
-<script defer src="field-sports/app.js?v=pdf-suite"></script>
+<script defer src="sport-demo.js"></script>
+<script defer src="field-sports/app.js?v=test-games"></script>
 <script defer src="sport-scorer.js"></script>
 </head>
 <body class="sport-scorer"><main class="wrap">
@@ -30,7 +31,7 @@
 <div class="actions"><button class="primary">Create game</button><button type="button" id="resume" hidden>Return to current game</button></div>
 </form>
 </section>
-<div id="game" data-scorer-views hidden>
+<div id="game" data-scorer-views hidden><section class="sport-demo-banner" id="sportDemoBanner" hidden><div><strong>Test Game</strong><small>Practice stats · Separate from your saved games</small></div><div><a id="sportDemoReset" href="./">Reset test game</a> · <a id="sportDemoExit" href="./">Exit test game</a></div></section>
 <section id="scoreboard" class="board" aria-label="Scoreboard">
 <div id="awayCard" class="team-card"><span>VISITOR</span><h2 id="awayName"></h2><strong id="awayScore"></strong></div>
 <div class="game-state">
