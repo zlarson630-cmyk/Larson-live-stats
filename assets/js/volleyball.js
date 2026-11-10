@@ -4,6 +4,16 @@
 const query=new URLSearchParams(location.search);if(!data.events.length){for(const side of ['home','away']){const value=query.get(side);if(value&&value.trim())data[side]=value.trim().slice(0,60);}}let serial=0;const newId=()=>String(Date.now())+'-'+String(++serial)+'-'+Math.random().toString(36).slice(2,7);
 function config(){return {rules:{bestOf:Number(data.bestOf)},firstServer:data.firstServer};}
 function state(){return v.replay(data.events,config());}
+function downloadPdf(full){
+ const feedback=el('feedback');
+ try{
+  if(!window.jspdf?.jsPDF)throw Error('PDF exporter unavailable. Check your connection and refresh.');
+  window.SportReport.download(window.VolleyballReport.model(data,state(),full),full);
+  feedback.textContent=full?'Full stats report exported.':'One-page box score exported.';
+ }catch(error){feedback.textContent=error.message;}
+}
+el('volleyballPdf').addEventListener('click',()=>downloadPdf(false));
+el('volleyballPdfFull').addEventListener('click',()=>downloadPdf(true));
 function save(){try{localStorage.setItem(key,JSON.stringify(data));}catch(e){el('feedback').textContent='Could not save locally. Storage may be full or disabled.';}}
 let publishing = false;
 let queuedPublication = false;

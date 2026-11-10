@@ -6,16 +6,16 @@
 <meta name="theme-color" content="#f6f7f9">
 <title>Larson Live Stats · Scoring</title>
 <link rel="icon" href="assets/brand/larson-z-mark.svg" type="image/svg+xml">
-<link rel="stylesheet" href="field-sports/ui.css"><link rel="stylesheet" href="athletic-ui.css?v=light-sports"><link rel="stylesheet" href="site-nav.css"><link rel="stylesheet" href="sport-scorer.css">
+<link rel="stylesheet" href="field-sports/ui.css"><link rel="stylesheet" href="athletic-ui.css"><link rel="stylesheet" href="site-nav.css"><link rel="stylesheet" href="sport-scorer.css">
 <script defer src="field-sports/engine.js"></script>
-<script defer src="field-sports/app.js"></script>
+<script defer src="field-sports/app.js?v=pdf-suite"></script>
 <script defer src="sport-scorer.js"></script>
 </head>
 <body class="sport-scorer"><main class="wrap">
 <header class="row"><h1><a class="brandHome" href="./" aria-label="Larson Live Stats home">Live Stats</a> <span class="small" id="fieldHeaderSport">Scoring</span></h1></header><nav class="navHierarchy" aria-label="Site"><a href="./">Home</a><details><summary>Sports <span id="fieldNavSport">· Scoring</span></summary><div class="sportsMenu"><a href="basketball-home.html">Basketball</a><a href="sport-home.html?sport=soccer">Soccer</a><a href="sport-home.html?sport=volleyball">Volleyball</a><a href="sport-home.html?sport=football">Football</a><a href="sport-home.html?sport=baseball">Baseball</a><a href="sport-home.html?sport=softball">Softball</a></div></details><a href="brands.html">Team Brands</a></nav><nav class="sportNav" aria-label="Sport"><a id="fieldLobbyLink" href="./">Game Lobby</a></nav>
 <div class="title">
 <div><p class="eyebrow" id="sportLabel">Scorer beta</p><h1 id="title">Scorekeeper</h1></div>
-<div class="actions" id="topActions" hidden><a class="button primary" id="broadcastLink" target="_blank" rel="noopener">Broadcast Center ↗</a><button id="pdf">Download PDF</button></div>
+<div class="actions" id="topActions" hidden><a class="button primary" id="broadcastLink" target="_blank" rel="noopener">Broadcast Center ↗</a><button id="pdf" type="button">One-page PDF</button><button id="pdfFull" type="button">Full stats PDF</button></div>
 </div>
 <p id="notice" role="status"></p>
 <section class="panel" id="setup" hidden aria-labelledby="setupTitle">

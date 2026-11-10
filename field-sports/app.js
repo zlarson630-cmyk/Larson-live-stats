@@ -260,20 +260,24 @@
     });
   }
 
-  $('pdf').onclick=async()=>{
-    const snapshot=game;
-    $('pdf').disabled=true;
+  async function downloadPdf(preset) {
+    if(!game)return;
+    const snapshot=game,now=Date.now(),button=$(preset==='one'?'pdf':'pdfFull');
+    button.disabled=true;
     try{
       pendingPDF ||= (async()=>{
         if(!window.jspdf)await script('https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js');
-        if(!window.FieldReport)await script('field-sports/report.js');
+        if(!window.SportReport)await script('sport-report.js');
+        if(!window.FieldReport)await script('field-sports/report.js?v=pdf-suite');
       })().catch(error=>{pendingPDF=null;throw error;});
       await pendingPDF;
-      await window.FieldReport.download(snapshot);
-      say('Box score exported.');
+      await window.FieldReport.download(snapshot,preset,now);
+      say(preset==='one'?'One-page box score exported.':'Full stats report exported.');
     } catch(error){say(error.message);}
-    finally{$('pdf').disabled=false;}
-  };
+    finally{button.disabled=false;}
+  }
+  $('pdf').onclick=()=>downloadPdf('one');
+  $('pdfFull').onclick=()=>downloadPdf('full');
 
   document.title='Larson Live Stats · '+config.name+(isBroadcast?' Broadcast':'');
   $('title').textContent=isBroadcast?'Broadcast Center':config.name+' scorer';

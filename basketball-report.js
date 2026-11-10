@@ -5,7 +5,7 @@ function openBasketballPdf(){
 function downloadBasketballPdf(preset){
  if(!state||!canWrite())return;
  if(!window.jspdf?.jsPDF){
-  el('basketballPdfStatus').textContent='PDF export is unavailable. Check your connection and refresh.';
+  scorerToast('PDF export is unavailable. Check your connection and refresh.',true);
   return;
  }
  const sections=preset==='selected'?[...el('basketballPdfOptions').querySelectorAll('input:checked')].map(input=>input.value):[];
@@ -18,10 +18,10 @@ function downloadBasketballPdf(preset){
   basketballBoxScorePdf(game,clock,preset,sections).save(
    'basketball-'+(preset==='one'?'box-score':'report')+'-'+id+'-q'+game.period+'-'+clock.replace(':','-')+'.pdf');
   el('basketballPdfStatus').textContent='';
-  el('basketballPdfDialog').close();
+  if(el('basketballPdfDialog').open)el('basketballPdfDialog').close();
  }catch(error){
   console.error('Basketball PDF export failed',error);
-  el('basketballPdfStatus').textContent='Could not download the report. Try again.';
+  scorerToast('Could not download the report. Try again.',true);
  }
 }
 
@@ -144,7 +144,9 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
   if(y!==undefined)doc.addPage();
   rect(0,0,pageWidth,pageHeight,'#ffffff');
   rect(margin,26,width,3,'#b62d43');
-  text('LARSON LIVE STATS',margin,45,{size:10,bold:true});
+  rect(margin,33,19,19,'#b62d43');
+  text('Z',margin+9.5,47,{size:13,bold:true,color:'#fff',align:'center'});
+  text('LARSON LIVE STATS',margin+26,46,{size:11,bold:true});
   text(compact?'BASKETBALL BOX SCORE':'BASKETBALL GAME REPORT',margin+width,45,{size:10,bold:true,align:'right'});
   text(order.map(t=>name(t)+' '+score(t)).join('  |  '),margin,67,{size:15,bold:true,maxWidth:width});
   const stage=game.libraryStatus==='completed'?'FINAL':'IN PROGRESS / Q'+game.period+' '+gameClock;
