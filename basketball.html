@@ -80,10 +80,11 @@ body:has(#broadcast:not(.hide)) main{max-width:1440px}
  <div class="graphic-choice"><button id="basketballGraphicRun" type="button" onclick="publishBasketballGraphic('run')">Show scoring run</button><span id="basketballGraphicRunPreview" class="small"></span></div>
  <div class="graphic-choice"><button id="basketballGraphicLeader" type="button" onclick="publishBasketballGraphic('leader')">Show leading scorer</button><span id="basketballGraphicLeaderPreview" class="small"></span></div>
  <div class="graphic-choice"><button type="button" onclick="publishBasketballGraphic('comparison')">Show team comparison</button><span class="small">Replaces the scorebug while on air.</span></div>
+ <p><a href="basketball-operator.html?demo=1" target="_blank" rel="noopener">Try the Broadcast Controller with a sample game</a></p>
  <button type="button" onclick="publishBasketballGraphic(null)">Clear graphic</button><p id="basketballGraphicStatus" class="small" role="status"></p>
  <details id="basketballOperatorShare" hidden>
-  <summary>Share team comparison controls</summary>
-  <p class="small">Create a one-person invite for a separate signed-in operator to show and clear the team comparison. A new invite replaces the previous operator.</p>
+  <summary>Share Broadcast Controller</summary>
+  <p class="small">Invite a separate operator to run the team comparison, matchup intro, upcoming games and conference standings. A new invite replaces the previous operator.</p>
   <button type="button" onclick="updateBasketballOperatorInvite(true)">Create operator invite</button>
   <button type="button" onclick="updateBasketballOperatorInvite(false)">Revoke operator access</button>
   <label id="basketballOperatorLinkLabel" hidden>Operator invite link <input id="basketballOperatorLink" type="url" readonly onclick="this.select()"></label>

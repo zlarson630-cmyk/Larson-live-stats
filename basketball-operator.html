@@ -2,13 +2,19 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Basketball Broadcast Operator · Larson Live Stats</title>
 <link rel="stylesheet" href="athletic-ui.css">
+<link rel="stylesheet" href="basketball-feature.css">
 <style>
-body{margin:0;padding:24px;font-family:system-ui,sans-serif}main{max-width:630px;margin:auto}
+body{margin:0;padding:24px;font-family:system-ui,sans-serif}main{max-width:900px;margin:auto}
 section{margin-top:16px;padding:16px;border-radius:12px}
+[hidden]{display:none!important}
+#featurePreview{padding:0;overflow:hidden;border:1px solid #ccd4df}
+#featureEditor input,#featureEditor textarea{box-sizing:border-box;width:100%;max-width:none}
+#featureEditor textarea{min-height:8rem}
+.feature-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 16px}
 label{display:block;margin:8px 0}input{display:block;width:min(100%,340px)}
 </style></head><body><main>
 <a href="./">Larson Live Stats</a><h1>Basketball Broadcast Operator</h1>
-<p>Use your own account to show or clear the team comparison on this game’s OBS scorebug.</p>
+<p>Use your own account to run graphics for this game’s OBS source.</p>
 <form id="operatorLogin" hidden>
  <label>Email <input type="email" name="email" autocomplete="username" required></label>
  <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
@@ -18,11 +24,36 @@ label{display:block;margin:8px 0}input{display:block;width:min(100%,340px)}
 <section id="operatorControls" hidden>
  <h2 id="operatorMatch"></h2>
  <button id="operatorShow" type="button" class="primary">Show team comparison</button>
- <button id="operatorClear" type="button">Clear comparison</button>
+ <button id="operatorClear" type="button">Back to Scorebug</button>
+ <form id="featureEditor">
+  <h3>Full-screen graphics</h3>
+  <label>Screen <select id="featureKind"><option value="intro">Matchup Intro</option><option value="upcoming">Upcoming Games</option><option value="standings">Conference Standings</option></select></label>
+  <div class="feature-pair">
+   <label>Conference <input name="conference" maxlength="80" placeholder="NIC-10"></label>
+   <label>Conference logo URL <input name="logo" type="url" maxlength="600" placeholder="Optional HTTPS image URL"></label>
+  </div>
+  <div id="featureMatchup" class="feature-pair">
+   <label>Visitor team <input name="away" maxlength="100"></label>
+   <label>Home team <input name="home" maxlength="100"></label>
+   <label>Visitor record <input name="awayRecord" maxlength="45" placeholder="12–4 overall · 7–1 conference"></label>
+   <label>Home record <input name="homeRecord" maxlength="45" placeholder="11–5 overall · 6–2 conference"></label>
+  </div>
+  <div id="featureTable" hidden>
+   <label id="featureRowsLabel" for="featureRows"></label>
+   <textarea id="featureRows" maxlength="2900" aria-describedby="featureFormat"></textarea>
+   <p id="featureFormat"></p>
+   <button id="featureSchedule" type="button">Load public conference schedule</button>
+  </div>
+  <p>Preview</p>
+  <section id="featurePreview" class="bf-screen" aria-label="Graphic preview"></section>
+  <p id="featureNotice" role="status"></p>
+  <button id="featureTake" type="submit" class="primary">Take Live · 12 seconds</button>
+ </form>
  <p><a id="operatorOverlay" target="_blank" rel="noopener">Open OBS scorebug</a></p>
 </section>
 <p id="operatorStatus" role="status">Connecting…</p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
-<script src="live.js"></script><script src="basketball-operator.js"></script>
+<script src="live.js"></script><script src="affiliations.js"></script><script src="basketball-demo.js"></script><script src="soccer-brand.js"></script><script src="basketball-graphics.js?v=team-comparison"></script><script src="basketball-feature.js"></script><script src="basketball-operator.js?v=broadcast-screens"></script>
 </body></html>
+

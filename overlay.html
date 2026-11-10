@@ -38,7 +38,7 @@ html,body{margin:0;background:transparent;font:700 25px system-ui;color:#fff}
 @media(min-width:1000px){#overlayGroup[data-position=side] #basketballGraphic{bottom:0;left:calc(100% + 9px)}}
 @media(max-width:600px){#overlayGroup{left:8px;bottom:25px}#overlayGroup[data-position=below]{bottom:109px}}
 @media(prefers-reduced-motion:reduce){#overlayGroup,#basketballGraphic{transition:none}}
-</style></head><body class="overlay">
+</style><link rel="stylesheet" href="basketball-feature.css"></head><body class="overlay">
 <div id="overlayGroup">
  <div id="bug"><img class="brandMark" src="assets/brand/larson-z-mark.svg" alt="Larson Live Stats"><span class="logoSlot" id="awayLogoSlot">V</span><span id="away">VISITOR</span><span id="as">0</span><span id="clock">Q1 8:00</span><span id="hs">0</span><span class="logoSlot" id="homeLogoSlot">H</span><span id="home">HOME</span></div>
  <div id="basketballGraphic"><strong id="graphicHeadline"></strong><small id="graphicDetail"></small></div>
@@ -48,13 +48,15 @@ html,body{margin:0;background:transparent;font:700 25px system-ui;color:#fff}
    <tbody id="comparisonRows"></tbody></table>
  </section>
 </div>
+<section id="broadcastFeature" class="bf-screen" aria-label="Broadcast screen"></section>
 <div id="status" style="position:absolute;bottom:5px;left:35px;font:12px system-ui;color:#fbbf24" role="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
 <script src="live.js"></script><script src="soccer-brand.js"></script><script src="basketball-demo.js?v=showcase-1"></script><script src="basketball-graphics.js?v=team-comparison"></script>
+<script src="basketball-feature.js"></script>
 <script>
 const params=new URLSearchParams(location.search),id=(params.get('game')||'').trim().toUpperCase();
 const get=id=>document.getElementById(id),status=get('status'),graphicBox=get('basketballGraphic'),group=get('overlayGroup');
-let state=null,graphic=null,renderedComparison=null;
+let state=null,graphic=null,renderedComparison=null,renderedFeature='',featureView=get('broadcastFeature');
 function drawComparison(teams){
  const [away,home]=teams;
  get('comparisonAway').textContent=away?.name||'Visitor';
@@ -74,15 +76,26 @@ function drawComparison(teams){
 function drawGraphic(period,clockSeconds){
  const active=graphic?.kind&&Date.parse(graphic.expires_at)>Date.now();
  const comparison=active&&graphic.kind==='comparison'&&Array.isArray(graphic.comparison)&&graphic.comparison.length===2;
+ const feature=active&&BasketballFeature.isFeature(graphic.kind)&&graphic.comparison?.[0];
+ group.classList.toggle('show-feature',!!feature);
+ featureView.classList.toggle('is-live',!!feature);
+ featureView.setAttribute('aria-hidden',String(!feature));
+ if(feature){
+  const signature=JSON.stringify([graphic.kind,feature,state?.logos,state?.colors,state?.away,state?.home]);
+  if(renderedFeature!==signature){
+   renderedFeature=signature;
+   BasketballFeature.render(featureView,graphic.kind,feature,state);
+  }
+ }
  group.classList.toggle('show-comparison',!!comparison);
- graphicBox.classList.toggle('is-live',!!active&&!comparison);
+ graphicBox.classList.toggle('is-live',!!active&&!comparison&&!feature);
  group.dataset.position=active&&!comparison&&['above','below','side'].includes(graphic.position)?graphic.position:'above';
  if(comparison){
   if(renderedComparison!==graphic){
    renderedComparison=graphic;
    drawComparison(graphic.comparison);
   }
- }else if(active){
+ }else if(active&&!feature){
   get('graphicHeadline').textContent=graphic.headline;
   get('graphicDetail').textContent=basketballGraphicDetail(graphic,period,clockSeconds);
  }
@@ -134,3 +147,4 @@ if(demo&&/^(1|[a-f0-9-]{36})$/i.test(demo)){
 }
 setInterval(draw,250);
 </script></body></html>
+
