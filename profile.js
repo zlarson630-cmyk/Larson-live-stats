@@ -3,9 +3,35 @@ window.ProfileData=(()=>{
  function game(id,state,source,updated){return {id:String(id),state,source,sport:['soccer','volleyball'].includes(state.sport)?state.sport:'basketball',updated:updated||null}}
  function href(g){if(g.sport==='volleyball')return './?match='+encodeURIComponent(g.id);return (g.sport==='soccer'?'soccer.html':'basketball.html')+'?game='+encodeURIComponent(g.id)}
  function rosterText(value){if(typeof value==='string')return value;return (Array.isArray(value)?value:[]).map(p=>typeof p==='string'?p:[p.number,p.name,p.height,p.year].filter(v=>v!==undefined&&v!=='').join(', ')).join('\n')}
- function rosters(games,library){const out=[];for(const [key,value] of Object.entries(library)){const text=rosterText(value);if(!text.trim())continue;const parts=key.split('|');out.push({team:parts[0]==='soccer'?parts[1]:parts[0],detail:(parts[0]==='soccer'?'Soccer · '+parts.slice(2).join(' · '):'Basketball · '+parts.slice(1).join(' · ')),text,source:'account'})}
-  for(const g of games)for(const side of ['home','away']){const text=rosterText(g.state.rosters?.[side]);if(text.trim())out.push({team:g.state[side],detail:g.sport+' · '+g.id+' · Game roster',text,source:g.source})}return out}
- function teams(brands,games){const map=new Map();for(const brand of brands)map.set(brand.name.toLowerCase(),{name:brand.name,brand,sources:new Set()});for(const g of games)for(const side of ['home','away']){const name=g.state[side];if(!name)continue;const key=name.toLowerCase();if(!map.has(key))map.set(key,{name,sources:new Set()});map.get(key).sources.add(g.source)}return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name))}
+ function rosters(games,library){
+  const out=[];
+  for(const [key,value] of Object.entries(library)){
+   const text=rosterText(value);
+   if(!text.trim())continue;
+   const parts=key.split('|'),soccer=parts[0]==='soccer';
+   out.push({team:parts[soccer?1:0],kind:'Season roster',detail:[soccer?'Soccer':'Basketball',...parts.slice(soccer?2:1)].join(' · '),text});
+  }
+  for(const g of games)for(const side of ['home','away']){
+   const text=rosterText(g.state.rosters?.[side]);
+   if(text.trim())out.push({team:g.state[side],kind:'Game roster',detail:g.sport[0].toUpperCase()+g.sport.slice(1)+' · '+g.id,text});
+  }
+  return out;
+ }
+ function teams(brands,games,rosters){
+  const map=new Map();
+  const getTeam=name=>{
+   const key=name.trim().toLowerCase();
+   if(!map.has(key))map.set(key,{name:name.trim(),rosters:[],gameCount:0});
+   return map.get(key);
+  };
+  for(const brand of brands)getTeam(brand.name).brand=brand;
+  for(const g of games){
+   const gameTeams=new Set([g.state.home,g.state.away].filter(name=>typeof name==='string'&&name.trim()).map(getTeam));
+   for(const team of gameTeams)team.gameCount++;
+  }
+  for(const roster of rosters)if(typeof roster.team==='string'&&roster.team.trim())getTeam(roster.team).rosters.push(roster);
+  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name));
+ }
  function score(g){const s=g.state;if(s.scores)return `${s.scores.away??0} – ${s.scores.home??0}`;const goals=t=>(s.events||[]).filter(e=>e.team===t&&['Goal','Own goal'].includes(e.kind)).length;return `${goals('away')} – ${goals('home')}`}
  async function cloud(client,userId){const rows=[];for(let page=0;;page++){const {data,error}=await client.from('live_games').select('id,state,updated_at').eq('owner_id',userId).order('updated_at',{ascending:false}).order('id').range(page*100,page*100+99);if(error)throw error;rows.push(...(data||[]).filter(r=>r.state).map(r=>game(r.id,r.state,'account',r.updated_at)));if(!data||data.length<100)break}return rows}
  function status(game){return game.state.libraryStatus==='trash'?(game.sport==='volleyball'?'unpublished':'trash'):game.state.finished||game.state.libraryStatus==='completed'?'completed':'active'}
@@ -63,11 +89,26 @@ window.ProfileData=(()=>{
  }
  function render(){if(!dashboard)return;const all=cloudGames,q=$('profileSearch').value.trim().toLowerCase(),matches=(...parts)=>parts.join(' ').toLowerCase().includes(q);let brands=[];try{brands=window.TeamBrands?.list()||[]}catch(e){$('profileBrandStatus').textContent=e.message}
  const current=window.TeamBrands?.state?.();if(current?.owner&&current.owner!==user?.id)brands=[];if(current)$('profileBrandStatus').textContent=current.message;else $('profileBrandStatus').textContent='Sign in to view your cloud brands.';
- const teams=ProfileData.teams(brands,all),rosters=ProfileData.rosters(all,user&&window.CloudLibrary?.state().owner===user.id?seasonRosters:{});for(const [name,count] of [['teams',teams.length],['brands',brands.length],['rosters',rosters.length],['games',all.length]])$(name+'Count').textContent=count;
- for(const name of ['Teams','Brands','Rosters','Games'])$('profile'+name).textContent='';
- for(const t of teams.filter(t=>matches(t.name,t.brand?.nickname||''))){const e=card($('profileTeams'),t.name);if(t.brand){badge(e,'account');e.append(node('p',[t.brand.nickname,t.brand.shortName].filter(Boolean).join(' · ')));link(e,'Manage brand','brands.html?team='+encodeURIComponent(t.brand.id))}else for(const source of t.sources)badge(e,source);const count=all.filter(g=>[g.state.home,g.state.away].some(n=>n?.toLowerCase()===t.name.toLowerCase())).length;e.append(node('p',count+' saved game'+(count===1?'':'s')))}
+ const rosters=ProfileData.rosters(all,user&&window.CloudLibrary?.state().owner===user.id?seasonRosters:{});
+ const teams=ProfileData.teams(brands,all,rosters);
+ for(const [name,count] of [['teams',teams.length],['brands',brands.length],['games',all.length]])$(name+'Count').textContent=count;
+ for(const name of ['Teams','Brands','Games'])$('profile'+name).textContent='';
+ for(const team of teams){
+  const teamMatches=matches(team.name,team.brand?.nickname||'');
+  const visibleRosters=teamMatches?team.rosters:team.rosters.filter(r=>matches(r.kind,r.detail,r.text));
+  if(!teamMatches&&!visibleRosters.length)continue;
+  const e=card($('profileTeams'),team.name);
+  e.append(node('p',team.gameCount+' saved game'+(team.gameCount===1?'':'s')));
+  if(!team.rosters.length)empty(e,'No saved player roster.');
+  for(const r of visibleRosters){
+   const details=node('details');
+   const count=r.text.split('\n').filter(line=>line.trim()).length;
+   details.append(node('summary',[r.kind,r.detail,count+' players'].join(' · ')),node('pre',r.text));
+   e.append(details);
+  }
+  if(team.brand)link(e,'View team brand','brands.html?team='+encodeURIComponent(team.brand.id));
+ }
  for(const b of brands.filter(b=>matches(b.name,b.nickname,b.shortName))){const e=card($('profileBrands'),b.name);badge(e,'account');const safeLogo=window.TeamBrands?.logo(b.logo);if(safeLogo){const img=node('img');img.className='profileLogo';img.src=safeLogo;img.alt=b.name+' logo';e.append(img)}e.append(node('p',[b.nickname,b.shortName].filter(Boolean).join(' · ')));for(const [name,kit] of Object.entries(b.kits||{})){if(!kit)continue;const row=node('div',undefined,'profileSwatches');for(const color of Object.values(kit)){if(!/^#[0-9a-f]{6}$/i.test(color))continue;const swatch=node('span');swatch.style.background=color;swatch.title=name+' '+color;row.append(swatch)}e.append(node('p',name),row)}link(e,'Edit brand','brands.html?team='+encodeURIComponent(b.id))}
- for(const r of rosters.filter(r=>matches(r.team,r.detail,r.text))){const e=card($('profileRosters'),r.team);badge(e,r.source);e.append(node('p',r.detail));const d=node('details');d.append(node('summary',r.text.split('\n').filter(x=>x.trim()).length+' players · View roster'),node('pre',r.text));e.append(d)}
  const sport=$('profileSport').value,status=$('profileGameStatus').value||'saved';
  const descending=$('profileGameSort').value!=='oldest';
  const games=all.filter(g=>{
@@ -93,7 +134,7 @@ window.ProfileData=(()=>{
   }
   e.append(actions);
  }
- for(const name of ['Teams','Brands','Rosters','Games']){const host=$('profile'+name);if(!host.children.length)empty(host,q?'No matching '+name.toLowerCase()+'.':name==='Games'?(!user?'Sign in to see your saved games.':all.length?'No games match these filters.':'No saved games here yet. Create a game in Basketball or Soccer.'):name==='Rosters'?'No rosters here yet. Save a season roster in Basketball or add players to a game.':'No '+name.toLowerCase()+' here yet. Add a team in Team Brands.')}
+ for(const name of ['Teams','Brands','Games']){const host=$('profile'+name);if(!host.children.length)empty(host,q?'No matching '+name.toLowerCase()+'.':name==='Games'?(!user?'Sign in to see your saved games.':all.length?'No games match these filters.':'No saved games here yet. Create a game in Basketball or Soccer.'):name==='Teams'?'No teams here yet. Save a season roster or score a game.':'No team brands here yet.')}
  }
  async function changeGameTrash(game,trash,button){
   const owner=user?.id,message=$('profileGameActionStatus');

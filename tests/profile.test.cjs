@@ -67,3 +67,23 @@ test('trash and restore preserve final status, stop a running clock, and retry a
  await action(false);
  assert.equal(state.libraryStatus,'completed');
 });
+
+test('season and game rosters share their team card and player search finds it',async()=>{
+ const state={home:'Jefferson',away:'Guilford',rosters:{home:[{number:'11',name:'Jordan Robinson'}]}};
+ const h=harness({user:{id:'A'},rows:[{id:'ABC123',state}]});
+ await h.flush();
+ const {rosters,teams}=h.ctx.ProfileData;
+ const games=[{id:'ABC123',sport:'basketball',state}];
+ const grouped=teams([{name:'Jefferson'}],games,rosters(games,{
+  'jefferson|boys|2026–27':'11, Jordan Robinson',
+  'soccer|auburn|girls|2026–27':'9, Casey Young',
+ }));
+ assert.deepEqual(Array.from(grouped,t=>t.name),['auburn','Guilford','Jefferson']);
+ assert.deepEqual(Array.from(grouped[2].rosters,r=>r.kind),['Season roster','Game roster']);
+ h.node('profileSearch').value='robinson';
+ h.node('profileSearch').input();
+ const [card]=h.node('profileTeams').children;
+ assert.equal(h.node('profileTeams').children.length,1);
+ assert.equal(card.children[0].textContent,'Jefferson');
+ assert.match(card.children[2].children[0].textContent,/Game roster.*ABC123/);
+});
