@@ -3,26 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#101827">
+<meta name="theme-color" content="#f6f7f9">
 <title>Larson Live Stats · Scoring</title>
 <link rel="icon" href="assets/brand/larson-z-mark.svg" type="image/svg+xml">
-<link rel="stylesheet" href="field-sports/ui.css">
+<link rel="stylesheet" href="field-sports/ui.css"><link rel="stylesheet" href="athletic-ui.css?v=light-sports"><link rel="stylesheet" href="site-nav.css"><link rel="stylesheet" href="sport-scorer.css">
 <script defer src="field-sports/engine.js"></script>
 <script defer src="field-sports/app.js"></script>
+<script defer src="sport-scorer.js"></script>
 </head>
-<body>
-<header class="mast"><div class="wrap mast-inner">
-<a class="brand" href="./"><img src="assets/brand/larson-z-mark.svg" alt=""> Larson <span>Live Stats</span></a>
-<nav aria-label="Sports"><a href="basketball-home.html">Basketball</a><a href="?sport=football">Football</a><a href="?sport=baseball">Baseball</a><a href="?sport=softball">Softball</a></nav>
-</div></header>
-<main class="wrap">
+<body class="sport-scorer"><main class="wrap">
+<header class="row"><h1><a class="brandHome" href="./" aria-label="Larson Live Stats home">Live Stats</a> <span class="small" id="fieldHeaderSport">Scoring</span></h1></header><nav class="navHierarchy" aria-label="Site"><a href="./">Home</a><details><summary>Sports <span id="fieldNavSport">· Scoring</span></summary><div class="sportsMenu"><a href="basketball-home.html">Basketball</a><a href="sport-home.html?sport=soccer">Soccer</a><a href="sport-home.html?sport=volleyball">Volleyball</a><a href="sport-home.html?sport=football">Football</a><a href="sport-home.html?sport=baseball">Baseball</a><a href="sport-home.html?sport=softball">Softball</a></div></details><a href="brands.html">Team Brands</a></nav><nav class="sportNav" aria-label="Sport"><a id="fieldLobbyLink" href="./">Game Lobby</a></nav>
 <div class="title">
 <div><p class="eyebrow" id="sportLabel">Scorer beta</p><h1 id="title">Scorekeeper</h1></div>
-<div class="actions" id="topActions" hidden><a class="button primary" id="broadcastLink" target="_blank" rel="noopener">Broadcast Center ↗</a><button id="pdf">Export PDF box score</button></div>
+<div class="actions" id="topActions" hidden><a class="button primary" id="broadcastLink" target="_blank" rel="noopener">Broadcast Center ↗</a><button id="pdf">Download PDF</button></div>
 </div>
 <p id="notice" role="status"></p>
 <section class="panel" id="setup" hidden aria-labelledby="setupTitle">
-<h2 id="setupTitle">Game setup</h2>
+<h2 id="setupTitle">Game Lobby</h2>
 <p class="muted">Set team names and jersey colors. Games are saved in this browser. Open the Broadcast Center in another tab on this device.</p>
 <form id="setupForm">
 <div class="teams-form">
@@ -33,7 +30,7 @@
 <div class="actions"><button class="primary">Create game</button><button type="button" id="resume" hidden>Return to current game</button></div>
 </form>
 </section>
-<div id="game" hidden>
+<div id="game" data-scorer-views hidden>
 <section id="scoreboard" class="board" aria-label="Scoreboard">
 <div id="awayCard" class="team-card"><span>VISITOR</span><h2 id="awayName"></h2><strong id="awayScore"></strong></div>
 <div class="game-state">
@@ -42,9 +39,7 @@
 </div>
 <div id="homeCard" class="team-card"><span>HOME</span><h2 id="homeName"></h2><strong id="homeScore"></strong></div>
 </section>
-<div class="layout">
-<div>
-<section class="panel" id="controls" aria-labelledby="entryTitle">
+<nav class="sport-mode-tabs" data-scorer-tabs aria-label="Game views"><button type="button" data-scorer-tab="score" aria-pressed="true" aria-controls="sport-score">Scoring</button><button type="button" data-scorer-tab="flow" aria-pressed="false" aria-controls="sport-flow">Game Flow</button><button type="button" data-scorer-tab="stats" aria-pressed="false" aria-controls="sport-stats">Stats</button></nav><div id="sport-score" data-scorer-panel="score"><section class="panel" id="controls" aria-labelledby="entryTitle">
 <div class="panel-head"><h2 id="entryTitle">Score a play</h2><button id="undo" type="button">Undo</button></div>
 <form id="footballEntry">
 <div class="input-row"><label>Team <select id="footballTeam"><option value="away">Visitor</option><option value="home">Home</option></select></label><label>Player / jersey <input id="footballPlayer" maxlength="45" placeholder="Optional"></label></div>
@@ -74,16 +69,14 @@
 <div class="actions"><button id="period">Next period</button><button id="finish">Mark final</button><button id="newGame">New game</button></div>
 </details>
 </section>
-<section class="panel"><h2 id="lineTitle">Line score</h2><div class="table-wrap" id="lineScore"></div></section>
+</div><div id="sport-flow" data-scorer-panel="flow"><section class="panel"><h2>Game Flow</h2><ol id="playLog" class="feed"></ol></section>
+</div><div id="sport-stats" data-scorer-panel="stats"><div class="layout"><div><section class="panel"><h2 id="lineTitle">Line score</h2><div class="table-wrap" id="lineScore"></div></section>
 <section class="panel"><h2>Player box score</h2><div class="player-grid" id="playerStats"></div><div class="player-grid" id="pitchingStats"></div></section>
 </div>
 <aside>
 <section class="panel" id="leadersPanel" hidden><h2>Game leaders</h2><div class="leader-grid" id="leaders"></div></section>
 <section class="panel comparison"><h2>Team comparison</h2><div class="table-wrap" id="comparison"></div></section>
-<section class="panel"><h2>Game flow</h2><ol id="playLog" class="feed"></ol></section>
-</aside>
-</div>
-</div>
+</aside></div></div></div>
 </main>
 <footer class="wrap">Larson Live Stats · Local scoring beta</footer>
 </body>

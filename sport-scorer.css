@@ -1,0 +1,21 @@
+/* Shared scorer shell. Sport-specific layouts and controls stay in their own stylesheets. */
+.sport-scorer main{max-width:1120px;margin:auto;padding:16px}
+.sport-scorer header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.sport-scorer header .brandHome{text-decoration:none}
+.sport-scorer header .small{font-weight:600}
+.sport-scorer .sport-mode-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.sport-scorer .sport-mode-tabs button{min-height:44px;padding:8px 15px}
+.sport-scorer .sport-mode-tabs button[aria-pressed=true]{color:#fff;background:#27394b;border-color:#27394b}
+.sport-scorer .sport-mode-tabs button[aria-pressed=true]:hover{background:#182b3e}
+.sport-scorer .sport-tab-inactive{display:none}
+.sport-scorer .sport-game-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px}
+.sport-scorer .sport-game-actions button,.sport-scorer .sport-game-actions a{margin:0}
+.sport-scorer .sport-game-actions .muted{flex-basis:100%;margin:0}
+.sport-scorer .sport-summary{margin:0 0 12px;color:#526174;font-size:.9rem}
+.sport-scorer :is(#setup,#saved-matches,#scoreboard){scroll-margin-top:12px}
+.sport-scorer :is(button,input,select,textarea){min-height:44px}
+.sport-scorer input[type=checkbox]{min-height:0}
+@media(max-width:600px){
+ .sport-scorer main{padding:10px}
+ .sport-scorer .sport-mode-tabs button{flex:1;padding-inline:8px}
+}

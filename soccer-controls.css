@@ -16,3 +16,19 @@
 .clockSettings{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:12px 0}.clockSettings label{display:flex;flex-direction:column;gap:6px;flex:1;min-width:130px}.clockSettings input,.clockSettings select{width:100%;min-height:44px}.clockCaption{text-align:center;margin:0 0 8px}#clockSettings summary{cursor:pointer;padding:8px 0}
 
 .viewButton{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:11px 15px;margin:6px 5px 6px 0;border:1px solid #b9142c;border-radius:10px;background:#d71936;color:#fff;text-decoration:none;font-weight:700}.viewButton:hover{background:#b9142c}.viewButton.secondary{background:#e9edf2;border-color:#d3dce5;color:#252b34}#saveBox{margin:16px 0;padding:12px;border-left:4px solid #d71936;background:#f0f2f4;border-radius:6px}#lineupSettings{margin-bottom:16px}#lineupSettings summary{font-weight:700;cursor:pointer;padding:8px 0}#lineupSettings input{width:100%}
+
+/* Match the scorer's visitor / game state / home layout. */
+.soccer-scoreboard{grid-template-columns:minmax(0,1fr) minmax(84px,.72fr) minmax(0,1fr);align-items:center}
+.soccer-scoreboard .team{min-width:0}
+.soccer-scoreboard .team span{font-weight:750}
+.soccer-score-clock{order:2;text-align:center;min-width:0}
+.soccer-score-clock .clock{font-size:clamp(27px,6vw,45px)}
+#feed article{margin:8px 0;border:1px solid #dbe2ea;border-inline-start:5px solid var(--flow-accent,#718096);border-radius:8px;padding:9px;background:#f7f9fc}
+#feed button{font-size:.85em}
+#saved-matches input{max-width:100%;width:100%}
+@media(max-width:560px){
+ .soccer-scoreboard{gap:5px}
+ .soccer-scoreboard .team{padding:8px 4px}
+ .soccer-score-clock button{padding-inline:5px}
+ .soccer-score-clock .clockCaption{font-size:11px}
+}

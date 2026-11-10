@@ -82,3 +82,10 @@ header #sync{font-size:12px;max-width:100px;text-align:right;overflow-wrap:anywh
 #lobby .seasonGrid button{width:100%;margin:8px 0}
 #lobby .pdfUpload input{width:100%;max-width:100%}
 }
+
+/* Scorer dialogs and supporting panels use the same light surface as the app. */
+body[data-sport=basketball] :is(.basketball-dialog,.subPanel){background:#fff;color:#252b34;border-color:#cbd5e1}
+body[data-sport=basketball] .basketball-dialog fieldset{border-color:#cbd5e1}
+body[data-sport=basketball] #basketballDemoBanner{background:#fff9ea;color:#252b34}
+body[data-sport=basketball] #basketballDemoBanner a{color:#8d1731}
+body[data-sport=soccer] :is(.entrySheet,.entrySheet .entryActions){background:#fff;color:#252b34}

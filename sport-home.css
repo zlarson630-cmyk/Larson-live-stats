@@ -1,0 +1,36 @@
+@font-face{font-family:Barlow;src:url('fonts/Barlow-Regular.ttf');font-weight:400;font-display:swap}
+@font-face{font-family:Barlow;src:url('fonts/Barlow-Bold.ttf');font-weight:600 900;font-display:swap}
+@font-face{font-family:'Barlow Condensed';src:url('fonts/BarlowCondensed-Bold.ttf');font-weight:700 900;font-display:swap}
+:root{font-family:Barlow,system-ui,sans-serif;color:#252b34;background:#f6f7f9;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;min-height:100dvh}
+main{max-width:620px;margin:auto;padding:24px 18px 70px}
+a{color:#ad1830;text-decoration:none}
+.brand{display:flex;align-items:center;gap:12px;color:#252b34;font-weight:800}
+.brand img{width:38px;height:38px}
+.back{display:inline-block;margin:28px 0 12px;color:#48596e}
+h1{font:italic 800 clamp(34px,8vw,46px) 'Barlow Condensed',Barlow,sans-serif;text-transform:uppercase;margin:8px 0 4px}
+p{color:#526174;line-height:1.45}
+.choices{display:grid;gap:12px;margin-top:25px}
+.choice,.gameItem,.panel{border:1px solid #d3dce5;border-radius:14px;background:#fff;box-shadow:0 2px 9px #1c2b3d0b;color:#252b34}
+.choice{display:flex;align-items:center;gap:16px;width:100%;text-align:left;padding:clamp(14px,4vw,21px);font:inherit;cursor:pointer}
+.choice:hover,.gameItem:hover{border-color:#ad1830;background:#fff8f9}
+.symbol{font-size:27px;width:35px;flex:none;text-align:center}
+.choice strong{display:block;font-size:20px}
+.choice small,.gameItem small{display:block;color:#526174;margin-top:4px;font-size:14px}
+.arrow{margin-left:auto;color:#ad1830;font-size:22px}
+.panel{margin-top:24px;padding:22px}
+.hidden,[hidden]{display:none!important}
+label{display:block;margin:16px 0 6px;font-weight:700}
+input{width:100%;padding:14px;border:1px solid #bfcbd7;border-radius:10px;background:white;color:#252b34;font:inherit}
+.primary{background:#b51930;color:white;border:0;border-radius:11px;padding:15px 18px;font:800 16px Barlow,sans-serif;width:100%;margin-top:22px;cursor:pointer}
+.secondary{background:none;border:0;color:#48596e;padding:10px 0;font:inherit;cursor:pointer}
+.step{color:#ad1830;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.error{color:#a21831}
+.gameList{display:grid;gap:10px;margin:20px 0}
+.gameItem{display:block;padding:17px}
+.gameItem strong{display:block;font-size:18px}
+.status{color:#526174}
+.manual{margin-top:25px;border-top:1px solid #d3dce5;padding-top:12px}
+.manual summary{cursor:pointer;color:#48596e;padding:12px 0}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #ad1830;outline-offset:3px}

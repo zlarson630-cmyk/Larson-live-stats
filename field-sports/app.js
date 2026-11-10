@@ -8,7 +8,7 @@
   const activeKey='lls-field-active-'+sport;
   const key=id=>'lls-field-game-'+sport+'-'+id;
   const fieldNames=['first','second','third'];
-  let game=null, state=null, editingSetup=false, pendingPDF=null;
+  let game=null, state=null, editingSetup=!isBroadcast&&!requested&&params.get('setup')==='1', pendingPDF=null;
 
   function read(id) {
     if(!/^[a-f0-9-]{36}$/.test(id||''))return null;
@@ -278,7 +278,11 @@
   document.title='Larson Live Stats · '+config.name+(isBroadcast?' Broadcast':'');
   $('title').textContent=isBroadcast?'Broadcast Center':config.name+' scorer';
   $('sportLabel').textContent=isBroadcast?config.name+' · Broadcast view':'Larson Live Stats · Local beta';
-  document.querySelector('nav a[href="?sport='+sport+'"]').setAttribute('aria-current','page');
+  const lobby='sport-home.html?sport='+sport;
+  $('fieldHeaderSport').textContent=config.name+' · Beta';
+  $('fieldNavSport').textContent='· '+config.name;
+  $('fieldLobbyLink').href=lobby;
+  document.querySelector('.sportsMenu a[href="'+lobby+'"]').setAttribute('aria-current','page');
   $('minutesField').hidden=!football;
   $('footballEntry').hidden=$('footballTools').hidden=!football;
   $('diamondEntry').hidden=$('diamond').hidden=$('pitchingStats').hidden=football;
