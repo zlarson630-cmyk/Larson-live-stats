@@ -7,6 +7,8 @@ html,body{margin:0;background:transparent;font:700 25px system-ui;color:#fff}
 .overlay #bug>.logoSlot{grid-template:minmax(0,1fr)/minmax(0,1fr)}
 </style><link rel="stylesheet" href="soccer-broadcast.css?v=official-overlay-mark">
 <style>
+#bug #away,#bug #home{font-family:'Barlow Condensed',Barlow,system-ui,sans-serif;text-transform:uppercase}
+#basketballGraphic small{font-variant-numeric:tabular-nums}
 #overlayGroup{position:absolute;bottom:35px;left:35px;transition:bottom .24s ease}
 #overlayGroup[data-position=below]{bottom:121px}
 #basketballGraphic{position:absolute;bottom:calc(100% + 8px);left:0;box-sizing:border-box;
@@ -28,33 +30,34 @@ html,body{margin:0;background:transparent;font:700 25px system-ui;color:#fff}
 </div>
 <div id="status" style="position:absolute;bottom:5px;left:35px;font:12px system-ui;color:#fbbf24" role="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
-<script src="live.js"></script><script src="soccer-brand.js"></script><script src="basketball-demo.js?v=showcase-1"></script>
+<script src="live.js"></script><script src="soccer-brand.js"></script><script src="basketball-demo.js?v=showcase-1"></script><script src="basketball-graphics.js?v=run-clock"></script>
 <script>
 const params=new URLSearchParams(location.search),id=(params.get('game')||'').trim().toUpperCase();
 const get=id=>document.getElementById(id),status=get('status'),graphicBox=get('basketballGraphic'),group=get('overlayGroup');
 let state=null,graphic=null;
-function drawGraphic(){
+function drawGraphic(period,clockSeconds){
  const active=graphic?.kind&&Date.parse(graphic.expires_at)>Date.now();
  graphicBox.classList.toggle('is-live',!!active);
  group.dataset.position=active&&['above','below','side'].includes(graphic.position)?graphic.position:'above';
  if(active){
   get('graphicHeadline').textContent=graphic.headline;
-  get('graphicDetail').textContent=graphic.detail;
+  get('graphicDetail').textContent=basketballGraphicDetail(graphic,period,clockSeconds);
  }
 }
 function draw(){
+ let clockSeconds;
  if(state){
   const s=state;
   for(const t of ['home','away']){
    const name=SoccerBrand.graphicName(s,t);
    SoccerBrand.logo(t+'LogoSlot',name,s.logos?.[t]||s.teamBrands?.[t]?.logo);
-   get(t).textContent=name;
+   get(t).textContent=s.teamBrands?.[t]?.shortName?.trim()||name;
   }
   get('as').textContent=s.scores.away;get('hs').textContent=s.scores.home;
-  const n=s.running?Math.max(0,s.seconds-Math.floor((Date.now()-s.startedAt)/1000)):s.seconds;
-  get('clock').textContent='Q'+s.period+' '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0');
+  clockSeconds=s.running?Math.max(0,s.seconds-Math.floor((Date.now()-s.startedAt)/1000)):s.seconds;
+  get('clock').textContent='Q'+s.period+' '+Math.floor(clockSeconds/60)+':'+String(clockSeconds%60).padStart(2,'0');
  }
- drawGraphic();
+ drawGraphic(state?.period,clockSeconds);
 }
 const demo=params.get('demo');
 if(demo&&/^(1|[a-f0-9-]{36})$/i.test(demo)){
@@ -75,10 +78,10 @@ if(demo&&/^(1|[a-f0-9-]{36})$/i.test(demo)){
   reading=true;
   try{
    if(!Live.viewer)return;
-   const {data,error}=await Live.viewer.from('basketball_broadcast_graphics').select('kind,position,headline,detail,expires_at').eq('game_id',id).maybeSingle();
+   const {data,error}=await Live.viewer.from('basketball_broadcast_graphics').select('kind,position,headline,detail,expires_at,run_clock').eq('game_id',id).maybeSingle();
    if(error)throw error;
    graphic=data;
-   drawGraphic();
+   draw();
   }catch{}finally{reading=false;}
  }
  // A short poll also handles expired graphics and recovers missed realtime messages.

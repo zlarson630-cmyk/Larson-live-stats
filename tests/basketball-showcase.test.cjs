@@ -30,7 +30,10 @@ test('the demo reconciles its score, fouls, substitutions, shots and OBS callout
  }
  const {run:streak,leader}=context.basketballGraphicChoices(game);
  assert.equal(streak.headline,'7–0 scoring run');
- assert.match(streak.detail,/Last 2:01/);
+ assert.equal(context.basketballGraphicDetail(streak,3,252),'Jefferson J-Hawks · Last 2:01');
+ assert.equal(context.basketballGraphicDetail(streak,3,245),'Jefferson J-Hawks · Last 2:08');
+ assert.equal(context.basketballGraphicDetail(streak,4,480),'Jefferson J-Hawks');
+ assert.equal(context.basketballGraphicDetail({detail:'Previous graphic · Last 2:01'},3,245),'Previous graphic · Last 2:01');
  assert.match(leader.headline,/Jordan Robinson.*13 PTS/);
  assert.equal(context.basketballGraphicChoices({...game,events:[]}).run,undefined);
 });

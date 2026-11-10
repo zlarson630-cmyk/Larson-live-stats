@@ -9,9 +9,8 @@ function basketballGraphicChoices(game){
  }
  const at=boundary?.period===game.period?boundary:(!boundary?scores.at(-1):null);
  const seconds=at?.period===game.period?at.time?.match(/^(\d+):([0-5]\d)$/):null;
- const elapsed=seconds?Number(seconds[1])*60+Number(seconds[2])-remaining(game):null;
- const duration=elapsed>0?Math.floor(elapsed/60)+':'+String(elapsed%60).padStart(2,'0'):null;
- const run=current&&{headline:points+'–0 scoring run',detail:SoccerBrand.name(game,current.team)+(duration?' · Last '+duration:'')};
+ const run=current&&{headline:points+'–0 scoring run',detail:SoccerBrand.name(game,current.team),
+  run_clock:seconds?{period:game.period,seconds:Number(seconds[1])*60+Number(seconds[2])}:null};
  const {totals}=basketballBoxScore(game);
  const leaders=['home','away'].flatMap(t=>Object.entries(totals[t]).filter(([n,p])=>n!=='Unassigned'&&p.pts>0)
   .map(([n,p])=>({t,n,points:p.pts,name:(game.rosters?.[t]||[]).find(player=>String(player.number)===n)?.name})))
@@ -21,6 +20,12 @@ function basketballGraphicChoices(game){
   detail:(leaders[1]?.points===top.points?'Co-leading scorer':'Leading scorer')+' · '+SoccerBrand.name(game,top.t)};
  return {run,leader};
 }
+function basketballGraphicDetail(graphic,period,clockSeconds){
+ const anchor=graphic.run_clock;
+ if(!anchor||anchor.period!==period||!Number.isSafeInteger(anchor.seconds)||!Number.isFinite(clockSeconds))return graphic.detail;
+ const elapsed=Math.max(0,anchor.seconds-clockSeconds);
+ return graphic.detail+' · Last '+Math.floor(elapsed/60)+':'+String(elapsed%60).padStart(2,'0');
+}
 function renderBasketballGraphics(){
  const panel=el('basketballGraphicControls');
  panel.hidden=!canWrite();
@@ -28,7 +33,7 @@ function renderBasketballGraphics(){
  const choices=basketballGraphicChoices(state);
  el('basketballGraphicRun').disabled=!choices.run;
  el('basketballGraphicLeader').disabled=!choices.leader;
- el('basketballGraphicRunPreview').textContent=choices.run?[choices.run.headline,choices.run.detail].join(' · '):'No scoring run yet';
+ el('basketballGraphicRunPreview').textContent=choices.run?[choices.run.headline,basketballGraphicDetail(choices.run,state.period,remaining(state))].join(' · '):'No scoring run yet';
  el('basketballGraphicLeaderPreview').textContent=choices.leader?[choices.leader.headline,choices.leader.detail].join(' · '):'Assign a scorer to a made shot';
 }
 let basketballGraphicSending=false;
@@ -39,7 +44,7 @@ async function publishBasketballGraphic(kind){
  const status=el('basketballGraphicStatus'),gameId=id;
  const graphic={game_id:gameId,position:el('basketballGraphicPosition').value,kind:kind||null,
   headline:selected?.headline.slice(0,120)??null,detail:selected?.detail.slice(0,180)??null,
-  expires_at:new Date(Date.now()+12000).toISOString()};
+  run_clock:selected?.run_clock??null,expires_at:new Date(Date.now()+12000).toISOString()};
  basketballGraphicSending=true;
  status.textContent=kind?'Sending graphic…':'Clearing graphic…';
  try{
