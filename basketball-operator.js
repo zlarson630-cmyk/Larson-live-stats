@@ -141,8 +141,7 @@
   try{
    let data,error;
    if(practice){
-    const graphic=screen==='comparison'?basketballGraphicChoices(score).comparison:{comparison:payload?[payload]:null};
-    localStorage.setItem(basketballDemoStorage('graphic'),JSON.stringify({...graphic,kind:screen,position:'above',expires_at:new Date(Date.now()+12000).toISOString()}));
+    localStorage.setItem(basketballDemoStorage('graphic'),JSON.stringify({comparison:payload?[payload]:null,kind:screen,position:'above',expires_at:new Date(Date.now()+12000).toISOString()}));
     data=true;
    }else if(screen==='comparison'){
     ({data,error}=await Live.client.rpc('take_basketball_operator_comparison',{game_code:game,show_graphic:true}));
@@ -166,6 +165,7 @@
  get('operatorClear').onclick=()=>take(null);
  if(practice){
   basketballDemoSession=demo;
+  get('operatorShow').hidden=true;
   score=basketballDemoRead('game')||createBasketballDemo();
   controls.hidden=false;
   get('operatorMatch').textContent=score.away+' at '+score.home;
