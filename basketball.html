@@ -13,7 +13,7 @@ body:has(#broadcast:not(.hide)) main{max-width:1440px}
 #broadcast .bc-mid small{display:block;font-size:11px}
 #broadcast #bcClockButton{display:block;min-height:22px;padding:2px 5px;margin:3px auto 0;font-size:11px}
 #broadcast .bc-compact-grid{display:grid;grid-template-columns:minmax(0,2.25fr) minmax(225px,1fr);gap:8px;align-items:start}
-#broadcast .bc-context{display:grid;gap:8px;min-width:0}
+#broadcast .bc-main,#broadcast .bc-context{display:grid;gap:8px;min-width:0}
 #broadcast .bc-players{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:start}
 #broadcast .bc-compact-grid .bc-card{margin:0;padding:7px 9px;min-width:0}
 #broadcast .bc-compact-grid .bc-card h3{margin:0 0 4px;font-size:14px}
@@ -30,7 +30,6 @@ body:has(#broadcast:not(.hide)) main{max-width:1440px}
 @media(min-width:661px) and (max-width:1050px){
  #broadcast .bc-compact-grid{grid-template-columns:minmax(0,1fr)}
  #broadcast .bc-context{grid-template-columns:repeat(2,minmax(0,1fr))}
- #broadcast .bc-recent{grid-column:1/-1}
 }
 @media(max-width:660px){
  #broadcast .bc-compact-grid{display:block}
@@ -38,7 +37,7 @@ body:has(#broadcast:not(.hide)) main{max-width:1440px}
  #broadcast .bc-mobile-nav [aria-pressed=true]{outline:2px solid currentColor;outline-offset:-3px}
  #broadcast[data-broadcast-panel=overview] .bc-players,#broadcast[data-broadcast-panel=overview] .bc-periods,
  #broadcast[data-broadcast-panel=players] .bc-recent,#broadcast[data-broadcast-panel=players] .bc-context,
- #broadcast[data-broadcast-panel=periods] .bc-players,#broadcast[data-broadcast-panel=periods] .bc-compare,#broadcast[data-broadcast-panel=periods] .bc-recent{display:none}
+ #broadcast[data-broadcast-panel=periods] .bc-main,#broadcast[data-broadcast-panel=periods] .bc-compare{display:none}
  #broadcast .bc-context{margin-top:8px}
 }
 @media(max-width:550px){
@@ -638,7 +637,7 @@ function broadcastDashboard(s){
   ${events.slice(0,5).map(e=>`<div class="bc-play"><time class="bc-muted">Q${safe(e.period)} · ${safe(e.time)}</time>
    <span><b>${teamName(e.team)}</b> · ${safe(playLabel(e))}${e.scorer!=null?' · '+name(e.team,String(e.scorer)):''}</span></div>`).join('')||'<div class="bc-muted">No plays recorded</div>'}</section>`;
  el('bc-dashboard').innerHTML=`<div class="bc-score">${teamCard(order[0])}<div class="bc-mid"><small>Q${safe(s.period)}</small><span id="bc-clock">${safe(stamp(s))}</span><button id="bcClockButton" type="button" aria-keyshortcuts="Space" onclick="toggleClock()" ${canWrite()?'':'disabled'}>${s.running?'Stop':'Start'}</button></div>${teamCard(order[1])}</div>
-  <div class="bc-compact-grid"><div class="bc-players">${order.map(playerCard).join('')}</div><aside class="bc-context">${byPeriod}${comparison}${plays}</aside></div>`;
+  <div class="bc-compact-grid"><div class="bc-main"><div class="bc-players">${order.map(playerCard).join('')}</div>${plays}</div><aside class="bc-context">${byPeriod}${comparison}</aside></div>`;
  for(const t of order)window.SoccerBrand?.logo('bc-logo-'+t,SoccerBrand.name(s,t),s.logos?.[t]||s.teamBrands?.[t]?.logo);
 
 }
