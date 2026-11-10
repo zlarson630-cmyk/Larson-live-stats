@@ -5,7 +5,7 @@ const fs=require('node:fs');
 function app(){
  const nodes=new Map(), storage=new Map(),listeners=new Map();
  let activeElement=null;
- const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',parentElement:{style:{}},style:{},setAttribute(k,v){this[k]=v},classList:{add(){},remove(){},toggle(){},contains(c){return c==='hide'&&id==='subSheet'}},focus(){activeElement=this},blur(){activeElement=null},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',parentElement:{style:{}},style:{},setAttribute(k,v){this[k]=v},removeAttribute(k){delete this[k]},classList:{add(){},remove(){},toggle(){},contains(c){return c==='hide'&&id==='subSheet'}},focus(){activeElement=this},blur(){activeElement=null},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
  const ctx=vm.createContext({console,structuredClone,URLSearchParams,Date,Math,Promise,
  document:{getElementById:node,get activeElement(){return activeElement},querySelectorAll:()=>[],addEventListener(type,handler){listeners.set(type,handler)},removeEventListener(){}},
  localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},
@@ -19,7 +19,7 @@ function app(){
  const press=(key,options={})=>listeners.get('keydown')({key,target:activeElement,preventDefault(){},...options});
  return {ctx,node,press,run:s=>vm.runInContext(s,ctx)};
 }
-const initial={id:'ABC123',home:'Home',away:'Away',scores:{home:0,away:0},colors:{home:'#ffffff',away:'#c62828'},fouls:{home:0,away:0},timeouts:{home:5,away:5},period:1,seconds:480,running:false,startedAt:null,events:[],version:1};
+const initial={scoringMode:'full',id:'ABC123',home:'Home',away:'Away',scores:{home:0,away:0},colors:{home:'#ffffff',away:'#c62828'},fouls:{home:0,away:0},timeouts:{home:5,away:5},period:1,seconds:480,running:false,startedAt:null,events:[],version:1};
 function cloud(a,{conflicts=0,fail=false,game=initial}={}){
  let row=structuredClone(game), calls=0;
  a.ctx.Live.read=async()=>({state:structuredClone(row)});
@@ -46,7 +46,7 @@ function cloud(a,{conflicts=0,fail=false,game=initial}={}){
  a.run("cloudMode=true;owner=true;id='ABC123'");a.ctx.seed=game;a.run('state=structuredClone(seed)');
  return {row:()=>row,calls:()=>calls};
 }
-test('signed-out scorer cannot create or save a device-only game',async()=>{const a=app();a.node('localMode').checked=true;await a.run('createGame()');assert.match(a.node('sync').textContent,/NOT CREATED/);assert.equal(a.run('state'),null);assert.equal(await a.run('write(()=>{})'),false);});
+test('signed-out scorer cannot create or save a device-only game',async()=>{const a=app();a.node('localMode').checked=true;a.node('basketballMode').value='basic';await a.run('createGame()');assert.match(a.node('sync').textContent,/NOT CREATED/);assert.equal(a.run('state'),null);assert.equal(await a.run('write(()=>{})'),false);});
 test('cloud saves serialize and retry a conflicting update without losing points',async()=>{
  const a=app(), db=cloud(a,{conflicts:1});
  await a.run("Promise.all([write(s=>s.scores.home+=2),write(s=>s.scores.away+=3)])");
@@ -108,45 +108,52 @@ test('switching possession saves a large legacy cloud game and preserves its dat
  assert.equal(db.calls(),2);
 });
 
-test('keyboard records shots by visible side and assigns jersey numbers and assists',async()=>{
- const a=app();
- cloud(a,{game:{...initial,rosters:{home:[{number:'00',name:'Casey'}]}}});
- for(const [key,team,points,kind] of [
-  ['a','away',2,'miss'],['s','away',3,'miss'],['d','away',2,'score'],['f','away',3,'score'],
-  ['j','home',3,'score'],['k','home',2,'score'],['l','home',3,'miss'],[';','home',2,'miss']
- ]){
-  await a.press(key);
-  assert.equal(a.run('state.events[0].team'),team,key);
-  assert.equal(a.run('state.events[0].points'),points,key);
-  assert.equal(a.run('state.events[0].kind'),kind,key);
-  a.press('Escape');
- }
- assert.match(a.run("shotButton('home',3,'score')"),/aria-keyshortcuts="J"/);
- assert.match(a.run("shotButton('away',2,'miss')"),/aria-keyshortcuts="A"/);
- assert.doesNotMatch(a.run("shotButton('home',1,'score')"),/aria-keyshortcuts/);
- await a.press('j');
- a.press('0');
- assert.equal(a.node('pickerJersey').value,'0');
+test('Full keyboard records Presto-style attempts, results, jerseys and assists',async()=>{
+ const a=app(),db=cloud(a,{game:{...initial,rosters:{home:[{number:'00',name:'Casey'}]}}});
+ await a.press('v');
+ a.press('y');
+ assert.equal(db.row().events.length,0);
+ await a.press('m');
+ assert.equal(db.row().events[0].kind,'miss');
+ assert.equal(db.row().events[0].team,'away');
+ assert.equal(db.row().events[0].points,3);
+ a.press('Escape');
+
+ await a.press('h');
+ a.press('j');
+ await a.press('g');
+ assert.equal(db.row().scores.home,2);
  a.node('pickerJersey').value='00';
  await a.press('Enter');
- assert.equal(a.run('state.events[0].scorer'),'00');
- assert.equal(a.run('pickerField'),'assist');
+ assert.equal(db.row().events[0].scorer,'00');
  await a.press('n');
- assert.equal(a.run('state.events[0].assist'),'no-assist');
+ assert.equal(db.row().events[0].assist,'no-assist');
 
- await a.run('write(s=>s.screenSidesSwapped=true)');
- assert.match(a.run("shotButton('home',3,'score')"),/aria-keyshortcuts="F"/);
- await a.press('d');
- assert.equal(a.run('state.events[0].team'),'home');
+ a.press('e');
+ a.press('F10');
+ await a.press('e');
+ assert.equal(db.row().scores.home,2);
+ await a.press('e');
+ assert.equal(db.row().scores.home,3);
  a.press('Escape');
- await a.press('k');
- assert.equal(a.run('state.events[0].team'),'away');
- a.node('pickerJersey').value='11';
- await a.press('Enter');
- a.node('pickerJersey').value='23';
- await a.press('Enter');
- assert.equal(a.run('state.events[0].assist'),'23');
- assert.equal(a.run('pickerEvent'),null);
+ a.press('r');
+ await a.press('m');
+ assert.equal(db.row().events[0].kind,'rebound');
+ assert.equal(db.row().events[0].detail,'team');
+ a.press('o');
+ await a.press('3');
+ assert.equal(db.row().timeouts.home,4);
+ await a.run('undo()');
+ assert.equal(db.row().timeouts.home,5);
+});
+test('new lower modes and older games keep click scoring with shortcuts inactive',async()=>{
+ for(const scoringMode of ['basic','streamlined',undefined]){
+  const a=app(),db=cloud(a,{game:{...initial,scoringMode}});
+  for(const key of ['h','j','g',' ','f','t','F7'])await a.press(key);
+  assert.equal(db.calls(),0);
+  await a.run("score('home',2)");
+  assert.equal(db.row().scores.home,2);
+ }
 });
 test('space toggles the clock once per press and shortcuts ignore other inputs and viewers',async()=>{
  const a=app(),db=cloud(a);
