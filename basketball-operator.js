@@ -6,7 +6,7 @@
  const demo=params.get('demo'),practice=/^(1|[a-f0-9-]{36})$/i.test(demo||'');
  let invite=new URLSearchParams(location.hash.slice(1)).get('invite'),account,epoch=0,stopWatching=null;
  let refreshInFlight=null,taking=false;
- if(!game||!(/^[A-Z0-9]{6}$/).test(game)||!Live.client){
+ if(!practice&&(!game||!/^[A-Z0-9]{6}$/.test(game)||!Live.client)){
   status.textContent='This graphics operator link is unavailable.';
   return;
  }
