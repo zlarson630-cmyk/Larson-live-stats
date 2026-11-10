@@ -19,7 +19,9 @@ test('basketball saves separate season rosters and applies game-day edits only t
  a.node('homeRoster').value='25, Player Two';
  a.run("editGameRoster('home');loadSeason('home')");
  assert.equal(a.node('homeRoster').value,'25, Player Two');
+ a.node('basketballMode').value='full';
  await a.run('createGame()');
+ assert.equal(a.run('state.scoringMode'),'full');
  assert.equal(a.db.tables.live_games.length,1);
  await a.run("score('home',2)");
  const state=a.db.tables.live_games[0].state;
@@ -37,6 +39,7 @@ test('basketball snapshots five starters and updates the on-court lineup after s
  a.run("editGameRoster('home')");
  for(const value of ['1','2','3','4','5'])a.node('homeStarterChoices').onchange({target:{value,checked:true}});
  assert.match(a.node('homeStarterSummary').textContent,/5\/5/);
+ a.node('basketballMode').value='basic';
  await a.run('createGame()');
  assert.deepEqual(a.db.tables.live_games[0].state.startingLineups.home,['1','2','3','4','5']);
  assert.equal(a.db.tables.account_roster_libraries.length,0);
