@@ -7,6 +7,7 @@ function showcase(){
  const script=fs.readFileSync('basketball.html','utf8');
  const context=vm.createContext({window:{},SoccerBrand:{name:(game,t)=>game[t]},remaining:game=>game.seconds});
  const run=code=>vm.runInContext(code,context);
+ run(script.slice(script.indexOf('function basketballRegulationPeriods('),script.indexOf('function basketballElapsedAt(')));
  run(script.slice(script.indexOf('function playLabel('),script.indexOf('let pickerEvent')));
  run(script.slice(script.indexOf('function basketballOnCourt('),script.indexOf('let subTeam=')));
  run(script.slice(script.indexOf('function basketballBoxScore('),script.indexOf('function broadcastDashboard(')));
@@ -69,5 +70,9 @@ test('PDF presets honor the selected sections and keep large compact rosters on 
  labels=[];
  context.basketballBoxScorePdf(game,'4:12','full');
  for(const section of ['Score by period','Team comparison','Shot charts','Substitution log','Play-by-play'])assert.ok(labels.includes(section));
+ labels=[];
+ context.basketballBoxScorePdf({...game,clockFormat:'halves',period:2,events:[]},'4:12','full');
+ assert.ok(labels.includes('H1'));
+ assert.ok(labels.includes('H2'));
 });
 
