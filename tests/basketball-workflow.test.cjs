@@ -522,3 +522,18 @@ test('shot and linked rebound jersey chips edit their own teams without changing
  assert.equal(game.events[0].assist,'04');
  assert.equal(game.scores.home,2);
 });
+
+test('the scoring lineup separates the five on the floor and bench after confirmed substitutions',()=>{
+ const roster=Array.from({length:7},(_,i)=>({number:String(i+1),name:'Player '+(i+1)}));
+ const a=setup('full',{rosters:{home:roster,away:roster},startingLineups:{home:['1','2','3','4','5']},
+  screenSidesSwapped:true,events:[{kind:'substitution',team:'home',out:'2',in:'6'}]});
+ const game=a.db.row(),groups=a.ctx.wfLineupGroups(game,'home');
+ assert.equal(Array.from(groups.active,p=>p.number).join(','),'1,3,4,5,6');
+ assert.equal(Array.from(groups.bench,p=>p.number).join(','),'2,7');
+ assert.equal(a.ctx.wfLineupGroups(game,'away').active,null);
+ a.ctx.wfRenderLineups();
+ const html=a.node('wfLineups').innerHTML;
+ assert.ok(html.indexOf('<h3>Home')<html.indexOf('<h3>Away'));
+ assert.match(html,/<h4>On the floor<\/h4>[\s\S]+<h4>Bench<\/h4>/);
+ assert.match(html,/<h3>Away<\/h3><p>No starting five recorded<\/p><h4>Roster<\/h4>/);
+});

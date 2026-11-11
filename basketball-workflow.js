@@ -214,6 +214,7 @@ function wfRender(){
  el('scoreControls').hidden=true;
  el('score').querySelectorAll(':scope > .row').forEach(x=>x.hidden=true);
  wfRenderBox();
+ wfRenderLineups();
 }
 function wfCoverage(game){
  if(game.statCoveragePartial)return 'Tracking changed during this game. Some shooting and advanced totals cover only part of the game.';
@@ -722,6 +723,30 @@ function wfMinutes(game,team){
  if(end<previous)return null;
  for(const n of active)totals[n]=(totals[n]||0)+end-previous;
  return totals;
+}
+function wfLineupGroups(game,team){
+ const active=basketballOnCourt(game,team);
+ const roster=game.rosters?.[team]||[];
+ if(active?.size!==5)return {active:null,bench:[],roster};
+ return {
+  active:[...active].map(number=>roster.find(player=>String(player.number)===String(number))||{number}),
+  bench:roster.filter(player=>!active.has(String(player.number))),
+  roster
+ };
+}
+function wfRenderLineups(){
+ const box=el('wfLineups');
+ const order=state.screenSidesSwapped?['home','away']:['away','home'];
+ const list=(players,empty)=>players.length?'<ul>'+players.map(player=>
+  '<li><b>#'+escapeHtml(player.number)+'</b>'+(player.name?'<span>'+escapeHtml(player.name)+'</span>':'')+'</li>').join('')+'</ul>':'<p>'+empty+'</p>';
+ box.innerHTML=order.map(team=>{
+  const {active,bench,roster}=wfLineupGroups(state,team);
+  const lineupLabel=wfIsFull(wfMode(state))?'On the floor':'Last recorded five';
+  return '<div class="wf-lineup"><h3>'+escapeHtml(SoccerBrand.name(state,team))+'</h3>'+
+   (active?'<h4>'+lineupLabel+'</h4>'+list(active,'')+'<h4>Bench</h4>'+list(bench,'No bench players'):
+    '<p>No starting five recorded</p>'+(roster.length?'<h4>Roster</h4>'+list(roster,''):''))+'</div>';
+ }).join('');
+ box.hidden=order.every(team=>!(state.rosters?.[team]?.length||state.startingLineups?.[team]?.length));
 }
 function wfRenderBox(){
  const box=el('wfBox');if(!box)return;

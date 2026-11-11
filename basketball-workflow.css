@@ -62,3 +62,48 @@ body:has(#score[data-controls=phone]:not(.hide)) #basketballGameHeader .scoreboa
 #wfPanel .wf-chip-edit:hover{background:#365282}
 #wfPanel .wf-chip-number{width:4ch;min-height:36px;padding:4px 6px;font:inherit;text-align:center}
 #wfPanel .wf-chip-confirm{min-height:36px;padding:4px 8px}
+
+main:has(> #app:not(.hide)) > :is(header,.navHierarchy,.sportNav){display:none!important}
+#basketballGameHeader{padding:8px;margin:6px 0}
+.basketball-game-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#basketballGameHeader .scoreboard{grid-template-columns:minmax(0,1fr) minmax(112px,auto) minmax(0,1fr);gap:6px}
+#basketballGameHeader .teamTile{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 8px;padding:6px 10px;text-align:left;border-width:2px;border-radius:8px}
+#basketballGameHeader .teamTile .big{grid-column:2;grid-row:1/span 2;font-size:clamp(26px,4vw,38px);line-height:1;font-variant-numeric:tabular-nums}
+#basketballGameHeader .teamTile .small{grid-column:1;color:inherit;line-height:1.2}
+.basketball-clock-control{order:2;display:grid;justify-items:center;gap:2px}
+.basketball-clock-readout{display:flex;align-items:center;gap:7px;font-variant-numeric:tabular-nums}
+#basketballGameHeader #clock{font-size:clamp(24px,4vw,36px);line-height:1}
+#basketballGameHeader .basketball-clock-control button{min-height:30px;margin:0;padding:4px 8px;font-size:13px}
+#score{margin-top:6px;padding:8px}
+#score .wf-possession{margin:0 0 6px}
+#score .wf-possession button{min-height:36px;margin:0;padding:4px 8px}
+#score #wfPanel{padding:10px}
+#score #wfActionGrid{margin:6px 0 0}
+#score #wfActionGrid button{min-height:46px}
+#wfLineups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+#wfLineups[hidden]{display:none}
+.wf-lineup{border:1px solid #d5dee8;border-radius:8px;padding:8px;min-width:0}
+.wf-lineup :is(h3,h4,p){margin:0;line-height:1.25}
+.wf-lineup h3{font-size:16px}
+.wf-lineup h4{font-size:13px;margin:6px 0 3px}
+.wf-lineup p{font-size:13px;color:#536276}
+.wf-lineup ul{display:flex;flex-wrap:wrap;gap:4px;margin:0;padding:0;list-style:none}
+.wf-lineup li{display:inline-flex;align-items:baseline;gap:4px;min-width:0;border:1px solid #dce4ed;border-radius:5px;padding:3px 6px;font-size:13px;line-height:1.2}
+.wf-lineup li span{overflow-wrap:anywhere}
+.wf-lineup li b{font-variant-numeric:tabular-nums}
+.wf-score-settings .wf-layout-settings{margin:6px 0 2px}
+#basketballViewDock{display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px 10px;margin:8px 0}
+#basketballViewDock>.basketball-tabs{margin:0}
+#basketballViewDock details{margin:0}
+#basketballViewDock summary,#basketballGameFooter summary{cursor:pointer;padding:7px 4px;font-size:14px;font-weight:700}
+#basketballViewDock details .row{padding:4px 0}
+#basketballViewDock details button,#basketballGameFooter button{min-height:36px;margin:0;padding:5px 9px;font-size:13px}
+#basketballGameFooter{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;border-top:1px solid #d5dee8;margin:12px 0 0;padding:8px 0}
+#basketballGameFooter #basketballGameTextTools{margin:0}
+#basketballGameFooter nav{display:flex;flex-wrap:wrap;gap:5px 12px;padding:4px}
+@media(max-width:600px){
+ #basketballGameHeader .teamTile{padding:5px 6px;gap:1px 4px}
+ #basketballGameHeader .teamTile b{font-size:13px}
+ #basketballGameHeader .teamTile .small{font-size:10px}
+ #wfLineups{grid-template-columns:minmax(0,1fr)}
+}
