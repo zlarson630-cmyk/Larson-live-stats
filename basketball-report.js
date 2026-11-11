@@ -107,11 +107,180 @@ async function saveBasketballShotLocation(clear=false){
  }
 }
 
-function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
- const compact=preset==='one',full=preset==='full';
- const include=section=>full||(compact?['periods','teams','players'].includes(section):selected.includes(section));
+function basketballOnePageBoxScore(game,gameClock){
  const {fresh,totals,teams,periods}=basketballBoxScore(game);
- const doc=new window.jspdf.jsPDF({unit:'pt',format:'letter',orientation:compact?'landscape':'portrait',compress:true});
+ const order=game.screenSidesSwapped?['home','away']:['away','home'];
+ const events=game.events||[], name=t=>SoccerBrand.name(game,t), score=t=>game.scores?.[t]??0;
+ const book=['basic','streamlined'].includes(game.scoringMode);
+ const playerStats=game.scoringMode!=='basic'||game.phoneBookStats;
+ const advanced=['full','fullchart'].includes(game.scoringMode)||game.demo;
+ const complete=t=>Object.values(periods[t]).reduce((sum,points)=>sum+points,0)===score(t);
+ const rosters=Object.fromEntries(order.map(t=>[t,new Map((game.rosters?.[t]||[]).map(p=>[String(p.number),p.name]))]));
+ const players=Object.fromEntries(order.map(t=>[t,playerStats?[...new Set([...rosters[t].keys(),...Object.keys(totals[t])])]:[]]));
+ for(const t of order){
+  const starters=(game.startingLineups?.[t]||[]).map(String);
+  const rank=n=>starters.includes(n)?starters.indexOf(n):starters.length;
+  players[t].sort((a,b)=>rank(a)-rank(b)||a.localeCompare(b,undefined,{numeric:true}));
+ }
+ const count=order.reduce((sum,t)=>sum+Math.max(1,players[t].length),0);
+ const format=count>88?[792,Math.max(1224,240+count*11)]:count>63?'tabloid':count>46?'legal':'letter';
+ const doc=new window.jspdf.jsPDF({unit:'pt',format,orientation:'portrait',compress:true});
+ const pageWidth=doc.internal.pageSize.getWidth(),pageHeight=doc.internal.pageSize.getHeight();
+ const margin=22,width=pageWidth-2*margin,gap=10,boxWidth=Math.round(width*.72),shootWidth=width-boxWidth-gap;
+ const ink='#142033',muted='#475569',red='#ed1e26',rule='#d5dee8',pale='#f2f5f9';
+ const clean=value=>String(value??'').replace(/[\u0000-\u001f]/g,' ').replace(/[\u2010-\u2014]/g,'-');
+ const text=(value,x,y,{size=8.5,bold=false,color=ink,align='left',maxWidth}={})=>{
+  doc.setFont('helvetica',bold?'bold':'normal').setFontSize(size).setTextColor(color);
+  let label=clean(value);
+  if(maxWidth&&doc.getTextWidth(label)>maxWidth){
+   while(label&&doc.getTextWidth(label+'...')>maxWidth)label=label.slice(0,-1);
+   label+='...';
+  }
+  doc.text(label,x,y,{align});
+ };
+ const fill=(x,y,w,h,color)=>doc.setFillColor(color).rect(x,y,w,h,'F');
+ const line=(x,y,w)=>doc.setDrawColor(rule).setLineWidth(.55).line(x,y,x+w,y);
+ const pairs=[['fgm','fga'],['tm','ta'],['ftm','fta']];
+ const attempts=(stat,made,tried)=>book?String(stat[made]??0):(stat[made]??0)+'-'+(stat[tried]??0);
+ const percent=(stat,made,tried)=>book||game.statCoveragePartial||!stat[tried]?'':(100*stat[made]/stat[tried]).toFixed(1)+'%';
+ const lastPeriod=Math.max(1,Number(game.period)||1,...events.map(e=>Number(e.period)||1));
+ const firstPeriod=Math.max(1,lastPeriod-7);
+ const periodList=Array.from({length:lastPeriod-firstPeriod+1},(_,i)=>firstPeriod+i);
+ const periodStats=periodList.map(period=>basketballBoxScore({...game,events:events.filter(e=>e.period===period)}).teams);
+ const phase=period=>basketballPeriodLabel(game,period);
+ const minutesLabel=seconds=>seconds==null?'-':Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+ const accent=t=>{
+  const color=game.teamBrands?.[t]?.scheme?.accent||game.colors?.[t];
+  return /^#[\da-f]{6}$/i.test(color)&&color.toLowerCase()!=='#ffffff'?color:red;
+ };
+ function row(values,widths,x,y,height,{size=8.5,header=false,total=false,stripe=false}={}){
+  const span=widths.reduce((sum,col)=>sum+col,0);
+  if(header||total||stripe)fill(x,y,span,height,header?'#e7edf4':total?'#e9eff5':pale);
+  if(total)line(x,y,span);
+  widths.forEach((col,i)=>{
+   text(values[i],x+(i===0?4:col/2),y+height/2+size*.34,{size,bold:header||total,align:i===0?'left':'center',maxWidth:col-(i===0?8:3)});
+   x+=col;
+  });
+ }
+ function heading(label,x,top,w,color=red){
+  fill(x,top,w,20,ink);
+  fill(x,top,3,20,color);
+  text(label,x+8,top+13.5,{size:10,bold:true,color:'#ffffff',maxWidth:w-16});
+ }
+ fill(0,0,pageWidth,pageHeight,'#ffffff');
+ fill(margin,22,22,22,red);
+ text('Z',margin+11,38,{size:15,bold:true,color:'#ffffff',align:'center'});
+ text('LARSON LIVE STATS',margin+29,32,{size:11,bold:true});
+ text('BASKETBALL BOX SCORE',margin+29,43,{size:8,bold:true,color:muted});
+ const final=game.libraryStatus==='completed';
+ text(final?'FINAL':phase(game.period)+'  '+gameClock,margin+width,32,{size:11,bold:true,align:'right'});
+ const timestamp=game.scheduledAt||game.finalAt;
+ const date=timestamp&&new Date(timestamp);
+ const meta=[date&&!Number.isNaN(date.getTime())?date.toLocaleDateString('en-US'):'',game.demo?'DEMO GAME':game.id?'GAME '+game.id:''].filter(Boolean);
+ text(meta.join('  /  '),margin+width,43,{size:8,color:muted,align:'right'});
+ text(order.map(t=>name(t)+'  '+score(t)).join('   /   '),margin,69,{size:17,bold:true,maxWidth:width});
+ fill(margin,77,width,2,red);
+ let y=91;
+ const shootingHeight=37+19*(periodList.length+1);
+ const tableBudget=pageHeight-y-172;
+ const rowHeight=Math.min(18,(tableBudget-108)/count,
+  ...order.map(t=>(tableBudget-shootingHeight-54)/Math.max(1,players[t].length)));
+ const size=Math.min(9.1,Math.max(7.4,rowHeight*.7));
+ const advancedKeys=['oreb','dreb','reb','ast','to','stl','blk'];
+ const columns=advanced?['PLAYER','MIN','PTS','FG','3PT','FT','OR','DR','REB','PF','TF','AST','TO','STL','BLK']:['PLAYER','PTS','FG','3PT','FT','PF','TF'];
+ const weights=advanced?[102,27,20,29,29,29,18,18,22,19,17,19,19,19,20]:[164,30,45,45,45,26,26];
+ const divisor=weights.reduce((a,b)=>a+b,0);
+ const playerWidths=weights.map(n=>n*boxWidth/divisor);
+ const shotRow=stat=>pairs.map(([made,tried])=>attempts(stat,made,tried));
+ for(const t of order){
+  const top=y,x=margin+boxWidth+gap;
+  heading(name(t)+'  /  '+score(t),margin,top,boxWidth,accent(t));
+  heading('Shooting by period',x,top,shootWidth,accent(t));
+  const minutes=advanced&&!game.statCoveragePartial&&typeof wfMinutes==='function'?wfMinutes(game,t):null;
+  const playerName=n=>n==='Unassigned'?'Unassigned / team':('#'+n+' '+(rosters[t].get(n)||'')).trim();
+  const cells=(label,stat,time,points,isTotal=false)=>[
+   label,...(advanced?[time]:[]),points,...shotRow(stat),
+   ...(advanced?advancedKeys.slice(0,3).map(key=>stat[key]??'-'):[]),isTotal?(game.fouls?.[t]??'-'):(stat.pf??'-'),stat.tf??'-',
+   ...(advanced?advancedKeys.slice(3).map(key=>stat[key]??'-'):[])
+  ];
+  y+=20;
+  row(columns,playerWidths,margin,y,17,{header:true,size:7.7});y+=17;
+  if(!players[t].length){
+   row([playerStats?'No players recorded':'Team totals only'],playerWidths,margin,y,rowHeight,{size});
+   y+=rowHeight;
+  }
+  players[t].forEach((n,i)=>{
+   const stat=totals[t][n]||fresh();
+   row(cells(playerName(n),stat,minutesLabel(n==='Unassigned'?null:minutes?.[n]??(minutes?0:null)),stat.pts),playerWidths,margin,y,rowHeight,{size,stripe:i%2===0});
+   y+=rowHeight;
+  });
+  row(cells('Totals',teams[t],'-',score(t),true),playerWidths,margin,y,17,{total:true,size:8.4});
+  y+=17;
+  const shootCols=[31,...Array(3).fill((shootWidth-31)/3)];
+  row(['','FG','3PT','FT'],shootCols,x,top+20,17,{header:true,size:7.8});
+  [...periodList.map((p,i)=>[phase(p),periodStats[i][t]]),['GAME',teams[t]]].forEach(([label,stat],i)=>{
+   const topRow=top+37+i*19;
+   const total=i===periodList.length;
+   if(total||i%2===0)fill(x,topRow,shootWidth,19,total?'#e9eff5':pale);
+   text(label,x+4,topRow+12,{size:7.8,bold:total});
+   pairs.forEach(([made,tried],col)=>{
+    const center=x+31+(col+.5)*shootCols[1],pct=percent(stat,made,tried);
+    text(attempts(stat,made,tried),center,topRow+(pct?8:12),{size:8.1,bold:total,align:'center',maxWidth:shootCols[1]-3});
+    if(pct)text(pct,center,topRow+16,{size:7,color:muted,align:'center'});
+   });
+  });
+  y=Math.max(y,top+37+19*(periodList.length+1))+12;
+ }
+ const bottomTop=y+1,summaryW=(width-2*gap)/3;
+ const summary=(title,headers,rows,index)=>{
+  const x=margin+index*(summaryW+gap);
+  const labelShare=index===0?.35:.46;
+  const widths=[summaryW*labelShare,...Array(headers.length-1).fill(summaryW*(1-labelShare)/(headers.length-1))];
+  heading(title,x,bottomTop,summaryW);
+  row(headers,widths,x,bottomTop+20,15,{header:true,size:7.2});
+  rows.forEach((values,i)=>row(values,widths,x,bottomTop+35+i*13,13,{size:7.7,stripe:i%2===0}));
+ };
+ const short=t=>game.teamBrands?.[t]?.shortName||name(t);
+ summary('Score by period',['TEAM',...periodList.map(phase),'TOT'],order.map(t=>[short(t),...periodList.map(p=>complete(t)?periods[t][p]||0:'-'),score(t)]),0);
+ summary('Team comparison',['STAT',...order.map(short)],[
+  ['FOULS',...order.map(t=>game.fouls?.[t]??'-')],['TO LEFT',...order.map(t=>game.timeouts?.[t]??'-')],
+  ...[['REB','reb'],['AST','ast'],['TURNOVERS','to']].map(([label,key])=>[label,...order.map(t=>advanced?teams[t][key]??'-':'-')])
+ ],1);
+ const running={away:0,home:0},lead={away:0,home:0},best={away:0,home:0};
+ let leader=null,runTeam=null,run=0,changes=0,ties=0;
+ for(const event of [...events].reverse()){
+  if(event.kind!=='score'||!Object.hasOwn(running,event.team)||!(event.points>0))continue;
+  const team=event.team,other=team==='home'?'away':'home';
+  running[team]+=Number(event.points);
+  run=runTeam===team?run+Number(event.points):Number(event.points);
+  runTeam=team;best[team]=Math.max(best[team],run);
+  const difference=running[team]-running[other];
+  if(!difference)ties++;
+  else if(difference>0){
+   lead[team]=Math.max(lead[team],difference);
+   if(leader&&leader!==team)changes++;
+   leader=team;
+  }
+ }
+ const balanced=order.every(complete);
+ summary('Game trends',['STAT',...order.map(short)],[
+  ['BIGGEST LEAD',...order.map(t=>balanced?lead[t]:'-')],['BEST RUN',...order.map(t=>balanced?best[t]+'-0':'-')],
+  ['LEAD CHANGES',balanced?changes:'-',''],['TIMES TIED',balanced?ties:'-','']
+ ],2);
+ line(margin,pageHeight-34,width);
+ const note=book?'Shooting shows makes only in this scoring mode.':game.statCoveragePartial?'Tracking changed during the game. Shooting and advanced stats may be partial.':'Shooting uses makes-attempts. TF is included in PF.';
+ const caveats=[note,!balanced?'Period scores or trends may be unavailable where the log and scoreboard differ.':'',firstPeriod>1?'Showing the last eight periods.':''].filter(Boolean);
+ caveats.forEach((note,index)=>text(note,margin,pageHeight-24+index*8,{size:7.5,color:muted,maxWidth:width-28}));
+ text('1 / 1',margin+width,pageHeight-24,{size:7.5,color:muted,align:'right'});
+ return doc;
+}
+
+function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
+ if(preset==='one')return basketballOnePageBoxScore(game,gameClock);
+ const full=preset==='full';
+ const include=section=>full||selected.includes(section);
+ const {fresh,totals,teams,periods}=basketballBoxScore(game);
+ const doc=new window.jspdf.jsPDF({unit:'pt',format:'letter',orientation:'portrait',compress:true});
  const pageWidth=doc.internal.pageSize.getWidth(),pageHeight=doc.internal.pageSize.getHeight();
  const margin=32,width=pageWidth-2*margin,bottom=pageHeight-39;
  const order=game.screenSidesSwapped?['home','away']:['away','home'];
@@ -147,7 +316,7 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
   rect(margin,33,19,19,'#b62d43');
   text('Z',margin+9.5,47,{size:13,bold:true,color:'#fff',align:'center'});
   text('LARSON LIVE STATS',margin+26,46,{size:11,bold:true});
-  text(compact?'BASKETBALL BOX SCORE':'BASKETBALL GAME REPORT',margin+width,45,{size:10,bold:true,align:'right'});
+  text('BASKETBALL GAME REPORT',margin+width,45,{size:10,bold:true,align:'right'});
   text(order.map(t=>name(t)+' '+score(t)).join('  |  '),margin,67,{size:15,bold:true,maxWidth:width});
   const stage=game.libraryStatus==='completed'?'FINAL':'IN PROGRESS / '+basketballPeriodLabel(game)+' '+gameClock;
   text(stage+'  /  '+(game.demo?'TEST GAME':'GAME '+game.id),margin,85,{size:9,color:muted});
@@ -186,16 +355,15 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
  }
  function byPeriod(){
   const batch=8;
-  const firstPeriod=compact?Math.max(1,periodCount-batch+1):1;
+  const firstPeriod=1;
   for(let first=firstPeriod;first<=periodCount;first+=batch){
    const quarters=Array.from({length:Math.min(batch,periodCount-first+1)},(_,i)=>first+i);
    const widths=[width*.4,...Array(quarters.length+1).fill(width*.6/(quarters.length+1))];
    table('Score by period',['TEAM',...quarters.map(q=>basketballPeriodLabel(game,q)),'TOTAL'],widths,
     order.map(t=>[name(t),...quarters.map(q=>complete(t)?periods[t][q]||0:'-'),score(t)]));
   }
-  if(order.some(t=>!complete(t))||firstPeriod>1){
-   text(firstPeriod>1?'The one-page report shows the most recent eight periods.':
-    'Period scores are unavailable where the play log and scoreboard differ.',margin,y-2,{size:8,color:muted});
+  if(order.some(t=>!complete(t))){
+   text('Period scores are unavailable where the play log and scoreboard differ.',margin,y-2,{size:8,color:muted});
    y+=9;
   }
  }
@@ -206,30 +374,9 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
   const rows=Object.fromEntries(order.map(t=>[t,playerRows(t)]));
   const heading=t=>name(t)+'  |  Fouls '+(game.fouls?.[t]??'-')+'  |  TO left '+(game.timeouts?.[t]??'-');
   const total=t=>['Recorded team totals',...statCells(teams[t],true),teams[t].pf??0];
-  if(!compact){
-   for(const t of order)table(heading(t),headers,[190,40,76,76,76,48,42],rows[t],{total:total(t)});
-   return;
-  }
-  const start=y,half=(width-14)/2;
-  const height=Math.min(18,(bottom-start-23)/(Math.max(1,...order.map(t=>rows[t].length))+1));
-  const size=Math.min(10,height*.65);
-  const widths=[half-185,25,36,36,36,26,26];
-  order.forEach((t,i)=>{
-   y=start;
-   const x=margin+i*(half+14);
-   text(name(t)+' · Player box score',x,y+12,{size:10,bold:true,maxWidth:half});
-   y+=20;
-   row(headers,widths,{x,size,height,header:true});
-   (rows[t].length?rows[t]:[['None recorded']]).forEach((values,j)=>row(values,widths,{x,size,height,stripe:j%2===0}));
-  });
+  for(const t of order)table(heading(t),headers,[190,40,76,76,76,48,42],rows[t],{total:total(t)});
  }
  function teamComparison(){
-  if(compact){
-   const widths=[.26,.08,.13,.13,.13,.07,.09,.11].map(fraction=>width*fraction);
-   const rows=order.map(t=>[name(t),score(t),...statCells(teams[t],true).slice(1),game.fouls?.[t]??'-',game.timeouts?.[t]??'-']);
-   table('Team comparison',['TEAM','PTS','FG','3PT','FT','AST','FOULS','TO LEFT'],widths,rows);
-   return;
-  }
   const rows=[
    ['Score',t=>score(t)],['Field goals',t=>shot(teams[t].fgm,teams[t].fga,true)],
    ['Three-pointers',t=>shot(teams[t].tm,teams[t].ta,true)],['Free throws',t=>shot(teams[t].ftm,teams[t].fta,true)],
@@ -295,9 +442,8 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
  }
  page();
  if(include('periods'))byPeriod();
- if(compact&&include('teams'))teamComparison();
  if(include('players'))players();
- if(!compact&&include('players')&&game.scoringMode==='full'){
+ if(include('players')&&game.scoringMode==='full'){
   for(const t of order){
    const minutes=typeof wfMinutes==='function'?wfMinutes(game,t):null;
    const rows=[...new Set([...roster[t].keys(),...Object.keys(totals[t])])].map(n=>{
@@ -307,7 +453,7 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
    table(name(t)+' / Full Box',['PLAYER','OREB','DREB','REB','STL','BLK','TO','MIN'],[198,50,50,50,50,50,50,50],rows);
   }
  }
- if(!compact&&include('teams'))teamComparison();
+ if(include('teams'))teamComparison();
  if(include('charts'))shotCharts();
  if(include('lineups'))lineups();
  if(include('log'))playByPlay();

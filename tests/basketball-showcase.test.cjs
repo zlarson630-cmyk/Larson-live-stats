@@ -44,8 +44,10 @@ test('the demo reconciles its score, fouls, substitutions, shots and OBS callout
 test('PDF presets honor the selected sections and keep large compact rosters on one page',()=>{
  const {context}=showcase();
  let labels=[];
+ let formatUsed;
  context.window.jspdf={jsPDF:class{
-  constructor({orientation}){
+  constructor({orientation,format}){
+   formatUsed=format;
    this.pages=1;
    this.internal={pageSize:{getWidth:()=>orientation==='landscape'?792:612,getHeight:()=>orientation==='landscape'?612:792}};
   }
@@ -58,8 +60,14 @@ test('PDF presets honor the selected sections and keep large compact rosters on 
   context.window.jspdf.jsPDF.prototype[method]=function(){return this;};
  }
  const game=context.createBasketballDemo();
+ assert.equal(context.basketballBoxScorePdf(game,'4:12','one').getNumberOfPages(),1);
+ assert.equal(formatUsed,'letter');
+ assert.equal(labels.filter(label=>label==='Shooting by period').length,2);
+ for(const label of ['Score by period','Team comparison','Game trends','BIGGEST LEAD','LEAD CHANGES'])assert.ok(labels.includes(label),label);
+ labels=[];
  game.rosters.home=Array.from({length:50},(_,i)=>({number:String(i+1),name:'Home Player '+(i+1)}));
  assert.equal(context.basketballBoxScorePdf(game,'4:12','one').getNumberOfPages(),1);
+ assert.equal(formatUsed,'legal');
  assert.ok(labels.includes('#50 Home Player 50'));
  for(const label of ['Team comparison','FG','3PT','FT','AST','FOULS','TO LEFT'])assert.ok(labels.includes(label));
  assert.ok(!labels.includes('Play-by-play'));
