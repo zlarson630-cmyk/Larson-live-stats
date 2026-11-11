@@ -147,3 +147,8 @@ main:has(> #app:not(.hide)) > :is(header,.navHierarchy,.sportNav){display:none!i
 #basketballGameControls .row{justify-content:center;gap:5px}
 #basketballGameControls button{min-height:36px;margin:0;padding:5px 9px;font-size:13px}
 #wfMiniFlow .wf-chip-team{background:var(--chip-jersey);color:var(--chip-ink);border-color:color-mix(in srgb,var(--chip-accent) 70%,#8192a7)}
+
+.wf-box-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px 12px;margin-bottom:6px}
+.wf-box-heading h2{margin:0}
+#wfBoxSortControl{font-size:13px}
+#wfMiniFlow .wf-chip:not(.wf-chip-team,.wf-chip-made,.wf-chip-missed){background:#e8edf2;color:#263447;border-color:#cbd5e1}

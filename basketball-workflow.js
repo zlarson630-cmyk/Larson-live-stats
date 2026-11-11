@@ -113,26 +113,28 @@ function wfMiniPlayChips(play){
   return '<span class="wf-chip'+style+'">'+escapeHtml(label)+'</span>';
  };
  const jersey=number=>number==='team'?'Team rebound':number==null?'Review later':'#'+number;
+ const jerseyChip=(number,team)=>chip(jersey(number),'',/^\d{1,2}$/.test(String(number))?team:undefined);
  const chips=[chip(SoccerBrand.name(state,play.team),'',play.team)];
  if(play.kind==='score'||play.kind==='miss'){
   chips.push(chip(play.points===1?'FT':play.points+'PT'));
-  if(play.individualTracking!==false)chips.push(chip(play.scorer==null?'Unassigned':jersey(play.scorer)));
+  if(play.individualTracking!==false)chips.push(play.scorer==null?chip('Unassigned'):jerseyChip(play.scorer,play.team));
   chips.push(play.kind==='score'?chip('MAKE',' wf-chip-made'):chip('MISS',' wf-chip-missed'));
-  if(/^\d{1,2}$/.test(String(play.assist)))chips.push(chip('Assist '+jersey(play.assist)));
+  if(/^\d{1,2}$/.test(String(play.assist)))chips.push(chip('Assist'),jerseyChip(play.assist,play.team));
  }else if(play.kind==='rebound'){
   chips.push(chip(play.reboundType==='defensive'?'Defensive rebound':play.reboundType==='offensive'?'Offensive rebound':'Rebound'));
-  chips.push(chip(jersey(play.player)));
+  chips.push(jerseyChip(play.player,play.team));
  }else{
   const labels={'jump-ball':'Jump ball',foul:play.foulType==='technical'?'Technical foul':'Personal foul',turnover:'Turnover',steal:'Steal',block:'Block'};
   chips.push(chip(play.openingTip?'Opening tip':labels[play.kind]||wfOriginalLabel(play)));
-  if(labels[play.kind]&&play.player!=null)chips.push(chip(jersey(play.player)));
+  if(labels[play.kind]&&play.player!=null)chips.push(jerseyChip(play.player,play.team));
  }
  for(const [key,label] of [['block','Block'],['rebound','Rebound'],['steal','Steal']]){
   const detail=play[key];
   if(!detail)continue;
   const type=key==='rebound'?(detail.type==='defensive'?'DREB':detail.type==='offensive'?'OREB':'Rebound'):label;
-  const team=detail.team!==play.team?' · '+SoccerBrand.name(state,detail.team):'';
-  chips.push(chip(type+team+' · '+jersey(detail.player),'',team?detail.team:undefined));
+  chips.push(chip(type));
+  if(detail.team&&detail.team!==play.team)chips.push(chip(SoccerBrand.name(state,detail.team),'',detail.team));
+  chips.push(jerseyChip(detail.player,detail.team));
  }
  return chips.join('');
 }
@@ -786,22 +788,31 @@ function wfRenderLineups(){
   '<li><b>#'+escapeHtml(player.number)+'</b>'+(player.name?'<span>'+escapeHtml(player.name)+'</span>':'')+'</li>').join('')+'</ul>':'<p>'+empty+'</p>';
  box.innerHTML=order.map(team=>{
   const {active,bench,roster}=wfLineupGroups(state,team);
-  const lineupLabel=wfIsFull(wfMode(state))?'On the floor':'Last recorded five';
+  const lineupHint=wfIsFull(wfMode(state))?'':' title="Shows the last recorded lineup"';
   return '<div class="wf-lineup"><h3>'+escapeHtml(SoccerBrand.name(state,team))+'</h3>'+
-   (active?'<h4>'+lineupLabel+'</h4>'+list(active,'')+'<h4>Bench</h4>'+list(bench,'No bench players'):
+   (active?'<h4'+lineupHint+'>On the floor</h4>'+list(active,'')+'<h4>Bench</h4>'+list(bench,'No bench players'):
     '<p>No starting five recorded</p>'+(roster.length?'<h4>Roster</h4>'+list(roster,''):''))+'</div>';
  }).join('');
  box.hidden=order.every(team=>!(state.rosters?.[team]?.length||state.startingLineups?.[team]?.length));
 }
 function wfRenderBox(){
  const box=el('wfBox');if(!box)return;
- if(wfMode(state)==='basic'&&!wfIsPhone()){box.innerHTML='<p>Basic records team totals. Choose Streamlined to track player points and fouls.</p>';return;}
+ const teamOnly=wfMode(state)==='basic'&&!wfIsPhone();
+ el('wfBoxSortControl').hidden=teamOnly;
+ if(teamOnly){box.innerHTML='<p>Basic records team totals. Choose Streamlined to track player points and fouls.</p>';return;}
  const mode=wfMode(state),stats=basketballBoxScore(state),full=wfIsFull(mode);
+ const byPoints=el('wfBoxSort').value==='points';
  const labels=mode==='basic'?['PTS','PF','TF']:['PTS','PF','TF','FG','3PT','FT',...(full?['REB','AST','STL','BLK','TO','MIN']:[])];
  const cells=(p,minutes)=>mode==='basic'?[p.pts,p.pf,p.tf]:[p.pts,p.pf,p.tf,p.fgm+'-'+p.fga,p.tm+'-'+p.ta,p.ftm+'-'+p.fta,...(full?[p.reb,p.ast,p.stl,p.blk,p.to,minutes==null?'—':Math.floor(minutes/60)+':'+String(minutes%60).padStart(2,'0')]:[])];
  box.innerHTML=['away','home'].map(t=>{
   const mins=full?wfMinutes(state,t):null;
   const numbers=[...new Set([...(state.rosters?.[t]||[]).map(p=>String(p.number)),...Object.keys(stats.totals[t])])];
+  numbers.sort((a,b)=>{
+   if(a==='Unassigned')return 1;
+   if(b==='Unassigned')return -1;
+   const difference=byPoints?(stats.totals[t][b]?.pts??0)-(stats.totals[t][a]?.pts??0):0;
+   return difference||Number(a)-Number(b)||a.localeCompare(b);
+  });
   return '<section><h3>'+escapeHtml(SoccerBrand.name(state,t))+'</h3><div class="wf-table"><table><thead><tr><th>Player</th>'+labels.map(l=>'<th>'+l+'</th>').join('')+'</tr></thead><tbody>'+numbers.map(n=>'<tr><th>'+escapeHtml(n==='Unassigned'?'Unassigned':wfPlayerName(t,n))+'</th>'+cells(stats.totals[t][n]||stats.fresh(),mins?.[n]??(mins?0:null)).map(v=>'<td>'+v+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></section>';
  }).join('');
 }

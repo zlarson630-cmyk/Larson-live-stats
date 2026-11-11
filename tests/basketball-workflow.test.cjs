@@ -587,11 +587,11 @@ test('scoring mini flow shows the five newest saved plays with their linked deta
  const mini=a.node('wfMiniPlays');
  assert.equal((mini.innerHTML.match(/<li>/g)||[]).length,5);
  assert.match(mini.innerHTML,/--chip-jersey:#ffffff[^"]*">Home/);
- assert.match(mini.innerHTML,/MISS.*--chip-jersey:#0051ba[^"]*">DREB · Away · #04/);
+ assert.match(mini.innerHTML,/MISS.*>DREB<.*--chip-jersey:#0051ba[^"]*">Away<.*--chip-jersey:#0051ba[^"]*">#04</);
  assert.match(mini.innerHTML,/Jump ball/);
  assert.doesNotMatch(mini.innerHTML,/Assist #02/);
  await a.ctx.undo();
- assert.match(mini.innerHTML,/MAKE.*Assist #02/);
+ assert.match(mini.innerHTML,/MAKE.*>Assist<.*--chip-jersey:#ffffff[^"]*">#02</);
  assert.doesNotMatch(mini.innerHTML,/DREB/);
 });
 
@@ -617,4 +617,17 @@ test('Next period can switch the arrow or keep it without changing the team in p
  assert.equal(game.period,3);
  assert.equal(game.seconds,300);
  assert.equal(game.possession,'away');
+});
+
+test('live box score sorts by jersey by default or points, with unassigned last',async()=>{
+ const a=setup('streamlined',{rosters:{home:[{number:'11'},{number:'3'},{number:'2'}],away:[]}});
+ await a.command('Y 11');
+ await a.command('J 3');
+ await a.command('J 2');
+ await a.command('C H N');
+ const html=()=>a.node('wfBox').innerHTML;
+ assert.match(html(),/#2<\/th>.*#3<\/th>.*#11<\/th>.*Unassigned<\/th>/);
+ a.node('wfBoxSort').value='points';
+ a.ctx.wfRenderBox();
+ assert.match(html(),/#11<\/th>.*#2<\/th>.*#3<\/th>.*Unassigned<\/th>/);
 });
