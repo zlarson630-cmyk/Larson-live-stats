@@ -327,11 +327,11 @@ test('custom college halves load each duration and use five-minute overtime by d
  await a.ctx.saveBasketballClockSettings({preventDefault(){}});
  assert.equal(a.db.row().seconds,1080);
  assert.equal(a.ctx.basketballPeriodLabel(a.db.row()),'H1');
- await a.ctx.changePeriod();
+ await a.ctx.changePeriod({period:a.db.row().period,arrow:a.db.row().possession??null},a.db.row().possession??null);
  assert.equal(a.db.row().seconds,1200);
  assert.equal(a.ctx.basketballPeriodLabel(a.db.row()),'H2');
  assert.equal(a.ctx.basketballElapsedAt(a.db.row(),2,1190),1090);
- await a.ctx.changePeriod();
+ await a.ctx.changePeriod({period:a.db.row().period,arrow:a.db.row().possession??null},a.db.row().possession??null);
  assert.equal(a.db.row().seconds,300);
  assert.equal(a.ctx.basketballPeriodLabel(a.db.row()),'OT');
 });
@@ -592,4 +592,28 @@ test('scoring mini flow shows the five newest saved plays with their linked deta
  await a.ctx.undo();
  assert.match(mini.innerHTML,/MAKE.*Assist #02/);
  assert.doesNotMatch(mini.innerHTML,/DREB/);
+});
+
+test('Next period can switch the arrow or keep it without changing the team in possession',async()=>{
+ const a=setup('full',{possession:'home',possessionEvent:'tip',offenseTeam:'home',clockFormat:'halves',periodSeconds:[1080,1200],overtimeSeconds:300,seconds:0});
+ const dialog=a.node('basketballNextPeriod');
+ dialog.showModal=()=>{dialog.open=true;};
+ dialog.close=()=>{dialog.open=false;};
+ a.ctx.openBasketballNextPeriod();
+ assert.equal(a.node('basketballPeriodSwitchArrow').textContent,'Switch to Away');
+ assert.equal(a.db.row().period,1);
+ await a.ctx.saveBasketballNextPeriod('switch');
+ let game=a.db.row();
+ assert.equal(game.period,2);
+ assert.equal(game.seconds,1200);
+ assert.equal(game.possession,'away');
+ assert.equal(game.offenseTeam,'home');
+ assert.equal(game.possessionEvent,null);
+
+ a.ctx.openBasketballNextPeriod();
+ await a.ctx.saveBasketballNextPeriod('keep');
+ game=a.db.row();
+ assert.equal(game.period,3);
+ assert.equal(game.seconds,300);
+ assert.equal(game.possession,'away');
 });

@@ -123,7 +123,7 @@ body:has(#broadcast:not(.hide)) main{max-width:1440px}
 </details>
 <details class="wf-guide"><summary>Quick guide &amp; keyboard commands</summary><p id="wfExamples">Choose H for home or V for visitor. J = 2-point shot, Y = three, E = free throw, F = personal foul, C = technical foul, O = timeout, then H or V for the team. For a technical in player-tracking modes, enter a jersey or press N for team / bench. Type the jersey number, then G for made or M for missed. The controls advance as you type. Press Backspace to go back one step in the current play. If a single digit could start a two-digit jersey, use a leading zero, such as 02 for #2. Basic records makes immediately without a player. Streamlined records makes after the player. Full Suite asks for Made or Missed.</p><p>Basic example: H J (two team points). Streamlined: H Y 11 (three points to #11). Full Suite: H Y 11 G 02 (assist by #2) or H J 11 M D 04 (visitor #4 defensive rebound). N skips an assist, rebound or steal prompt. If you know the rebound type but missed the jersey, choose D or O, then press Enter to save it for review. Use Assign rebounder in Game Flow when you have the number. Space or F8 starts or stops the clock, including while typing a play. In Full Suite, T = turnover, R = rebound, S = steal and K = block. A foul asks for H or V. Basic saves a team foul immediately; Streamlined and Full Suite also ask for the player: F V 24. Phone buttons keep +1, +2 and +3 visible for both teams, then ask who scored.</p><p>Use the touch buttons for the same steps. The active team's jersey color follows ball possession. Select H or V, or use the team buttons, whenever possession changes. Made shots, rebounds, steals and turnovers leave that selection under your control. Use Start game · opening tip to choose the winner and start the clock. For a jump ball during play, press B, then H or V for the team awarded the ball. The arrow moves to the other team. You can also adjust the arrow in Game controls.</p><p>To correct a play, use Game Flow. Undo removes the latest play and its linked rebound, block or steal. Download One-page PDF during a timeout, or Full stats PDF for the detailed report.</p></details>
 
-<div class="row"><button onclick="openBasketballSubs('home')">Prepare home substitutions</button><button onclick="openBasketballSubs('away')">Prepare visitor substitutions</button></div><div id="basketballPending"></div><div id="scoreControls"></div><div class="compactBottom"><div id="recent"></div><button onclick="undo()">↶ Undo</button></div></section><div id="basketballViewDock"><nav class="basketball-tabs" aria-label="Game views"><button type="button" aria-controls="score" aria-pressed="true" onclick="showTab('score',true)">Scoring</button><button type="button" aria-controls="flow" aria-pressed="false" onclick="showTab('flow',true)">Game Flow</button><button type="button" aria-controls="broadcast" aria-pressed="false" onclick="showTab('broadcast',true)">Broadcaster</button><button type="button" aria-controls="obsGraphics" aria-pressed="false" onclick="showTab('obsGraphics',true)">OBS Graphics</button></nav><details id="basketballPdfButton" class="hide"><summary>PDF reports</summary><div class="row"><button type="button" onclick="downloadBasketballPdf('one')">One-page PDF</button><button type="button" onclick="downloadBasketballPdf('full')">Full stats PDF</button><button type="button" onclick="openBasketballPdf()">Customize PDF</button></div></details><details class="gameTools"><summary>Game controls</summary><div class="row"><button onclick="changePeriod()">Next period</button><button onclick="setClock()">Set clock</button><button onclick="openBasketballClockSettings()">Period lengths</button><button onclick="togglePossession()">Switch possession</button><button onclick="switchBasketballSides()">⇄ Switch screen sides</button><button id="markFinalButton" onclick="markBasketballFinal()">Mark Final</button></div></details></div><section id="flow" class="hide"><h2>Game Flow</h2><p class="small">Tap a bubble to fill in or change a player.</p><p class="small">Use Shot location on a field-goal attempt to plot it on the PDF shot chart.</p><div id="events"></div></section><section id="broadcast" class="hide" data-broadcast-panel="overview"><div class="bc-head"><h2>Broadcast Center</h2></div><div class="bc-mobile-nav" aria-label="Broadcast sections"><button type="button" aria-pressed="true" onclick="showBroadcastPanel(this,'overview')">Overview</button><button type="button" aria-pressed="false" onclick="showBroadcastPanel(this,'players')">Box scores</button><button type="button" aria-pressed="false" onclick="showBroadcastPanel(this,'periods')">By period</button></div><div id="bc-dashboard"></div><div id="leaders" class="hide"></div><div id="run" class="hide"></div></section><section id="obsGraphics" class="hide"><div class="bc-head"><h2>OBS Graphics</h2><a id="overlay" target="_blank" rel="noopener">Open OBS score bug</a></div><div id="basketballGraphicControls" hidden>
+<div class="row"><button onclick="openBasketballSubs('home')">Prepare home substitutions</button><button onclick="openBasketballSubs('away')">Prepare visitor substitutions</button></div><div id="basketballPending"></div><div id="scoreControls"></div><div class="compactBottom"><div id="recent"></div><button onclick="undo()">↶ Undo</button></div></section><div id="basketballViewDock"><nav class="basketball-tabs" aria-label="Game views"><button type="button" aria-controls="score" aria-pressed="true" onclick="showTab('score',true)">Scoring</button><button type="button" aria-controls="flow" aria-pressed="false" onclick="showTab('flow',true)">Game Flow</button><button type="button" aria-controls="broadcast" aria-pressed="false" onclick="showTab('broadcast',true)">Broadcaster</button><button type="button" aria-controls="obsGraphics" aria-pressed="false" onclick="showTab('obsGraphics',true)">OBS Graphics</button></nav><details id="basketballPdfButton" class="hide"><summary>PDF reports</summary><div class="row"><button type="button" onclick="downloadBasketballPdf('one')">One-page PDF</button><button type="button" onclick="downloadBasketballPdf('full')">Full stats PDF</button><button type="button" onclick="openBasketballPdf()">Customize PDF</button></div></details><details class="gameTools"><summary>Game controls</summary><div class="row"><button onclick="openBasketballNextPeriod()">Next period</button><button onclick="setClock()">Set clock</button><button onclick="openBasketballClockSettings()">Period lengths</button><button onclick="togglePossession()">Switch possession</button><button onclick="switchBasketballSides()">⇄ Switch screen sides</button><button id="markFinalButton" onclick="markBasketballFinal()">Mark Final</button></div></details></div><section id="flow" class="hide"><h2>Game Flow</h2><p class="small">Tap a bubble to fill in or change a player.</p><p class="small">Use Shot location on a field-goal attempt to plot it on the PDF shot chart.</p><div id="events"></div></section><section id="broadcast" class="hide" data-broadcast-panel="overview"><div class="bc-head"><h2>Broadcast Center</h2></div><div class="bc-mobile-nav" aria-label="Broadcast sections"><button type="button" aria-pressed="true" onclick="showBroadcastPanel(this,'overview')">Overview</button><button type="button" aria-pressed="false" onclick="showBroadcastPanel(this,'players')">Box scores</button><button type="button" aria-pressed="false" onclick="showBroadcastPanel(this,'periods')">By period</button></div><div id="bc-dashboard"></div><div id="leaders" class="hide"></div><div id="run" class="hide"></div></section><section id="obsGraphics" class="hide"><div class="bc-head"><h2>OBS Graphics</h2><a id="overlay" target="_blank" rel="noopener">Open OBS score bug</a></div><div id="basketballGraphicControls" hidden>
  <p class="small">Send a graphic to your OBS scorebug for 12 seconds.</p>
  <label>Placement <select id="basketballGraphicPosition"><option value="above">Above scorebug</option><option value="below">Below scorebug</option><option value="side">Beside scorebug</option></select></label>
  <div class="graphic-choice"><button id="basketballGraphicRun" type="button" onclick="publishBasketballGraphic('run')">Show scoring run</button><span id="basketballGraphicRunPreview" class="small"></span></div>
@@ -162,6 +162,17 @@ body:has(#broadcast:not(.hide)) main{max-width:1440px}
  <button type="button" onclick="downloadBasketballPdf('selected')">Download selected</button>
  <button type="button" onclick="this.closest('dialog').close()">Close</button>
  <p id="basketballPdfStatus" class="small" role="status"></p>
+</dialog>
+<dialog id="basketballNextPeriod" class="basketball-dialog" aria-labelledby="basketballNextPeriodTitle">
+ <h2 id="basketballNextPeriodTitle"></h2>
+ <p id="basketballNextPeriodArrow"></p>
+ <div class="row">
+  <button id="basketballPeriodKeepArrow" type="button" onclick="saveBasketballNextPeriod('keep')"></button>
+  <button id="basketballPeriodSwitchArrow" type="button" onclick="saveBasketballNextPeriod('switch')"></button>
+  <button id="basketballPeriodAwayArrow" type="button" hidden onclick="saveBasketballNextPeriod('away')"></button>
+  <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+ </div>
+ <p id="basketballNextPeriodStatus" role="status"></p>
 </dialog>
 <dialog id="basketballOpeningTipDialog" class="basketball-dialog" aria-labelledby="basketballOpeningTipTitle">
  <h2 id="basketballOpeningTipTitle">Who won the opening tip?</h2>
@@ -493,7 +504,43 @@ function setClock(){
  if(!match||Number(match[2])>59)return alert('Enter MM:SS');
  return saveBasketballClockTime(Number(match[1])*60+Number(match[2]),state.period);
 }
-function changePeriod(){return write(s=>{s.period++;s.running=false;s.startedAt=null;s.seconds=basketballPeriodSeconds(s,s.period);})}
+let basketballPeriodChoice=null;
+function openBasketballNextPeriod(){
+ if(!state||!canWrite()||gameLocked(state))return;
+ const arrow=state.possession==='home'||state.possession==='away'?state.possession:null;
+ const other=arrow==='home'?'away':'home';
+ basketballPeriodChoice={game:id,period:state.period,arrow,saving:false};
+ el('basketballNextPeriodTitle').textContent='Advance to '+basketballPeriodLabel(state,state.period+1);
+ el('basketballNextPeriodArrow').textContent=arrow?'Arrow points to '+SoccerBrand.name(state,arrow)+'.':'The possession arrow is unset.';
+ el('basketballPeriodKeepArrow').textContent=arrow?'Keep arrow':'Leave arrow unset';
+ el('basketballPeriodSwitchArrow').textContent=(arrow?'Switch to ':'Set to ')+SoccerBrand.name(state,other);
+ const away=el('basketballPeriodAwayArrow');
+ away.hidden=!!arrow;
+ away.textContent='Set to '+SoccerBrand.name(state,'away');
+ el('basketballNextPeriodStatus').textContent='';
+ el('basketballNextPeriod').showModal();
+}
+async function saveBasketballNextPeriod(action){
+ const choice=basketballPeriodChoice,dialog=el('basketballNextPeriod');
+ if(!choice||choice.saving||!dialog.open||choice.game!==id||!canWrite()||gameLocked(state))return;
+ const arrow=action==='keep'?choice.arrow:action==='away'?'away':choice.arrow==='home'?'away':'home';
+ choice.saving=true;
+ const saved=await changePeriod(choice,arrow);
+ if(choice!==basketballPeriodChoice)return;
+ choice.saving=false;
+ if(saved){dialog.close();basketballPeriodChoice=null;}
+ else el('basketballNextPeriodStatus').textContent='Period not advanced. Close and reopen Next period to try again.';
+}
+function changePeriod(choice,arrow){
+ return write(s=>{
+  if(s.period!==choice.period||(s.possession??null)!==choice.arrow)throw Error('The period or arrow changed. Reopen Next period.');
+  s.period++;
+  s.running=false;
+  s.startedAt=null;
+  s.seconds=basketballPeriodSeconds(s,s.period);
+  if(arrow!==choice.arrow){s.possession=arrow;s.possessionEvent=null;}
+ });
+}
 function basketballRegulationPeriods(format){return format==='halves'?2:4;}
 function basketballPeriodSeconds(game,period=game.period){
  const format=game.clockFormat;
@@ -953,5 +1000,5 @@ function listSeasonTeams(){
 }
 window.addEventListener('hashchange',showBasketballSetup);
 showBasketballSetup();
-</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script><script src="live.js"></script><script src="cloud.js?v=basketball-game-text-1"></script><script src="basketball-quick-roster.js?v=starters-20261107"></script><script src="cloud-library.js"></script><script src="profile.js"></script><script src="basketball-setup.js?v=lobby-20261107"></script><script src="basketball-report.js?v=period-format-1"></script><script src="basketball-demo.js?v=basketball-game-text-1"></script><script src="basketball-graphics.js?v=team-comparison"></script><script src="basketball-workflow.js?v=mini-flow-1"></script><script>startBasketballDemo();</script><script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script></body></html>
+</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script><script src="live.js"></script><script src="cloud.js?v=basketball-game-text-1"></script><script src="basketball-quick-roster.js?v=starters-20261107"></script><script src="cloud-library.js"></script><script src="profile.js"></script><script src="basketball-setup.js?v=lobby-20261107"></script><script src="basketball-report.js?v=period-format-1"></script><script src="basketball-demo.js?v=basketball-game-text-1"></script><script src="basketball-graphics.js?v=team-comparison"></script><script src="basketball-workflow.js?v=next-period-arrow-1"></script><script>startBasketballDemo();</script><script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script></body></html>
 
