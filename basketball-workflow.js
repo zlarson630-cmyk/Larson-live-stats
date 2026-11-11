@@ -103,7 +103,7 @@ function wfRender(){
  el('wfUndo').disabled=wfBusy;
  el('wfTracking').textContent=mode==='basic'?'Team totals · Clock, score, team fouls and timeouts. No individual statistics.':mode==='streamlined'?'Scorebook · Player points and personal fouls, with clock, team fouls and timeouts.':'Full Box · Shooting, assists, rebounds, steals, blocks, turnovers and substitutions. Minutes require a five-player lineup.';
  el('wfCoverage').textContent=wfCoverage(state);
- el('wfPanel').querySelectorAll('button,input,select').forEach(x=>x.disabled=wfBusy||!canWrite()||gameLocked(state));
+ el('wfPanel').querySelectorAll('button,input,select').forEach(x=>{if(!x.closest('#wfActionGrid'))x.disabled=wfBusy||!canWrite()||gameLocked(state);});
  el('scoreControls').hidden=true;
  el('score').querySelectorAll(':scope > .row').forEach(x=>x.hidden=true);
  wfRenderBox();
