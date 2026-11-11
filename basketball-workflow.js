@@ -104,6 +104,11 @@ function wfRenderTrail(){
   return '<span class="wf-chip'+result+'">'+escapeHtml(labels[step]||step)+'</span>';
  }).join('');
 }
+function wfLinkedReboundTeam(shot){
+ const rebound=shot.rebound;
+ if(shot.kind==='miss'&&Number(shot.points)===1&&rebound.type==='offensive'&&rebound.player==='team')return shot.team;
+ return rebound.team;
+}
 function wfMiniPlayChips(play){
  const chip=(label,style='',team)=>{
   const color=value=>/^#[0-9a-f]{6}$/i.test(value);
@@ -136,8 +141,9 @@ function wfMiniPlayChips(play){
   if(!detail)continue;
   const type=key==='rebound'?(detail.type==='defensive'?'DREB':detail.type==='offensive'?'OREB':'Rebound'):label;
   chips.push(chip(type));
-  if(detail.team&&detail.team!==play.team)chips.push(chip(SoccerBrand.name(state,detail.team),'',detail.team));
-  chips.push(jerseyChip(detail.player,detail.team));
+  const team=key==='rebound'?wfLinkedReboundTeam(play):detail.team;
+  if(team&&team!==play.team)chips.push(chip(SoccerBrand.name(state,team),'',team));
+  chips.push(jerseyChip(detail.player,team));
  }
  return chips.join('');
 }
@@ -246,7 +252,7 @@ function wfRender(){
   buttons=wfNumbers(d.team);
   if(d.stage==='player'&&d.technical)buttons+=wfButton('Team / bench · N','N');
   if(d.stage==='assist')buttons+=wfButton('No assist + switch · Enter','END')+wfButton('No assist · N','N');
-  if(d.stage==='reboundPlayer')buttons+=wfButton('Team rebound · M','M')+wfButton('Review later · Enter','REVIEW');
+  if(d.stage==='reboundPlayer')buttons+=wfButton(SoccerBrand.name(state,d.team)+' team rebound · M','M')+wfButton('Review later · Enter','REVIEW');
  }
  el('wfChoices').innerHTML=buttons;
  el('wfActionGrid').innerHTML=wfComputerActions(mode);
@@ -569,11 +575,13 @@ async function wfApplyToken(raw,fromCommand=false){
 function wfChooseRebound(d,token){
  const defensive=token==='D';
  d.reboundType=defensive?'defensive':'offensive';
- d.team=defensive?wfOther(d.offense):d.offense;
+ const shootingTeam=state.events.find(e=>e.id===d.eid&&e.kind==='miss')?.team??d.offense;
+ d.team=defensive?wfOther(shootingTeam):shootingTeam;
  d.stage='reboundPlayer';
  d.trail.push(d.reboundType+' rebound');
 }
 async function wfSaveRebound(d,player){
+ let creditedTeam=d.team;
  if(d.review){
   if(player!==null&&!await wfPatch(d,e=>{
    const rebound=e.kind==='rebound'?e:e.rebound;
@@ -581,14 +589,20 @@ async function wfSaveRebound(d,player){
    rebound.player=player;
   }))return false;
  }else if(d.eid){
-  if(!await wfPatch(d,e=>{e.rebound={team:d.team,player,type:d.reboundType};}))return false;
+  if(!await wfPatch(d,e=>{
+   if(e.kind!=='miss')throw Error('The shot changed. Review it in Game Flow.');
+   creditedTeam=d.reboundType==='offensive'?e.team:wfOther(e.team);
+   if(creditedTeam!==d.team&&player!=='team')throw Error('The rebound team changed. Review the shot in Game Flow.');
+   e.rebound={team:creditedTeam,player,type:d.reboundType};
+  }))return false;
  }else{
   d.player=player;
   if(!await wfCommit(d))return false;
  }
  if(player===null||player==='team')d.trail.push(player===null?'Review later':'Team rebound');
  else wfAddJerseyChip(d,'rebound',player);
- wfFinish(player===null?'Rebound saved for review in Game Flow.':'Rebound saved.',player!==null);
+ const message=player===null?'Rebound saved for review in Game Flow.':player==='team'?SoccerBrand.name(state,creditedTeam)+' team rebound saved.':'Rebound saved.';
+ wfFinish(message,player!==null);
  return true;
 }
 async function wfSubmit(event){
@@ -671,7 +685,7 @@ playLabel=function(e){
  if(e.kind==='rebound'&&e.player===null)label=(e.reboundType==='defensive'?'Defensive':'Offensive')+' rebound · Review later';
  if(e.rebound){
   const player=e.rebound.player;
-  label+=' · '+e.rebound.type+' rebound '+SoccerBrand.name(state,e.rebound.team)+' · '+(player===null?'Review later':player==='team'?'Team':'#'+player);
+  label+=' · '+e.rebound.type+' rebound '+SoccerBrand.name(state,wfLinkedReboundTeam(e))+' · '+(player===null?'Review later':player==='team'?'Team':'#'+player);
  }
  if(e.block)label+=' · Block #'+e.block.player;
  if(e.steal)label+=' · Steal #'+e.steal.player;
@@ -807,7 +821,7 @@ basketballBoxScore=function(game){
   if(e.kind==='turnover')add(e.team,e.player,'to');
   if(e.kind==='steal')add(e.team,e.player,'stl');
   if(e.kind==='block')add(e.team,e.player,'blk');
-  if(e.rebound)add(e.rebound.team,e.rebound.player,e.rebound.type==='offensive'?'oreb':'dreb');
+  if(e.rebound)add(wfLinkedReboundTeam(e),e.rebound.player,e.rebound.type==='offensive'?'oreb':'dreb');
   if(e.block)add(e.block.team,e.block.player,'blk');
   if(e.steal)add(e.steal.team,e.steal.player,'stl');
  }

@@ -696,6 +696,28 @@ test('O and D record the miss and go straight to player or team rebound entry',a
  assert.equal(a.db.row().events.length,1);
 });
 
+test('a missed free throw credits the shooting team with the offensive team rebound',async()=>{
+ const a=setup('full',{possession:'home'});
+ const field=a.node('wfCommand');
+ for(const key of 'VE24O')await a.press(key,{target:field});
+ assert.match(a.node('wfChoices').innerHTML,/Away team rebound/);
+ await a.press('M',{target:field});
+ const game=a.db.row(),shot=game.events[0];
+ assert.equal(shot.team,'away');
+ assert.deepEqual({...shot.rebound},{team:'away',player:'team',type:'offensive'});
+ assert.match(a.node('wfPrompt').textContent,/Away team rebound saved/);
+ assert.equal(game.possession,'home');
+
+ // A previously saved team rebound can be attributed from the linked free throw.
+ shot.rebound.team='home';
+ const box=a.ctx.basketballBoxScore(game);
+ assert.equal(box.teams.away.oreb,1);
+ assert.equal(box.teams.home.oreb,0);
+ assert.equal(box.totals.away.team.reb,1);
+ assert.equal(box.totals.away['24'].reb,0);
+ assert.match(a.ctx.playLabel(shot),/offensive rebound Away · Team/);
+});
+
 test('Backspace from a direct rebound reverses the miss and returns to the shot result',async()=>{
  const a=setup('full');
  const field=a.node('wfCommand');
