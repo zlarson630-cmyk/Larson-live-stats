@@ -403,3 +403,64 @@ test('pregame technicals allow an opening tip, and opening-tip controls are hidd
  assert.equal(a.node('basketballOpeningTip').hidden,true);
  assert.equal(a.node('basketballPhoneOpeningTip').hidden,true);
 });
+
+test('Backspace restores one play step, including a shot result that already saved',async()=>{
+ const a=setup();
+ const field=a.node('wfCommand');
+ const key=k=>a.press(k,{target:field});
+ for(const k of 'Y11G')await key(k);
+ assert.equal(a.db.row().scores.home,3);
+ assert.equal(a.run('wfDraft.stage'),'assist');
+ await key('Backspace');
+ assert.equal(a.run('wfDraft.stage'),'result');
+ assert.equal(a.db.row().scores.home,0);
+ await key('M');
+ assert.equal(a.db.row().events[0].kind,'miss');
+ await key('D');
+ await key('Backspace');
+ assert.equal(a.run('wfDraft.stage'),'rebound');
+ await key('O');
+ assert.equal(a.run('wfDraft.team'),'home');
+ await key('0');
+ await key('Backspace');
+ assert.equal(a.run('wfDigits'),'');
+ for(const k of '04')await key(k);
+ assert.equal(a.db.row().events[0].rebound.type,'offensive');
+ await key('Backspace');
+ assert.equal(a.db.row().events.length,1);
+});
+
+test('Backspace removes only the linked block when returning to the blocker step',async()=>{
+ const a=setup();
+ await a.command('J 11 M K 04');
+ assert.equal(a.db.row().events[0].block.player,'04');
+ await a.press('Backspace',{target:a.node('wfCommand')});
+ assert.equal(a.run('wfDraft.stage'),'blockPlayer');
+ assert.equal(a.db.row().events[0].block,undefined);
+ assert.equal(a.db.row().events[0].kind,'miss');
+});
+
+test('Enter saves a linked or standalone defensive rebound for review and later assignment',async()=>{
+ for(const linked of [true,false]){
+  const a=setup();
+  const field=a.node('wfCommand');
+  const key=k=>a.press(k,{target:field});
+  for(const k of linked?'J11MD':'RD')await key(k);
+  await key('Enter');
+  const game=a.db.row(), event=game.events[0];
+  assert.equal(a.run('wfDraft'),null);
+  assert.equal((event.rebound||event).player,null);
+  assert.equal((event.rebound||event).team,'away');
+  assert.equal(a.ctx.basketballBoxScore(game).teams.away.dreb,1);
+  assert.equal(a.node('wfReviewQueue').textContent,'Review rebounds (1)');
+  assert.match(a.ctx.eventHtml(event),/Assign rebounder/);
+  await key('V');
+  assert.equal(a.db.row().offenseTeam,'away');
+  a.node('basketballReportDock').appendChild=()=>{};
+  a.ctx.wfReviewNextRebound();
+  for(const k of '04')await key(k);
+  assert.equal(a.ctx.basketballBoxScore(a.db.row()).totals.away['04'].dreb,1);
+  assert.equal(a.ctx.basketballBoxScore(a.db.row()).teams.away.dreb,1);
+  assert.equal(a.node('wfReviewQueue').hidden,true);
+ }
+});
