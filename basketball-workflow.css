@@ -1,0 +1,30 @@
+.wf-settings,.wf-possession,.wf-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wf-settings label{display:flex;align-items:center;gap:7px;margin:0}
+.wf-settings input[type=checkbox]{width:18px;height:18px}
+.wf-possession{margin:10px 0}
+.wf-possession button{flex:1;min-height:44px}
+.wf-possession button[aria-pressed=true]{outline:3px solid #324d6d;outline-offset:-3px}
+#wfPanel{background:var(--wf-jersey,#fff);color:var(--wf-ink,#172332);border:3px solid var(--wf-accent,#64748b);border-radius:12px;padding:16px}
+#wfPanel h2{color:inherit;margin:0 0 8px;font-size:25px}
+#wfPanel p{margin:6px 0}
+#wfPrompt{font-weight:700;min-height:24px}
+#wfTrail{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#wfPanel label{font-size:14px}
+.wf-command{display:flex;gap:6px;margin:5px 0 10px}
+#wfCommand{flex:1;min-width:0;font:600 20px/1.4 ui-monospace,monospace;min-height:46px;background:#fff;color:#172332;border:1px solid #8192a7}
+#wfChoices{display:flex;flex-wrap:wrap;gap:6px}
+#wfPanel button{background:#fff;color:#172332;border:1px solid #8192a7;min-height:44px;margin:0;padding:8px 12px;font-size:15px}
+#wfPanel button:hover:not(:disabled){background:#e8edf3}
+#wfSkip{margin-top:10px!important}
+.wf-tools{margin:10px 0}
+.wf-tools button{min-height:40px}
+#wfBox{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#wfBox section{padding:8px;min-width:0;margin:8px 0}
+#wfBox h3{margin:0 0 6px}
+.wf-table{overflow-x:auto}
+.wf-table table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.wf-table th,.wf-table td{padding:5px;border-bottom:1px solid #d9e1e9;text-align:right;white-space:nowrap}
+.wf-table th:first-child{text-align:left}
+.wf-logline{margin:6px 0;font-family:ui-monospace,monospace;font-size:13px;overflow-wrap:anywhere}
+#scoreControls[hidden],#score>.row[hidden],#wfSubs[hidden],#wfPromptsLabel[hidden],#wfSkip[hidden]{display:none!important}
+@media(max-width:750px){#wfBox{grid-template-columns:1fr}#wfPanel{padding:10px}#wfChoices button{flex:1 1 130px}#wfPanel h2{font-size:21px}.wf-settings{align-items:flex-start}}

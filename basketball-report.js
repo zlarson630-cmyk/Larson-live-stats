@@ -122,13 +122,13 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
  const clean=v=>String(v??'').replace(/[\u0000-\u001f]/g,' ');
  const periodCount=Math.max(1,Number(game.period)||1,...Object.keys(periods.home).map(Number),...Object.keys(periods.away).map(Number));
  const complete=t=>Object.values(periods[t]).reduce((sum,n)=>sum+n,0)===score(t);
- const shot=(made,attempted,pct=false)=>made+'-'+attempted+(pct&&attempted?' ('+Math.round(100*made/attempted)+'%)':'');
- const statCells=(p,pct=false)=>[p.pts,shot(p.fgm,p.fga,pct),shot(p.tm,p.ta,pct),shot(p.ftm,p.fta,pct),p.ast];
+ const shot=(made,attempted,pct=false)=>game.scoringMode==='basic'?made+' made':made+'-'+attempted+(pct&&attempted&&!game.statCoveragePartial?' ('+Math.round(100*made/attempted)+'%)':'');
+ const statCells=(p,pct=false)=>[p.pts,shot(p.fgm,p.fga,pct),shot(p.tm,p.ta,pct),shot(p.ftm,p.fta,pct),game.scoringMode==='basic'?'-':p.ast];
  const roster=Object.fromEntries(order.map(t=>[t,new Map((game.rosters?.[t]||[]).map(p=>[String(p.number),p.name]))]));
  const playerName=(t,n)=>n==null||n==='Unassigned'?'Unassigned':('#'+n+' '+(roster[t].get(String(n))||'')).trim();
  const playerRows=t=>[...new Set([...roster[t].keys(),...Object.keys(totals[t])])]
   .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))
-  .map(n=>[playerName(t,n),...statCells(totals[t][n]||fresh())]);
+  .map(n=>[playerName(t,n),...statCells(totals[t][n]||fresh()),totals[t][n]?.pf??0]);
  let y;
  function text(value,x,baseline,{size=10,bold=false,color=ink,align='left',maxWidth}={}){
   doc.setFont('helvetica',bold?'bold':'normal').setFontSize(size).setTextColor(color);
@@ -200,18 +200,18 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
   }
  }
  function players(){
-  const headers=['PLAYER','PTS','FG','3PT','FT','AST'];
+  const headers=['PLAYER','PTS','FG','3PT','FT','AST','PF'];
   const rows=Object.fromEntries(order.map(t=>[t,playerRows(t)]));
   const heading=t=>name(t)+'  |  Fouls '+(game.fouls?.[t]??'-')+'  |  TO left '+(game.timeouts?.[t]??'-');
-  const total=t=>['Recorded team totals',...statCells(teams[t],true)];
+  const total=t=>['Recorded team totals',...statCells(teams[t],true),teams[t].pf??0];
   if(!compact){
-   for(const t of order)table(heading(t),headers,[215,53,76,76,76,52],rows[t],{total:total(t)});
+   for(const t of order)table(heading(t),headers,[190,40,76,76,76,48,42],rows[t],{total:total(t)});
    return;
   }
   const start=y,half=(width-14)/2;
   const height=Math.min(18,(bottom-start-23)/(Math.max(1,...order.map(t=>rows[t].length))+1));
   const size=Math.min(10,height*.65);
-  const widths=[half-225,34,53,53,53,32];
+  const widths=[half-185,25,36,36,36,26,26];
   order.forEach((t,i)=>{
    y=start;
    const x=margin+i*(half+14);
@@ -295,6 +295,16 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
  if(include('periods'))byPeriod();
  if(compact&&include('teams'))teamComparison();
  if(include('players'))players();
+ if(!compact&&include('players')&&game.scoringMode==='full'){
+  for(const t of order){
+   const minutes=typeof wfMinutes==='function'?wfMinutes(game,t):null;
+   const rows=[...new Set([...roster[t].keys(),...Object.keys(totals[t])])].map(n=>{
+    const p=totals[t][n]||fresh(),seconds=minutes?.[n]??(minutes?0:null);
+    return [playerName(t,n),p.oreb??0,p.dreb??0,p.reb??0,p.stl??0,p.blk??0,p.to??0,seconds==null?'-':Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0')];
+   });
+   table(name(t)+' / Full Box',['PLAYER','OREB','DREB','REB','STL','BLK','TO','MIN'],[198,50,50,50,50,50,50,50],rows);
+  }
+ }
  if(!compact&&include('teams'))teamComparison();
  if(include('charts'))shotCharts();
  if(include('lineups'))lineups();
@@ -302,7 +312,7 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
  const pages=doc.getNumberOfPages();
  for(let p=1;p<=pages;p++){
   doc.setPage(p);
-  text('Shooting columns use makes-attempts. Log scores reflect recorded plays.',margin,pageHeight-19,{size:8,color:muted});
+  text(game.scoringMode==='basic'?'Basic: missed shots and advanced stats are untracked. Shooting columns show makes only.':game.statCoveragePartial?'Tracking changed during the game. Shooting and advanced totals may be partial.':'Shooting columns use makes-attempts. Log scores reflect recorded plays.',margin,pageHeight-19,{size:8,color:muted,maxWidth:width-40});
   text(p+' / '+pages,margin+width,pageHeight-19,{size:8,color:muted,align:'right'});
  }
  return doc;
