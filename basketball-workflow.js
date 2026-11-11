@@ -53,7 +53,7 @@ function wfStage(){
  if(d.stage==='player')return 'Enter '+(d.action==='shot'?'shooter':d.action==='foul'?'fouling player':'player')+' jersey number.';
  if(d.stage==='phonePlayer')return 'Basket saved. Who scored? Choose a player or assign later.';
  if(d.stage==='result')return 'G for make, O for miss + offensive rebound, D for miss + defensive rebound, or M for miss.';
- if(d.stage==='assist')return 'Who assisted? Choose a player, N for no assist, or skip.';
+ if(d.stage==='assist')return 'Who assisted? Enter a jersey, or press Enter for no assist and switch possession.';
  if(d.stage==='rebound')return 'Rebound: D defensive, O offensive, K blocked shot, or N to skip.';
  if(d.stage==='reboundPlayer')return 'Enter the rebounder’s jersey, press M for a team rebound, or press Enter to review later.';
  if(d.stage==='steal')return 'Was there a steal? S to credit a steal, or N for none.';
@@ -241,7 +241,7 @@ function wfRender(){
  else{
   buttons=wfNumbers(d.team);
   if(d.stage==='player'&&d.technical)buttons+=wfButton('Team / bench · N','N');
-  if(d.stage==='assist')buttons+=wfButton('No assist · N','N');
+  if(d.stage==='assist')buttons+=wfButton('No assist + switch · Enter','END')+wfButton('No assist · N','N');
   if(d.stage==='reboundPlayer')buttons+=wfButton('Team rebound · M','M')+wfButton('Review later · Enter','REVIEW');
  }
  el('wfChoices').innerHTML=buttons;
@@ -331,6 +331,27 @@ function wfRestorePossession(game,event){
    if(saved?.[field]?.source===event.id)saved[field]=previous;
   }
  }
+}
+function wfCanEndMadePossession(game,event){
+ return event?.kind==='score'&&game.events[0]?.id===event.id&&wfOffense(game)===event.team&&!event.beforePossession;
+}
+function wfSwitchAfterMake(game,event){
+ if(!wfCanEndMadePossession(game,event))return false;
+ event.beforePossession={offenseTeam:{value:game.offenseTeam??null,source:game.offenseEvent??null}};
+ game.offenseTeam=wfOther(event.team);
+ game.offenseEvent=event.id;
+ return true;
+}
+async function wfEndMadePossession(){
+ const game=id,event=state.events[0];
+ if(wfChipEdit||wfLastPlay?.id!==event?.id||!wfCanEndMadePossession(state,event))return true;
+ let switched=false;
+ const saved=await wfSave(s=>{
+  switched=s.events[0]?.id===event.id&&wfSwitchAfterMake(s,s.events[0]);
+ });
+ if(!saved||id!==game)return false;
+ if(switched){wfMessage='Possession switched to '+SoccerBrand.name(state,wfOffense(state))+'.';wfRender();}
+ return true;
 }
 async function wfCommit(d){
  const eid=d.eid||crypto.randomUUID(),game=id;
@@ -426,6 +447,7 @@ async function wfApplyToken(raw,fromCommand=false){
  wfMessage='';
  let d=wfDraft;
  if(!d){
+  if(token==='END')return wfEndMadePossession();
   if(token==='H'||token==='V')return wfSetTeam(token==='H'?'home':'away',fromCommand);
   if(token==='G'){return true;}
   const team=wfOffense(state),full=wfIsFull(wfMode(state));
@@ -441,6 +463,15 @@ async function wfApplyToken(raw,fromCommand=false){
   else{wfMessage='Choose J, Y, E, F, C, O or B'+(full?', T, R, S or K':'')+'.';wfRender();return false;}
   if(wfMode(state)==='basic'&&wfDraft.action==='shot'){wfDraft.made=true;wfDraft.trail.push('Made');if(!await wfCommit(wfDraft))return false;wfFinish();}
   wfRender();return true;
+ }
+ if(token==='END'&&d.stage==='assist'){
+  if(!await wfPatch(d,(e,s)=>{
+   if(e.kind!=='score'||Number(e.points)<=1)throw Error('The shot changed. Review it in Game Flow.');
+   if(e.assist==null)e.assist='no-assist';
+   wfSwitchAfterMake(s,e);
+  }))return false;
+  if(state.events.find(e=>e.id===d.eid)?.assist==='no-assist')d.trail.push('No assist');
+  wfFinish();return true;
  }
  if(token==='N'&&['assist','rebound','steal'].includes(d.stage)){
   if(d.stage==='assist'){if(!await wfPatch(d,e=>e.assist='no-assist'))return false;d.trail.push('No assist');}
@@ -502,11 +533,7 @@ async function wfApplyToken(raw,fromCommand=false){
    if(e.kind!=='score'||Number(e.points)<=1)throw Error('The shot changed. Review it in Game Flow.');
    if(String(e.scorer)===String(number))throw Error('The shooter cannot assist their own basket.');
    e.assist=String(number);
-   if(s.events[0]?.id===e.id&&wfOffense(s)===e.team){
-    e.beforePossession={offenseTeam:{value:s.offenseTeam??null,source:s.offenseEvent??null}};
-    s.offenseTeam=wfOther(e.team);
-    s.offenseEvent=e.id;
-   }
+   wfSwitchAfterMake(s,e);
   }))return false;
   wfAddJerseyChip(d,'assist',number);wfFinish();return true;
  }
@@ -588,7 +615,11 @@ async function wfProcessKey(key){
   wfDigits='';
   return wfToken(number);
  }
- if(key==='ENTER'&&(!wfDigits||wfDraft?.stage!=='reboundPlayer'))return wfDraft?.stage==='reboundPlayer'?wfToken('REVIEW'):true;
+ if(key==='ENTER'&&(!wfDigits||!['assist','reboundPlayer'].includes(wfDraft?.stage))){
+  if(wfDraft?.stage==='reboundPlayer')return wfToken('REVIEW');
+  if(!wfDraft||wfDraft.stage==='assist')return wfToken('END');
+  return true;
+ }
  if(wfDigits){
   const number=wfDigits;
   wfDigits='';

@@ -694,3 +694,34 @@ test('Backspace from a direct rebound reverses the miss and returns to the shot 
  assert.equal(a.db.row().events[0].rebound.player,'team');
  assert.equal(a.db.row().events[0].rebound.team,'away');
 });
+
+test('Enter closes the assist prompt and changes offense once without changing the arrow',async()=>{
+ const a=setup('full',{possession:'away'});
+ const field=a.node('wfCommand');
+ for(const key of 'J11G')await a.press(key,{target:field});
+ await a.press('Enter',{target:field});
+ let game=a.db.row();
+ assert.equal(game.events[0].assist,'no-assist');
+ assert.equal(game.offenseTeam,'away');
+ assert.equal(game.possession,'away');
+ assert.equal(a.run('wfDraft'),null);
+ await a.press('Enter',{target:field});
+ game=a.db.row();
+ assert.equal(game.offenseTeam,'away');
+ assert.equal(game.events.length,1);
+ await a.ctx.undo();
+ assert.equal(a.db.row().offenseTeam,'home');
+});
+
+test('Enter ends a just-completed make in Streamlined, but ignores a miss',async()=>{
+ const a=setup('streamlined',{possession:'home'});
+ const field=a.node('wfCommand');
+ for(const key of 'J11')await a.press(key,{target:field});
+ await a.press('Enter',{target:field});
+ assert.equal(a.db.row().offenseTeam,'away');
+ assert.equal(a.db.row().possession,'home');
+ const full=setup('full');
+ await full.command('J 11 D M');
+ await full.press('Enter',{target:full.node('wfCommand')});
+ assert.equal(full.db.row().offenseTeam,'home');
+});
