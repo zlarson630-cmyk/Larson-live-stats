@@ -464,3 +464,61 @@ test('Enter saves a linked or standalone defensive rebound for review and later 
   assert.equal(a.node('wfReviewQueue').hidden,true);
  }
 });
+
+test('saved foul jersey chips edit the existing play and transfer the personal foul',async()=>{
+ const a=setup();
+ const trail=a.node('wfTrail'),input=a.node('wfChipNumber');
+ trail.querySelector=()=>null;
+ input.select=()=>{};
+ await a.command('F H 11');
+ const eid=a.db.row().events[0].id;
+ assert.match(trail.innerHTML,/<button[^>]*aria-label="Edit #11"/);
+ a.ctx.wfOpenJerseyChip(2);
+ assert.match(trail.innerHTML,/id="wfChipNumber"[^>]*value="11"/);
+ input.value='99';
+ await a.ctx.wfSaveJerseyChip();
+ assert.equal(a.db.row().events[0].player,'11');
+ input.value='02';
+ await a.ctx.wfJerseyEditKey({key:'Enter',preventDefault(){}});
+ const game=a.db.row();
+ assert.equal(game.events.length,1);
+ assert.equal(game.events[0].id,eid);
+ assert.equal(game.events[0].player,'02');
+ assert.equal(game.fouls.home,1);
+ assert.equal(a.ctx.basketballBoxScore(game).totals.home['02'].pf,1);
+ assert.match(trail.innerHTML,/aria-label="Edit #02"/);
+});
+
+test('shot and linked rebound jersey chips edit their own teams without changing totals',async()=>{
+ const a=setup();
+ const trail=a.node('wfTrail'),input=a.node('wfChipNumber');
+ trail.querySelector=()=>null;
+ input.select=()=>{};
+ await a.command('J 11 M D 04');
+ a.ctx.wfOpenJerseyChip(2);
+ input.value='02';
+ await a.ctx.wfSaveJerseyChip();
+ let game=a.db.row();
+ assert.equal(game.events[0].scorer,'02');
+ assert.equal(game.events[0].player,'02');
+ assert.equal(game.events[0].rebound.player,'04');
+ a.ctx.wfOpenJerseyChip(5);
+ input.value='24';
+ await a.ctx.wfSaveJerseyChip();
+ game=a.db.row();
+ assert.equal(game.events[0].rebound.player,'24');
+ assert.equal(a.ctx.basketballBoxScore(game).teams.away.dreb,1);
+
+ await a.command('J 11 G 02');
+ a.ctx.wfOpenJerseyChip(2);
+ input.value='02';
+ await a.ctx.wfSaveJerseyChip();
+ assert.equal(a.db.row().events[0].scorer,'11');
+ a.ctx.wfJerseyEditKey({key:'Escape',preventDefault(){}});
+ a.ctx.wfOpenJerseyChip(4);
+ input.value='04';
+ await a.ctx.wfSaveJerseyChip();
+ game=a.db.row();
+ assert.equal(game.events[0].assist,'04');
+ assert.equal(game.scores.home,2);
+});

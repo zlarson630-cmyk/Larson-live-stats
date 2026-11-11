@@ -58,3 +58,7 @@ body:has(#score[data-controls=phone]:not(.hide)) #basketballGameHeader .scoreboa
 #score[data-controls=computer] .wf-command button[type=submit]{display:none}
 #score[data-controls=computer] .wf-command{flex-wrap:wrap;align-items:center}
 #score[data-controls=computer] #wfCommand{flex:0 1 150px;min-width:100px;max-width:100%;font-size:16px}
+#wfPanel .wf-chip-edit{min-height:36px;padding:7px 12px;background:#263c68;color:#fff;border-color:#8296bc;font:700 16px/1.1 'Barlow',system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px}
+#wfPanel .wf-chip-edit:hover{background:#365282}
+#wfPanel .wf-chip-number{width:4ch;min-height:36px;padding:4px 6px;font:inherit;text-align:center}
+#wfPanel .wf-chip-confirm{min-height:36px;padding:4px 8px}

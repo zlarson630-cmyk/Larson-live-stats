@@ -6,7 +6,7 @@ try{wfLayout=localStorage.getItem('lls-basketball-control-layout')||'auto';}catc
 function wfIsPhone(){return wfLayout==='phone'||(wfLayout==='auto'&&matchMedia('(max-width:700px)').matches);}
 function wfSetLayout(layout){if(wfDraft){wfMessage='Finish or skip the current play first.';wfRender();return;}wfLayout=layout;try{localStorage.setItem('lls-basketball-control-layout',layout);}catch{}wfRender();}
 let wfDraft=null,wfBusy=false,wfSubmitting=false,wfGame=null,wfInput='',wfMessage='';
-let wfDigits='',wfLastTrail=[],wfSteps=[],wfKeyQueue=Promise.resolve(),wfKeyGeneration=0;
+let wfDigits='',wfLastTrail=[],wfLastPlay=null,wfChipEdit=null,wfSteps=[],wfKeyQueue=Promise.resolve(),wfKeyGeneration=0;
 const wfOriginalRender=render,wfOriginalLabel=playLabel,wfOriginalEvent=eventHtml;
 const wfOriginalBox=basketballBoxScore,wfOriginalUndo=undo,wfOriginalCorrect=correctEvent;
 const wfOther=team=>team==='home'?'away':'home';
@@ -63,9 +63,99 @@ function wfNumbers(team){
  const roster=state.rosters?.[team]||[];
  return roster.map(p=>wfButton('#'+p.number+(p.name?' '+p.name:''),String(p.number))).join('');
 }
+function wfAddJerseyChip(d,role,number){
+ (d.jerseyChips||={})[d.trail.length]=role;
+ d.trail.push(wfJerseyLabel(role,number));
+}
+function wfJerseyLabel(role,number){return (role==='assist'?'Assist ':'')+'#'+number;}
+function wfJerseyTarget(event,role){
+ if(!event)return null;
+ if(role==='scorer'||role==='assist'||role==='player')return {record:event,field:role};
+ const record=role==='rebound'&&event.kind==='rebound'?event:event[role];
+ return record?{record,field:'player'}:null;
+}
+function wfRenderTrail(){
+ const saved=wfLastPlay&&state.events.find(e=>e.id===wfLastPlay.id);
+ if(wfLastPlay&&!saved){wfLastPlay=null;wfLastTrail=[];wfChipEdit=null;}
+ if(wfChipEdit){
+  if(wfDraft||!canWrite()||gameLocked(state))wfChipEdit=null;
+  else if(el('wfTrail').querySelector('#wfChipNumber'))return;
+ }
+ const trail=wfDraft?.trail||wfLastTrail;
+ const labels={'2-point shot':'J · 2PT','3-point shot':'Y · 3PT','Free throw':'E · FT',Made:'MAKE',Missed:'MISS'};
+ el('wfTrail').innerHTML=[...trail,...(wfDigits?['#'+wfDigits]:[])].map((step,index)=>{
+  const role=!wfDraft&&wfLastPlay?.chips[index];
+  const target=role?wfJerseyTarget(saved,role):null;
+  const number=target?.record[target.field];
+  if(role&&/^\d{1,2}$/.test(String(number))){
+   const label=wfJerseyLabel(role,number);
+   if(wfChipEdit?.index===index&&wfChipEdit.id===saved.id&&canWrite()&&!gameLocked(state)){
+    return '<input id="wfChipNumber" class="wf-chip-number" type="text" inputmode="numeric" autocomplete="off" maxlength="2" aria-label="Correct jersey number" value="'+escapeHtml(number)+'" onkeydown="wfJerseyEditKey(event)"><button type="button" class="wf-chip-confirm" onclick="wfSaveJerseyChip()">Save</button>';
+   }
+   if(canWrite()&&!gameLocked(state))return '<button type="button" class="wf-chip wf-chip-edit" aria-label="Edit '+escapeHtml(label)+'" onclick="wfOpenJerseyChip('+index+')">'+escapeHtml(label)+'</button>';
+   step=label;
+  }else if(role){
+   step=role==='assist'&&number==='no-assist'?'No assist':number==='team'?'Team rebound':'Unassigned';
+  }
+  const result=step==='Made'?' wf-chip-made':step==='Missed'?' wf-chip-missed':'';
+  return '<span class="wf-chip'+result+'">'+escapeHtml(labels[step]||step)+'</span>';
+ }).join('');
+}
+function wfOpenJerseyChip(index){
+ if(wfDraft||wfBusy||wfChipEdit||!canWrite()||gameLocked(state))return;
+ const play=wfLastPlay&&state.events.find(e=>e.id===wfLastPlay.id);
+ const role=wfLastPlay?.chips[index],target=role?wfJerseyTarget(play,role):null;
+ const number=target?.record[target.field];
+ if(!/^\d{1,2}$/.test(String(number)))return;
+ wfChipEdit={id:play.id,index,role,number,team:target.record.team,saving:false};
+ wfMessage='Type the correct jersey and press Enter. Esc cancels.';
+ wfRender();
+ el('wfChipNumber').focus();
+ el('wfChipNumber').select();
+}
+function wfJerseyEditKey(event){
+ if(!['Enter','Escape'].includes(event.key))return;
+ event.preventDefault();
+ if(event.key==='Enter')return wfSaveJerseyChip();
+ if(wfChipEdit?.saving)return;
+ wfChipEdit=null;wfMessage='';wfRender();
+ el('wfCommand').focus();
+}
+async function wfSaveJerseyChip(){
+ const edit=wfChipEdit;
+ if(!edit||edit.saving||!canWrite()||gameLocked(state))return;
+ const input=el('wfChipNumber');
+ const player=wfValidPlayer(edit.team,input.value.trim());
+ if(player===null){
+  el('wfPrompt').textContent='Enter a jersey from '+SoccerBrand.name(state,edit.team)+'’s roster.';
+  input.focus();input.select();return;
+ }
+ const number=String(player);
+ edit.saving=true;
+ input.readOnly=true;
+ const saved=await write(game=>{
+  const play=game.events.find(e=>e.id===edit.id),target=wfJerseyTarget(play,edit.role);
+  if(!target||target.record.team!==edit.team||target.record[target.field]!==edit.number)throw Error('This jersey was changed. Reopen the play before editing.');
+  const other=edit.role==='scorer'?play.assist:edit.role==='assist'?play.scorer:null;
+  if(other!=null&&String(other)===number)throw Error('The shooter cannot assist their own basket.');
+  target.record[target.field]=number;
+  if(edit.role==='scorer')play.player=number;
+ });
+ if(wfChipEdit!==edit)return;
+ edit.saving=false;
+ if(!saved){
+  input.readOnly=false;
+  el('wfPrompt').textContent='Jersey not saved. Check the selection and try again.';
+  input.focus();input.select();return;
+ }
+ wfChipEdit=null;
+ wfMessage='Jersey updated. Ready for the next play.';
+ wfRender();
+ el('wfCommand').focus();
+}
 function wfRender(){
  if(!state||!el('wfPanel'))return;
- if(wfGame!==id){wfGame=id;wfDraft=null;wfInput='';wfMessage='';wfDigits='';wfLastTrail=[];wfSteps=[];}
+ if(wfGame!==id){wfGame=id;wfDraft=null;wfInput='';wfMessage='';wfDigits='';wfLastTrail=[];wfLastPlay=null;wfChipEdit=null;wfSteps=[];}
  const mode=wfMode(state),team=wfDraft?.team||wfOffense(state),phone=wfIsPhone();
  el('score').dataset.controls=phone?'phone':'computer';
  el('wfLayout').value=wfLayout;
@@ -86,12 +176,7 @@ function wfRender(){
   button.setAttribute('aria-pressed',String(wfOffense(state)===t));
  }
  el('wfPrompt').textContent=wfMessage||wfStage();
- const trail=wfDraft?.trail||wfLastTrail;
- const labels={'2-point shot':'J · 2PT','3-point shot':'Y · 3PT','Free throw':'E · FT',Made:'MAKE',Missed:'MISS'};
- el('wfTrail').innerHTML=[...trail,...(wfDigits?['#'+wfDigits]:[])].map(step=>{
-  const result=step==='Made'?' wf-chip-made':step==='Missed'?' wf-chip-missed':'';
-  return '<span class="wf-chip'+result+'">'+escapeHtml(labels[step]||step)+'</span>';
- }).join('');
+ wfRenderTrail();
  const field=el('wfCommand');
  if(document.activeElement!==field)field.value=wfInput;
  let buttons='';
@@ -163,7 +248,11 @@ async function wfSetMode(mode){
 async function wfSetPrompts(value){await wfSave(s=>s.reboundPrompts=value);}
 function wfFinish(message='Play saved. Ready for the next play.',openChart=true){
  const finished=wfDraft;
- if(finished?.eid)wfLastTrail=[...finished.trail];
+ if(finished?.eid){
+  wfLastTrail=[...finished.trail];
+  wfLastPlay={id:finished.eid,chips:finished.jerseyChips||{}};
+ }
+ wfChipEdit=null;
  wfDigits='';wfSteps=[];wfDraft=null;wfInput='';wfMessage=message;wfRender();
  if(openChart&&finished?.eid&&finished.action==='shot'&&finished.points>1&&wfMode(state)==='fullchart'&&!finished.phone)openBasketballShotLocation(finished.eid);
 }
@@ -244,6 +333,8 @@ async function wfPatch(d,change){
 }
 async function wfToken(raw,fromCommand=false){
  if(state&&wfGame!==id)wfRender();
+ if(wfChipEdit?.saving)return false;
+ if(wfChipEdit){wfChipEdit=null;wfRender();}
  const game=id,previous=wfDraft?structuredClone(wfDraft):null;
  const accepted=await wfApplyToken(raw,fromCommand);
  if(accepted&&id===game&&wfDraft&&wfDraft.stage!==previous?.stage)wfSteps.push(previous);
@@ -348,23 +439,23 @@ async function wfApplyToken(raw,fromCommand=false){
  if(number===null){wfMessage='Enter a jersey number from '+SoccerBrand.name(state,d.team)+'’s roster.';wfRender();return false;}
  if(d.stage==='phonePlayer'){
   if(!await wfPatch(d,e=>{e.scorer=String(number);e.player=String(number);}))return false;
-  d.trail.push('#'+number);wfFinish();return true;
+  wfAddJerseyChip(d,'scorer',number);wfFinish();return true;
  }
  if(d.stage==='assist'){
   const shot=state.events.find(e=>e.id===d.eid);
   if(String(shot?.scorer)===String(number)){wfMessage='The shooter cannot assist their own basket.';wfRender();return false;}
   if(!await wfPatch(d,e=>e.assist=String(number)))return false;
-  d.trail.push('Assist #'+number);wfFinish();return true;
+  wfAddJerseyChip(d,'assist',number);wfFinish();return true;
  }
  if(d.stage==='blockPlayer'||d.stage==='stealPlayer'){
   const key=d.stage==='blockPlayer'?'block':'steal';
   if(!await wfPatch(d,e=>e[key]={team:d.team,player:String(number)}))return false;
-  d.trail.push('#'+number);
+  wfAddJerseyChip(d,key,number);
   if(key==='block'){d.block=true;d.team=d.offense;d.stage='rebound';wfRender();}else wfFinish();
   return true;
  }
  if(d.stage==='reboundPlayer')return wfSaveRebound(d,String(number));
- d.player=String(number);d.trail.push('#'+number);
+ d.player=String(number);wfAddJerseyChip(d,d.action==='shot'?'scorer':'player',number);
  if(d.action==='shot'){
   if(!wfIsFull(wfMode(state))||d.phone){
    d.made=true;d.trail.push('Made');if(!await wfCommit(d))return false;wfFinish();
@@ -388,7 +479,8 @@ async function wfSaveRebound(d,player){
   d.player=player;
   if(!await wfCommit(d))return false;
  }
- d.trail.push(player===null?'Review later':player==='team'?'Team rebound':'#'+player);
+ if(player===null||player==='team')d.trail.push(player===null?'Review later':'Team rebound');
+ else wfAddJerseyChip(d,'rebound',player);
  wfFinish(player===null?'Rebound saved for review in Game Flow.':'Rebound saved.',player!==null);
  return true;
 }
@@ -448,6 +540,7 @@ document.addEventListener('keydown',event=>{
  }
  const commandField=event.target===el('wfCommand');
  if(editable&&!commandField)return;
+ if(event.key===' '&&!commandField&&event.target?.closest?.('#wfTrail button'))return;
  if(event.key===' '){event.preventDefault();if(!event.repeat)return toggleClock();return;}
  if(event.repeat||el('score').classList.contains('hide'))return;
  if(event.key==='Enter'&&!commandField&&event.target?.closest?.('button,a,summary'))return;
@@ -512,7 +605,7 @@ pickerValue=function(value){
  return wfPickerValue(value);
 };
 undo=async function(){
- if(wfBusy)return;
+ if(wfBusy||wfChipEdit?.saving)return;
  const latest=state?.events?.[0];
  if(latest?.workflow){
   const ok=await wfSave(s=>{
@@ -676,6 +769,7 @@ async function recordBasketballOpeningTip(team){
   return;
  }
  el('basketballOpeningTipDialog').close();
+ wfLastPlay=null;
  wfLastTrail=['Opening tip',SoccerBrand.name(state,team)];
  wfFinish('Opening tip saved. Clock running.');
  if(!wfIsPhone())el('wfCommand').focus();
