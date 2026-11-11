@@ -65,13 +65,17 @@ test('a complete keyboard sequence links assist, rebound and block without dupli
  assert.equal(a.db.row().offenseTeam,'away');
 });
 
-test('rebounds, turnovers and linked steals keep possession under manual control',async()=>{
+test('a turnover switches possession once, and the linked steal credits the opponent',async()=>{
  const a=setup();
  let game=await a.command('H J 11 M O 04');
  assert.equal(game.offenseTeam,'home');
  assert.equal(a.ctx.basketballBoxScore(game).teams.home.oreb,1);
- game=await a.command('T 02 S 24');
- assert.equal(game.offenseTeam,'home');
+ game=await a.command('T 02');
+ assert.equal(game.offenseTeam,'away');
+ assert.equal(game.events[0].team,'home');
+ assert.equal(a.run('wfDraft.stage'),'steal');
+ game=await a.command('S 24');
+ assert.equal(game.offenseTeam,'away');
  assert.deepEqual(JSON.parse(JSON.stringify(game.events[0].steal)),{team:'away',player:'24'});
  const box=a.ctx.basketballBoxScore(game);
  assert.equal(box.teams.home.to,1);assert.equal(box.teams.away.stl,1);
@@ -724,4 +728,20 @@ test('Enter ends a just-completed make in Streamlined, but ignores a miss',async
  await full.command('J 11 D M');
  await full.press('Enter',{target:full.node('wfCommand')});
  assert.equal(full.db.row().offenseTeam,'home');
+});
+
+test('turnover possession reverses on Backspace or Undo and preserves the arrow',async()=>{
+ const a=setup('full',{possession:'home'});
+ const field=a.node('wfCommand');
+ await a.command('T 02');
+ assert.equal(a.db.row().offenseTeam,'away');
+ await a.press('Backspace',{target:field});
+ assert.equal(a.db.row().offenseTeam,'home');
+ assert.equal(a.db.row().events.length,0);
+ await a.command('02 N');
+ assert.equal(a.db.row().offenseTeam,'away');
+ assert.equal(a.db.row().possession,'home');
+ await a.ctx.undo();
+ assert.equal(a.db.row().offenseTeam,'home');
+ assert.equal(a.db.row().possession,'home');
 });
