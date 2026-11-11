@@ -663,3 +663,34 @@ test('correcting an assisted make to a miss reverses its automatic offense switc
  assert.equal(corrected.offenseTeam,'home');
  assert.equal(corrected.possession,'away');
 });
+
+test('O and D record the miss and go straight to player or team rebound entry',async()=>{
+ const a=setup('full',{reboundPrompts:false});
+ const field=a.node('wfCommand');
+ for(const key of 'J11D04')await a.press(key,{target:field});
+ let game=a.db.row();
+ assert.equal(game.events.length,1);
+ assert.equal(game.events[0].kind,'miss');
+ assert.deepEqual({...game.events[0].rebound},{team:'away',player:'04',type:'defensive'});
+ for(const key of 'Y11OM')await a.press(key,{target:field});
+ game=a.db.row();
+ assert.equal(game.events.length,2);
+ assert.equal(game.events[0].kind,'miss');
+ assert.deepEqual({...game.events[0].rebound},{team:'home',player:'team',type:'offensive'});
+ assert.equal(a.ctx.basketballBoxScore(game).teams.home.oreb,1);
+ await a.ctx.undo();
+ assert.equal(a.db.row().events.length,1);
+});
+
+test('Backspace from a direct rebound reverses the miss and returns to the shot result',async()=>{
+ const a=setup('full');
+ const field=a.node('wfCommand');
+ for(const key of 'J11O')await a.press(key,{target:field});
+ assert.equal(a.db.row().events[0].kind,'miss');
+ await a.press('Backspace',{target:field});
+ assert.equal(a.db.row().events.length,0);
+ assert.equal(a.run('wfDraft.stage'),'result');
+ for(const key of 'DM')await a.press(key,{target:field});
+ assert.equal(a.db.row().events[0].rebound.player,'team');
+ assert.equal(a.db.row().events[0].rebound.team,'away');
+});

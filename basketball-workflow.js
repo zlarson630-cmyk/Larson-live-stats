@@ -52,10 +52,10 @@ function wfStage(){
  if(d.stage==='player'&&d.technical)return 'Enter the player’s jersey or choose Team / bench · N.';
  if(d.stage==='player')return 'Enter '+(d.action==='shot'?'shooter':d.action==='foul'?'fouling player':'player')+' jersey number.';
  if(d.stage==='phonePlayer')return 'Basket saved. Who scored? Choose a player or assign later.';
- if(d.stage==='result')return 'Made or missed?';
+ if(d.stage==='result')return 'G for make, O for miss + offensive rebound, D for miss + defensive rebound, or M for miss.';
  if(d.stage==='assist')return 'Who assisted? Choose a player, N for no assist, or skip.';
  if(d.stage==='rebound')return 'Rebound: D defensive, O offensive, K blocked shot, or N to skip.';
- if(d.stage==='reboundPlayer')return 'Enter the rebounder’s jersey, choose Team rebound, or press Enter to review later.';
+ if(d.stage==='reboundPlayer')return 'Enter the rebounder’s jersey, press M for a team rebound, or press Enter to review later.';
  if(d.stage==='steal')return 'Was there a steal? S to credit a steal, or N for none.';
  return 'Enter '+(d.stage==='blockPlayer'?'blocker':d.stage==='stealPlayer'?'stealing player':'rebounder')+' jersey number, or Team.';
 }
@@ -234,14 +234,15 @@ function wfRender(){
   const showKey=d.action==='jump-ball';
   buttons=wfButton((showKey?'H · ':'')+SoccerBrand.name(state,'home'),'H')+wfButton((showKey?'V · ':'')+SoccerBrand.name(state,'away'),'V');
  }
- else if(d.stage==='result')buttons=wfButton('Made · G','G')+wfButton('Missed · M','M');
+ else if(d.stage==='result')buttons=wfButton('Made · G','G')+
+  wfButton('Miss + offensive rebound · O','O')+wfButton('Miss + defensive rebound · D','D')+wfButton('Missed · M','M');
  else if(d.stage==='rebound')buttons=wfButton('Defensive rebound · D','D')+wfButton('Offensive rebound · O','O')+(d.block? '':wfButton('Blocked shot · K','K'))+wfButton('Skip · N','N');
  else if(d.stage==='steal')buttons=wfButton('Credit steal · S','S')+wfButton('No steal · N','N');
  else{
   buttons=wfNumbers(d.team);
   if(d.stage==='player'&&d.technical)buttons+=wfButton('Team / bench · N','N');
   if(d.stage==='assist')buttons+=wfButton('No assist · N','N');
-  if(d.stage==='reboundPlayer')buttons+=wfButton('Team rebound','TEAM')+wfButton('Review later · Enter','REVIEW');
+  if(d.stage==='reboundPlayer')buttons+=wfButton('Team rebound · M','M')+wfButton('Review later · Enter','REVIEW');
  }
  el('wfChoices').innerHTML=buttons;
  el('wfActionGrid').innerHTML=wfComputerActions(mode);
@@ -462,11 +463,13 @@ async function wfApplyToken(raw,fromCommand=false){
   d.stage='player';wfRender();return true;
  }
  if(d.stage==='result'){
-  if(!['G','M','X'].includes(token)){wfMessage='Choose G for made or M for missed.';wfRender();return false;}
+  const reboundShortcut=token==='O'||token==='D';
+  if(!reboundShortcut&&!['G','M','X'].includes(token)){wfMessage=wfStage();wfRender();return false;}
   d.made=token==='G';
   if(!await wfCommit(d))return false;
   d.trail.push(d.made?'Made':'Missed');
-  if(wfIsFull(wfMode(state))&&d.made&&d.points>1)d.stage='assist';
+  if(reboundShortcut)wfChooseRebound(d,token);
+  else if(wfIsFull(wfMode(state))&&d.made&&d.points>1)d.stage='assist';
   else if(wfIsFull(wfMode(state))&&!d.made&&el('wfPrompts').checked)d.stage='rebound';
   else wfFinish();
   wfRender();return true;
@@ -478,7 +481,7 @@ async function wfApplyToken(raw,fromCommand=false){
  if(d.stage==='rebound'){
   if(token==='K'&&d.eid&&!d.block){d.team=wfOther(d.offense);d.stage='blockPlayer';d.trail.push('Block');wfRender();return true;}
   if(!['D','O'].includes(token)){wfMessage='Choose D, O, K or N.';wfRender();return false;}
-  d.reboundType=token==='D'?'defensive':'offensive';d.team=token==='D'?wfOther(d.offense):d.offense;d.stage='reboundPlayer';d.trail.push(d.reboundType+' rebound');wfRender();return true;
+  wfChooseRebound(d,token);wfRender();return true;
  }
  if(d.stage==='player'&&d.technical&&token==='N'){
   if(!await wfCommit(d))return false;
@@ -486,7 +489,7 @@ async function wfApplyToken(raw,fromCommand=false){
   wfFinish('Technical foul saved.');return true;
  }
  if(token==='REVIEW'&&d.stage==='reboundPlayer')return wfSaveRebound(d,null);
- const number=token==='TEAM'&&d.stage==='reboundPlayer'?'team':wfValidPlayer(d.team,token);
+ const number=(token==='M'||token==='TEAM')&&d.stage==='reboundPlayer'?'team':wfValidPlayer(d.team,token);
  if(number===null){wfMessage='Enter a jersey number from '+SoccerBrand.name(state,d.team)+'’s roster.';wfRender();return false;}
  if(d.stage==='phonePlayer'){
   if(!await wfPatch(d,e=>{e.scorer=String(number);e.player=String(number);}))return false;
@@ -525,6 +528,13 @@ async function wfApplyToken(raw,fromCommand=false){
  if(!await wfCommit(d))return false;
  if(d.action==='turnover'){d.stage='steal';wfRender();}else wfFinish();
  return true;
+}
+function wfChooseRebound(d,token){
+ const defensive=token==='D';
+ d.reboundType=defensive?'defensive':'offensive';
+ d.team=defensive?wfOther(d.offense):d.offense;
+ d.stage='reboundPlayer';
+ d.trail.push(d.reboundType+' rebound');
 }
 async function wfSaveRebound(d,player){
  if(d.review){
