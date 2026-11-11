@@ -49,3 +49,12 @@
 .wf-phone-clock{display:flex;align-items:center;justify-content:space-between;font-variant-numeric:tabular-nums;font-size:24px}
 body:has(#score[data-controls=phone]:not(.hide)) #basketballGameHeader .scoreboard{display:none}
 @media(max-width:500px){#wfActionGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+#wfTrail{display:flex;flex-wrap:wrap;gap:7px;min-height:0}
+#wfTrail:empty{display:none}
+.wf-chip{display:inline-flex;align-items:center;padding:7px 12px;min-height:36px;border:1px solid #8296bc;border-radius:5px;background:#263c68;color:#fff;font:700 16px/1.1 'Barlow',system-ui,sans-serif}
+.wf-chip.wf-chip-made{background:#17683b;color:#fff;border-color:#89ca9f}
+.wf-chip.wf-chip-missed{background:#a5243f;color:#fff;border-color:#f4a7b6}
+#score[data-controls=computer] .wf-command button[type=submit]{display:none}
+#score[data-controls=computer] .wf-command{flex-wrap:wrap;align-items:center}
+#score[data-controls=computer] #wfCommand{flex:0 1 150px;min-width:100px;max-width:100%;font-size:16px}

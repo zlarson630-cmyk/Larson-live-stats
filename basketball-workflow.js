@@ -6,6 +6,7 @@ try{wfLayout=localStorage.getItem('lls-basketball-control-layout')||'auto';}catc
 function wfIsPhone(){return wfLayout==='phone'||(wfLayout==='auto'&&matchMedia('(max-width:700px)').matches);}
 function wfSetLayout(layout){if(wfDraft){wfMessage='Finish or skip the current play first.';wfRender();return;}wfLayout=layout;try{localStorage.setItem('lls-basketball-control-layout',layout);}catch{}wfRender();}
 let wfDraft=null,wfBusy=false,wfSubmitting=false,wfGame=null,wfInput='',wfMessage='';
+let wfDigits='',wfLastTrail=[],wfKeyQueue=Promise.resolve(),wfKeyGeneration=0;
 const wfOriginalRender=render,wfOriginalLabel=playLabel,wfOriginalEvent=eventHtml;
 const wfOriginalBox=basketballBoxScore,wfOriginalUndo=undo,wfOriginalCorrect=correctEvent;
 const wfOther=team=>team==='home'?'away':'home';
@@ -59,7 +60,7 @@ function wfNumbers(team){
 }
 function wfRender(){
  if(!state||!el('wfPanel'))return;
- if(wfGame!==id){wfGame=id;wfDraft=null;wfInput='';wfMessage='';}
+ if(wfGame!==id){wfGame=id;wfDraft=null;wfInput='';wfMessage='';wfDigits='';wfLastTrail=[];}
  const mode=wfMode(state),team=wfDraft?.team||wfOffense(state),phone=wfIsPhone();
  el('score').dataset.controls=phone?'phone':'computer';
  el('wfLayout').value=wfLayout;
@@ -79,7 +80,12 @@ function wfRender(){
   button.setAttribute('aria-pressed',String(wfOffense(state)===t));
  }
  el('wfPrompt').textContent=wfMessage||wfStage();
- el('wfTrail').textContent=wfDraft?.trail.join(' → ')||'';
+ const trail=wfDraft?.trail||wfLastTrail;
+ const labels={'2-point shot':'J · 2PT','3-point shot':'Y · 3PT','Free throw':'E · FT',Made:'MAKE',Missed:'MISS'};
+ el('wfTrail').innerHTML=[...trail,...(wfDigits?['#'+wfDigits]:[])].map(step=>{
+  const result=step==='Made'?' wf-chip-made':step==='Missed'?' wf-chip-missed':'';
+  return '<span class="wf-chip'+result+'">'+escapeHtml(labels[step]||step)+'</span>';
+ }).join('');
  const field=el('wfCommand');
  if(document.activeElement!==field)field.value=wfInput;
  let buttons='';
@@ -104,7 +110,7 @@ function wfRender(){
  el('wfUndo').disabled=wfBusy;
  el('wfTracking').textContent=mode==='basic'?'Team totals · Clock, score, team fouls and timeouts. No individual statistics.':mode==='streamlined'?'Scorebook · Player points and personal fouls, with clock, team fouls and timeouts.':'Full Box · Shooting, assists, rebounds, steals, blocks, turnovers and substitutions. Minutes require a five-player lineup.';
  el('wfCoverage').textContent=wfCoverage(state);
- el('wfPanel').querySelectorAll('button,input,select').forEach(x=>{if(!x.closest('#wfActionGrid'))x.disabled=wfBusy||!canWrite()||gameLocked(state);});
+ el('wfPanel').querySelectorAll('button,input,select').forEach(x=>{if(!x.closest('#wfActionGrid'))x.disabled=(wfBusy&&(phone||x!==field))||!canWrite()||gameLocked(state);});
  el('scoreControls').hidden=true;
  el('score').querySelectorAll(':scope > .row').forEach(x=>x.hidden=true);
  wfRenderBox();
@@ -141,7 +147,8 @@ async function wfSetMode(mode){
 async function wfSetPrompts(value){await wfSave(s=>s.reboundPrompts=value);}
 function wfFinish(message='Play saved. Ready for the next play.'){
  const finished=wfDraft;
- wfDraft=null;wfInput='';wfMessage=message;wfRender();
+ if(finished?.eid)wfLastTrail=[...finished.trail];
+ wfDigits='';wfDraft=null;wfInput='';wfMessage=message;wfRender();
  if(finished?.eid&&finished.action==='shot'&&finished.points>1&&wfMode(state)==='fullchart'&&!finished.phone)openBasketballShotLocation(finished.eid);
 }
 function wfSkip(){
@@ -206,11 +213,11 @@ async function wfToken(raw,fromCommand=false){
   else if(full&&token==='R')wfDraft={action:'rebound',team,offense:team,stage:'rebound',trail:['Rebound']};
   else if(full&&['T','S','K'].includes(token))wfDraft={action:token==='T'?'turnover':token==='S'?'steal':'block',team:token==='T'?team:wfOther(team),offense:team,stage:'player',trail:[token==='T'?'Turnover':token==='S'?'Steal':'Block']};
   else{wfMessage='Choose J, Y, E, F or O'+(full?', T, R, S or K':'')+'.';wfRender();return false;}
-  if(wfMode(state)==='basic'&&wfDraft.action==='shot'){wfDraft.made=true;if(!await wfCommit(wfDraft))return false;wfFinish();}
+  if(wfMode(state)==='basic'&&wfDraft.action==='shot'){wfDraft.made=true;wfDraft.trail.push('Made');if(!await wfCommit(wfDraft))return false;wfFinish();}
   wfRender();return true;
  }
  if(token==='N'&&['assist','rebound','steal'].includes(d.stage)){
-  if(d.stage==='assist'&&!await wfPatch(d,e=>e.assist='no-assist'))return false;
+  if(d.stage==='assist'){if(!await wfPatch(d,e=>e.assist='no-assist'))return false;d.trail.push('No assist');}
   wfFinish();return true;
  }
  if(d.stage==='team'){
@@ -245,21 +252,23 @@ async function wfToken(raw,fromCommand=false){
  if(number===null){wfMessage='Enter a jersey number from '+SoccerBrand.name(state,d.team)+'’s roster.';wfRender();return false;}
  if(d.stage==='phonePlayer'){
   if(!await wfPatch(d,e=>{e.scorer=String(number);e.player=String(number);}))return false;
-  wfFinish();return true;
+  d.trail.push('#'+number);wfFinish();return true;
  }
  if(d.stage==='assist'){
   const shot=state.events.find(e=>e.id===d.eid);
   if(String(shot?.scorer)===String(number)){wfMessage='The shooter cannot assist their own basket.';wfRender();return false;}
   if(!await wfPatch(d,e=>e.assist=String(number)))return false;
-  wfFinish();return true;
+  d.trail.push('Assist #'+number);wfFinish();return true;
  }
  if(d.stage==='blockPlayer'||d.stage==='stealPlayer'){
   const key=d.stage==='blockPlayer'?'block':'steal';
   if(!await wfPatch(d,e=>e[key]={team:d.team,player:String(number)}))return false;
+  d.trail.push('#'+number);
   if(key==='block'){d.block=true;d.team=d.offense;d.stage='rebound';wfRender();}else wfFinish();
   return true;
  }
  if(d.stage==='reboundPlayer'){
+  d.trail.push(number==='team'?'Team rebound':'#'+number);
   if(d.eid){
    if(!await wfPatch(d,(e,s)=>{e.rebound={team:d.team,player:String(number),type:d.reboundType};}))return false;
   }else{
@@ -271,7 +280,7 @@ async function wfToken(raw,fromCommand=false){
  d.player=String(number);d.trail.push('#'+number);
  if(d.action==='shot'){
   if(!wfIsFull(wfMode(state))||d.phone){
-   d.made=true;if(!await wfCommit(d))return false;wfFinish();
+   d.made=true;d.trail.push('Made');if(!await wfCommit(d))return false;wfFinish();
   }else{d.stage='result';wfRender();}
   return true;
  }
@@ -296,20 +305,59 @@ async function wfSubmit(event){
  }finally{wfSubmitting=false;}
  el('wfCommand').focus();
 }
+function wfNeedsJersey(){
+ return ['player','assist','reboundPlayer','blockPlayer','stealPlayer'].includes(wfDraft?.stage);
+}
+
+async function wfProcessKey(key,commandField){
+ if(key===' '&&!commandField&&!wfDraft&&!wfDigits){await toggleClock();return;}
+ if(key==='ESCAPE'){wfSkip();return;}
+ if(key==='BACKSPACE'){wfDigits=wfDigits.slice(0,-1);wfRender();return;}
+ if(/^\d$/.test(key)&&wfNeedsJersey()){
+  wfDigits+=key;
+  const roster=state.rosters?.[wfDraft.team]||[];
+  const mayContinue=wfDigits.length===1&&(wfDigits==='0'||!roster.length||
+   roster.some(p=>String(p.number).length===2&&String(p.number).startsWith(wfDigits)));
+  if(mayContinue){wfRender();return;}
+  const number=wfDigits;
+  wfDigits='';
+  return wfToken(number);
+ }
+ if(wfDigits){
+  const number=wfDigits;
+  wfDigits='';
+  if(!await wfToken(number))return false;
+ }
+ if(key!==' ')return wfToken(key);
+}
+
 document.removeEventListener('keydown',basketballKeydown);
 document.addEventListener('keydown',event=>{
  if(event.defaultPrevented||event.isComposing||event.altKey||event.ctrlKey||event.metaKey||!state||!canWrite()||gameLocked(state)||el('app').classList.contains('hide'))return;
  if(el('basketballPdfDialog').open||el('shotLocationDialog').open||!el('subSheet').classList.contains('hide')||pickerEvent)return;
  if(event.key==='F8'){event.preventDefault();if(!event.repeat)toggleClock();return;}
  const editable=event.target?.closest?.('input,textarea,select,[contenteditable=true]');
- if(event.key==='Escape'&&!wfBusy&&wfDraft){event.preventDefault();wfSkip();return;}
- if(editable)return;
- if(event.key===' '){event.preventDefault();if(!event.repeat)toggleClock();return;}
- if(el('score').classList.contains('hide')||event.repeat)return;
- if(/^[a-z0-9]$/i.test(event.key)){
-  event.preventDefault();el('wfCommand').focus();
-  el('wfCommand').value=event.key;wfInput=event.key;
+ if(wfIsPhone()){
+  if(event.key==='Escape'&&!wfBusy&&wfDraft){event.preventDefault();wfSkip();}
+  if(event.key===' '&&!editable){event.preventDefault();if(!event.repeat)toggleClock();}
+  return;
  }
+ const commandField=event.target===el('wfCommand');
+ if(editable&&!commandField)return;
+ if(event.repeat)return;
+ if(el('score').classList.contains('hide')){if(event.key===' '&&!commandField){event.preventDefault();toggleClock();}return;}
+ if(!/^[a-z0-9 ]$/i.test(event.key)&&!['Escape','Backspace'].includes(event.key))return;
+ event.preventDefault();
+ if(!commandField&&/^[a-z0-9]$/i.test(event.key))el('wfCommand').focus();
+ const game=id,generation=wfKeyGeneration,key=event.key.toUpperCase();
+ wfKeyQueue=wfKeyQueue.then(async()=>{
+  if(generation!==wfKeyGeneration||id!==game||!state||!canWrite()||gameLocked(state)||wfIsPhone()||el('shotLocationDialog').open||el('score').classList.contains('hide'))return;
+  if(await wfProcessKey(key,commandField)===false)wfKeyGeneration++;
+ }).catch(error=>{
+  wfKeyGeneration++;console.error(error);
+  if(id===game){wfMessage='Could not process that key. Check the play before continuing.';wfRender();}
+ });
+ return wfKeyQueue;
 });
 render=function(){wfOriginalRender();wfRender();};
 playLabel=function(e){

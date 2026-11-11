@@ -193,3 +193,30 @@ test('phone keeps both team scoring buttons visible and credits the chosen playe
  assert.equal(a.run('wfDraft'),null);
  assert.ok(a.node('wfPhoneTeams').innerHTML.includes("wfPhoneShot('home',2)"));
 });
+
+test('desktop keys build and save a play without Enter, even while an earlier key is saving',async()=>{
+ const a=setup();
+ const field=a.node('wfCommand');
+ await Promise.all([...('VY24GN')].map(key=>a.press(key,{target:field})));
+ const game=a.db.row();
+ assert.equal(game.scores.away,3);
+ assert.equal(game.events[0].scorer,'24');
+ assert.equal(game.events[0].assist,'no-assist');
+ const chips=a.node('wfTrail').innerHTML;
+ for(const label of ['Away','Y · 3PT','#24','MAKE'])assert.ok(chips.includes(label));
+});
+
+test('ambiguous jersey prefixes wait for the next digit or the next action',async()=>{
+ const a=setup('full',{rosters:{home:[{number:'2'},{number:'23'}],away:[]}});
+ const field=a.node('wfCommand');
+ await a.press('Y',{target:field});
+ await a.press('2',{target:field});
+ assert.equal(a.run('wfDraft.stage'),'player');
+ assert.match(a.node('wfTrail').innerHTML,/#2/);
+ await a.press('3',{target:field});
+ await a.press('G',{target:field});
+ await a.press('N',{target:field});
+ assert.equal(a.db.row().events[0].scorer,'23');
+ await Promise.all([...('Y2GN')].map(key=>a.press(key,{target:field})));
+ assert.equal(a.db.row().events[0].scorer,'2');
+});
