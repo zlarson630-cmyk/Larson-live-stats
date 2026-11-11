@@ -49,8 +49,9 @@
 #wfPhoneTeams section>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
 #wfPhoneTeams button{margin:3px 0;min-height:46px;padding:7px 3px;color:#172332;background:#fff;border:1px solid #8796a8;font-size:16px}
 #wfPhoneTeams section>button{margin:3px 2px;font-size:13px}
-.wf-phone-clock{display:flex;align-items:center;justify-content:space-between;font-variant-numeric:tabular-nums;font-size:24px}
+.wf-phone-clock{display:none;align-items:center;justify-content:space-between;font-variant-numeric:tabular-nums;font-size:24px}
 body:has(#score[data-controls=phone]:not(.hide)) #basketballGameHeader .scoreboard{display:none}
+body:has(#score[data-controls=phone]:not(.hide)) #basketballGameHeader .wf-phone-clock{display:flex}
 @media(max-width:500px){#wfActionGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 #wfTrail{display:flex;flex-wrap:wrap;gap:7px;min-height:0}
@@ -140,3 +141,9 @@ main:has(> #app:not(.hide)) > :is(header,.navHierarchy,.sportNav){display:none!i
  #score[data-controls=computer] #wfMiniFlow{grid-row:1;grid-column:2;margin:0 0 6px}
  #score[data-controls=computer] #wfSkip{justify-self:start}
 }
+
+#basketballGameControls{margin:0 auto 6px;text-align:center}
+#basketballGameControls summary{width:fit-content;margin:auto;padding:4px 8px;cursor:pointer;font-size:14px;font-weight:700}
+#basketballGameControls .row{justify-content:center;gap:5px}
+#basketballGameControls button{min-height:36px;margin:0;padding:5px 9px;font-size:13px}
+#wfMiniFlow .wf-chip-team{background:var(--chip-jersey);color:var(--chip-ink);border-color:color-mix(in srgb,var(--chip-accent) 70%,#8192a7)}

@@ -577,7 +577,7 @@ test('clock editor keeps invalid times out and discards cancelled changes',async
 });
 
 test('scoring mini flow shows the five newest saved plays with their linked details',async()=>{
- const a=setup();
+ const a=setup('full',{colors:{home:'#ffffff',away:'#0051ba'}});
  await a.command('J 11 G 02');
  await a.command('F H 04');
  await a.command('O V');
@@ -586,7 +586,8 @@ test('scoring mini flow shows the five newest saved plays with their linked deta
  await a.command('J 11 M D 04');
  const mini=a.node('wfMiniPlays');
  assert.equal((mini.innerHTML.match(/<li>/g)||[]).length,5);
- assert.match(mini.innerHTML,/MISS.*DREB · Away · #04/);
+ assert.match(mini.innerHTML,/--chip-jersey:#ffffff[^"]*">Home/);
+ assert.match(mini.innerHTML,/MISS.*--chip-jersey:#0051ba[^"]*">DREB · Away · #04/);
  assert.match(mini.innerHTML,/Jump ball/);
  assert.doesNotMatch(mini.innerHTML,/Assist #02/);
  await a.ctx.undo();

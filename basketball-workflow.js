@@ -102,9 +102,18 @@ function wfRenderTrail(){
  }).join('');
 }
 function wfMiniPlayChips(play){
- const chip=(label,style='')=>'<span class="wf-chip'+style+'">'+escapeHtml(label)+'</span>';
+ const chip=(label,style='',team)=>{
+  const color=value=>/^#[0-9a-f]{6}$/i.test(value);
+  if(team==='home'||team==='away'){
+   const jersey=uniform(team),ink=uniformInk(team),accent=uniformAccent(team);
+   if([jersey,ink,accent].every(color)){
+    return '<span class="wf-chip wf-chip-team" style="--chip-jersey:'+jersey+';--chip-ink:'+ink+';--chip-accent:'+accent+'">'+escapeHtml(label)+'</span>';
+   }
+  }
+  return '<span class="wf-chip'+style+'">'+escapeHtml(label)+'</span>';
+ };
  const jersey=number=>number==='team'?'Team rebound':number==null?'Review later':'#'+number;
- const chips=[chip(SoccerBrand.name(state,play.team))];
+ const chips=[chip(SoccerBrand.name(state,play.team),'',play.team)];
  if(play.kind==='score'||play.kind==='miss'){
   chips.push(chip(play.points===1?'FT':play.points+'PT'));
   if(play.individualTracking!==false)chips.push(chip(play.scorer==null?'Unassigned':jersey(play.scorer)));
@@ -123,7 +132,7 @@ function wfMiniPlayChips(play){
   if(!detail)continue;
   const type=key==='rebound'?(detail.type==='defensive'?'DREB':detail.type==='offensive'?'OREB':'Rebound'):label;
   const team=detail.team!==play.team?' · '+SoccerBrand.name(state,detail.team):'';
-  chips.push(chip(type+team+' · '+jersey(detail.player)));
+  chips.push(chip(type+team+' · '+jersey(detail.player),'',team?detail.team:undefined));
  }
  return chips.join('');
 }
