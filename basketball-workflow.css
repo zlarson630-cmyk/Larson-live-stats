@@ -19,7 +19,9 @@
 .wf-tools{margin:10px 0}
 .wf-tools button{min-height:40px}
 #wfBox{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-#wfBox section{padding:8px;min-width:0;margin:8px 0}
+#wfBox section{padding:8px;min-width:0;margin:0}
+.wf-live-box{margin:10px 0}
+.wf-live-box h2{margin:0 0 6px;font-size:18px}
 #wfBox h3{margin:0 0 6px}
 .wf-table{overflow-x:auto}
 .wf-table table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
@@ -66,8 +68,9 @@ body:has(#score[data-controls=phone]:not(.hide)) #basketballGameHeader .scoreboa
 main:has(> #app:not(.hide)) > :is(header,.navHierarchy,.sportNav){display:none!important}
 #basketballGameHeader{padding:8px;margin:6px 0}
 .basketball-game-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-#basketballGameHeader .scoreboard{grid-template-columns:minmax(0,1fr) minmax(112px,auto) minmax(0,1fr);gap:6px}
-#basketballGameHeader .teamTile{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 8px;padding:6px 10px;text-align:left;border-width:2px;border-radius:8px}
+#basketballGameHeader .scoreboard{grid-template-columns:minmax(0,1fr) minmax(112px,auto) minmax(0,1fr);gap:10px}
+#basketballGameHeader .teamTile{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 10px;padding:7px 12px;text-align:left;border-width:2px;border-radius:8px}
+#basketballGameHeader .teamTile b{font-size:clamp(17px,2.3vw,22px);line-height:1.08}
 #basketballGameHeader .teamTile .big{grid-column:2;grid-row:1/span 2;font-size:clamp(26px,4vw,38px);line-height:1;font-variant-numeric:tabular-nums}
 #basketballGameHeader .teamTile .small{grid-column:1;color:inherit;line-height:1.2}
 .basketball-clock-control{order:2;display:grid;justify-items:center;gap:2px}
@@ -103,14 +106,15 @@ main:has(> #app:not(.hide)) > :is(header,.navHierarchy,.sportNav){display:none!i
 #basketballGameFooter nav{display:flex;flex-wrap:wrap;gap:5px 12px;padding:4px}
 @media(max-width:600px){
  #basketballGameHeader .teamTile{padding:5px 6px;gap:1px 4px}
- #basketballGameHeader .teamTile b{font-size:13px}
+ #basketballGameHeader .teamTile b{font-size:15px}
+ #basketballGameHeader .scoreboard{gap:6px}
  #basketballGameHeader .teamTile .small{font-size:10px}
  #wfLineups{grid-template-columns:minmax(0,1fr)}
 }
 
 #basketballGameHeader #clock{min-height:0;padding:0 3px;border:1px solid transparent;border-radius:5px;box-shadow:none;background:transparent;color:inherit;font-weight:800}
-#basketballGameHeader #clock:not(:disabled){cursor:pointer;text-decoration:underline dotted;text-underline-offset:4px}
-#basketballGameHeader #clock:not(:disabled):hover{background:#edf2f7;border-color:#aab8c7}
+#basketballGameHeader #clock:not(:disabled){cursor:pointer;padding-inline-end:23px;background:#f4f6f9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23536276' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 11-.5 2.5L5 13l7.5-7.5-2-2L3 11Zm6.5-6.5 2 2'/%3E%3C/svg%3E") right 4px center/15px no-repeat;border-color:#dce3eb}
+#basketballGameHeader #clock:not(:disabled):hover{background-color:#edf2f7;border-color:#aab8c7}
 #basketballGameHeader #clock:disabled{opacity:1}
 #basketballGameHeader :is(#clock,#basketballClockEditor)[hidden]{display:none}
 #basketballClockEditor{display:grid;gap:3px;justify-items:center}
