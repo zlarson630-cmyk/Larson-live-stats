@@ -4,7 +4,7 @@
 <link rel="icon" href="assets/brand/larson-z-mark.svg?v=official-20261107" type="image/svg+xml">
 <link rel="stylesheet" href="game-center.css?v=light-ticker">
 <style>#management .sectionheading h2{font:700 clamp(2rem,4vw,3rem)/1 "Barlow Condensed",sans-serif;text-transform:uppercase;margin:0}</style>
-<script>/* Preserve existing root basketball deep links after the home-page migration. */(function(){const q=new URLSearchParams(location.search);if(q.has('game')||q.has('local'))location.replace('basketball.html'+location.search+location.hash)})();</script>
+<script>/* Preserve existing root basketball deep links after the home-page migration. */(function(){const q=new URLSearchParams(location.search),auth=new URLSearchParams(location.hash.slice(1));if(['invite','recovery'].includes(auth.get('type'))&&auth.has('access_token')){location.replace('profile.html'+location.hash);return;}if(q.has('game')||q.has('local'))location.replace('basketball.html'+location.search+location.hash)})();</script>
 </head><body>
 <header><div class="inner"><a class="brand" href="./" aria-label="Larson Live Stats home"><img src="assets/brand/larson-z-mark.svg?v=official-20261107" alt=""><span>LARSON <em>LIVE STATS</em></span></a><a class="profile-link" href="profile.html">My profile</a></div></header>
 <main>

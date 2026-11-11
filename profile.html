@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Profile · Larson Live Stats</title><link rel="icon" type="image/svg+xml" href="assets/brand/larson-z-mark.svg?v=official-20261107"><link rel="stylesheet" href="athletic-ui.css"><link rel="stylesheet" href="profile.css?v=teams-and-rosters"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" defer></script><script src="live.js" defer></script><script src="team-brands.js" defer></script><script src="cloud-library.js?v=legacy-game-key" defer></script><script src="profile.js?v=teams-and-rosters" defer></script><style>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Profile · Larson Live Stats</title><link rel="icon" type="image/svg+xml" href="assets/brand/larson-z-mark.svg?v=official-20261107"><link rel="stylesheet" href="athletic-ui.css"><link rel="stylesheet" href="profile.css?v=teams-and-rosters"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" defer></script><script src="profile-password.js?v=1" defer></script><script src="live.js" defer></script><script src="team-brands.js" defer></script><script src="cloud-library.js?v=legacy-game-key" defer></script><script src="profile.js?v=teams-and-rosters" defer></script><style>
 body[data-management="games"] :is(#teams,#brands,#games .profileSectionHeading),body[data-management="teams"] :is(#brands,#games){display:none}
 #games .gameLibraryFilters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:10px 0}
 #games .gameLibraryFilters label{display:grid;gap:4px}
@@ -10,7 +10,19 @@ body[data-management="games"] :is(#teams,#brands,#games .profileSectionHeading),
 <header class="profileHeader"><a class="brandHome" href="./">Live Stats</a></header>
 <nav class="siteNav" aria-label="Main navigation"><a href="./">Home</a><a href="basketball.html">Basketball</a><a href="soccer.html">Soccer</a><a href="brands.html">Team Brands</a><a href="profile.html" aria-current="page">My Profile</a></nav>
 <section class="accountHero"><div class="profileAvatar" id="profileAvatar" aria-hidden="true">?</div><div><p class="profileEyebrow">YOUR LIVE STATS</p><h1 id="profileHeading">My profile</h1><p id="profileIdentity" role="status">Checking sign-in…</p></div><button id="profileSignOut" hidden>Sign out</button></section>
-<section id="profileLogin"><h2>Sign in to your account</h2><p>Your account connects your team brands and cloud games across devices.</p><form id="profileSignIn"><label>Email<input id="profileEmail" type="email" autocomplete="username" required></label><label>Password<input id="profilePassword" type="password" autocomplete="current-password" required></label><button type="submit" class="primary">Sign in</button></form><p id="profileAuthMessage" role="status" aria-live="polite"></p></section>
+<section id="profileLogin"><h2>Sign in to your account</h2><p>Your account connects your team brands and cloud games across devices.</p><form id="profileSignIn"><label>Email<input id="profileEmail" type="email" autocomplete="username" required></label><label>Password<input id="profilePassword" type="password" autocomplete="current-password" required></label><button type="submit" class="primary">Sign in</button></form><button id="profileResetPassword" type="button">Email me a password reset link</button><p id="profilePasswordEmailStatus" role="status"></p><p id="profileAuthMessage" role="status" aria-live="polite"></p></section>
+<section id="profilePasswordSection" hidden>
+ <details id="profilePasswordDetails">
+  <summary>Set or change your password</summary>
+  <p id="profilePasswordIntro">Choose a password to sign in to LLS again.</p>
+  <form id="profileSetPassword">
+   <label>New password<input id="profileNewPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+   <label>Confirm new password<input id="profileConfirmPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+   <button type="submit" class="primary">Save password</button>
+  </form>
+  <p id="profilePasswordStatus" role="status"></p>
+ </details>
+</section>
 <section id="legacyImport" hidden><h2>Bring older records into the cloud</h2><p class="profileHint">If you used this app before cloud saving, open this page in the original browser to bring those brands, rosters and games into your account. Existing cloud records stay intact. Imported games get a game code for the scoreboard; rosters and play details stay in your account.</p><p id="legacyImportStatus" role="status"></p><button id="legacyImportButton">Import older records to my account</button></section><p id="profileStatus" role="status" aria-live="polite"></p>
 <nav class="profileTabs" aria-label="Profile sections">
  <a href="profile.html?view=teams#teams"><span>My Teams<small>Teams and player rosters</small></span><b id="teamsCount">0</b></a>
