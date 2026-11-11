@@ -777,3 +777,108 @@ test('turnover possession reverses on Backspace or Undo and preserves the arrow'
  assert.equal(a.db.row().offenseTeam,'home');
  assert.equal(a.db.row().possession,'home');
 });
+
+test('reopening a game keeps the confirmed score, clock and possession while recovering an assist',async()=>{
+ const a=setup('full',{period:2,seconds:91,possession:'away'});
+ const saved=await a.command('J 11 G');
+ assert.equal(saved.events[0].pendingDetail,'assist');
+
+ const reopened=setup('full',saved);
+ reopened.run('render()');
+ assert.equal(reopened.run('wfDraft'),null);
+ assert.equal(reopened.run('stamp(state)'),'1:31');
+ assert.equal(reopened.run('state.period'),2);
+ assert.equal(reopened.run('state.offenseTeam'),'home');
+ assert.equal(reopened.run('state.possession'),'away');
+ assert.equal(reopened.node('wfDetailReview').textContent,'Review unfinished plays (1)');
+ assert.match(reopened.ctx.eventHtml(saved.events[0]),/Review assist/);
+ reopened.ctx.wfReviewNextDetail();
+ const game=await reopened.command('02');
+ assert.equal(game.events.length,1);
+ assert.equal(game.events[0].assist,'02');
+ assert.equal(game.events[0].pendingDetail,undefined);
+ assert.equal(game.scores.home,2);
+ assert.equal(game.offenseTeam,'away');
+ assert.equal(game.possession,'away');
+ assert.equal(reopened.node('wfDetailReview').hidden,true);
+});
+
+test('a reopened turnover and missed free throw recover their pending details without replaying either play',async()=>{
+ const a=setup();
+ await a.command('T 11');
+ await a.press('Escape',{target:a.node('wfCommand')});
+ const saved=await a.command('E 24 O');
+ assert.equal(saved.offenseTeam,'away');
+ assert.equal(saved.events[0].pendingDetail,'offensive');
+ assert.equal(saved.events[1].pendingDetail,'steal');
+
+ const reopened=setup('full',saved);
+ reopened.run('render()');
+ reopened.ctx.wfReviewNextDetail();
+ assert.equal(reopened.run('wfDraft.stage'),'steal');
+ await reopened.command('S 04');
+ reopened.ctx.wfReviewNextDetail();
+ assert.equal(reopened.run('wfDraft.stage'),'reboundPlayer');
+ const game=await reopened.command('M');
+ assert.deepEqual({...game.events[0].rebound},{team:'away',player:'team',type:'offensive'});
+ assert.deepEqual({...game.events[1].steal},{team:'away',player:'04'});
+ assert.equal(game.events.length,2);
+ assert.equal(game.offenseTeam,'away');
+ assert.equal(reopened.node('wfDetailReview').hidden,true);
+});
+
+test('declined or disabled follow-ups stay out of the recovery queue',async()=>{
+ const a=setup('full',{reboundPrompts:false});
+ await a.command('J 11 G N');
+ await a.command('J 11 M');
+ const saved=await a.command('T 11 N');
+ const reopened=setup('full',saved);
+ reopened.run('render()');
+ assert.equal(reopened.node('wfDetailReview').hidden,true);
+ assert.equal(saved.events.some(e=>e.pendingDetail),false);
+});
+
+test('reconnect clears a pending draft when the server already saved its play',async()=>{
+ const a=setup();
+ const savedWrite=a.ctx.write;
+ let confirmed;
+ a.ctx.write=async change=>{
+  confirmed=structuredClone(a.db.row());
+  change(confirmed);
+  return false;
+ };
+ await a.command('J 11 G');
+ assert.equal(a.run('wfDraft.stage'),'result');
+ assert.equal(a.db.row().scores.home,0);
+ a.ctx.write=savedWrite;
+ a.ctx.confirmed=confirmed;
+ a.run('state=confirmed;render()');
+ assert.equal(a.run('wfDraft'),null);
+ assert.equal(a.run('state.scores.home'),2);
+ assert.equal(a.node('wfDetailReview').hidden,false);
+ assert.match(a.node('wfPrompt').textContent,/Game updated/);
+});
+
+test('the same practice tab reopens its saved game and unfinished details',async()=>{
+ const session=new Map(),local=new Map();
+ function practice(){
+  const a=setup();
+  for(const [name,storage] of [['sessionStorage',session],['localStorage',local]]){
+   a.ctx[name]={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)};
+  }
+  a.ctx.location.search='?demo=1';
+  a.run(fs.readFileSync('basketball-demo.js','utf8'));
+  a.run('startBasketballDemo(); state.scoringMode="full"');
+  return a;
+ }
+ const a=practice();
+ await a.command('H J 11 G');
+ const score=a.run('state.scores.home');
+ const sessionId=a.run('basketballDemoSession');
+
+ const reopened=practice();
+ assert.equal(reopened.run('basketballDemoSession'),sessionId);
+ assert.equal(reopened.run('state.scores.home'),score);
+ assert.equal(reopened.run('state.events[0].pendingDetail'),'assist');
+ assert.equal(reopened.node('wfDetailReview').textContent,'Review unfinished plays (1)');
+});

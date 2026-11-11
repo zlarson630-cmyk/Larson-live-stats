@@ -85,9 +85,14 @@ function basketballDemoRead(key){
 function startBasketballDemo(){
  const params=new URLSearchParams(location.search);
  if(params.get('demo')!=='1'||params.has('game')||params.has('local'))return;
- basketballDemoSession=crypto.randomUUID();
- // Only the explicit test-game route replaces scorer writes with a tab-local session.
- state=createBasketballDemo();
+ // Keep a practice game across refreshes in the same browser tab.
+ const sessionKey='lls-basketball-practice-session';
+ let previous;
+ try{previous=sessionStorage.getItem(sessionKey);}catch{}
+ basketballDemoSession=previous||crypto.randomUUID();
+ const saved=previous?basketballDemoRead('game'):null;
+ state=saved?.demo&&saved.id==='DEMO01'?saved:createBasketballDemo();
+ try{sessionStorage.setItem(sessionKey,basketballDemoSession);}catch{}
  id=state.id;
  canWrite=()=>true;
  write=async (change,gameTextField)=>{
@@ -106,7 +111,7 @@ function startBasketballDemo(){
  };
  goHome=event=>{event?.preventDefault();location.assign('basketball-home.html');return false;};
  basketballDemoSave('game',state);
- basketballDemoSave('graphic',null);
+ if(!saved)basketballDemoSave('graphic',null);
  el('lobby').classList.add('hide');
  el('teams').classList.add('hide');
  el('app').classList.remove('hide');
