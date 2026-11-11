@@ -309,8 +309,7 @@ function wfNeedsJersey(){
  return ['player','assist','reboundPlayer','blockPlayer','stealPlayer'].includes(wfDraft?.stage);
 }
 
-async function wfProcessKey(key,commandField){
- if(key===' '&&!commandField&&!wfDraft&&!wfDigits){await toggleClock();return;}
+async function wfProcessKey(key){
  if(key==='ESCAPE'){wfSkip();return;}
  if(key==='BACKSPACE'){wfDigits=wfDigits.slice(0,-1);wfRender();return;}
  if(/^\d$/.test(key)&&wfNeedsJersey()){
@@ -328,7 +327,7 @@ async function wfProcessKey(key,commandField){
   wfDigits='';
   if(!await wfToken(number))return false;
  }
- if(key!==' ')return wfToken(key);
+ return wfToken(key);
 }
 
 document.removeEventListener('keydown',basketballKeydown);
@@ -344,15 +343,15 @@ document.addEventListener('keydown',event=>{
  }
  const commandField=event.target===el('wfCommand');
  if(editable&&!commandField)return;
- if(event.repeat)return;
- if(el('score').classList.contains('hide')){if(event.key===' '&&!commandField){event.preventDefault();toggleClock();}return;}
- if(!/^[a-z0-9 ]$/i.test(event.key)&&!['Escape','Backspace'].includes(event.key))return;
+ if(event.key===' '){event.preventDefault();if(!event.repeat)return toggleClock();return;}
+ if(event.repeat||el('score').classList.contains('hide'))return;
+ if(!/^[a-z0-9]$/i.test(event.key)&&!['Escape','Backspace'].includes(event.key))return;
  event.preventDefault();
  if(!commandField&&/^[a-z0-9]$/i.test(event.key))el('wfCommand').focus();
  const game=id,generation=wfKeyGeneration,key=event.key.toUpperCase();
  wfKeyQueue=wfKeyQueue.then(async()=>{
   if(generation!==wfKeyGeneration||id!==game||!state||!canWrite()||gameLocked(state)||wfIsPhone()||el('shotLocationDialog').open||el('score').classList.contains('hide'))return;
-  if(await wfProcessKey(key,commandField)===false)wfKeyGeneration++;
+  if(await wfProcessKey(key)===false)wfKeyGeneration++;
  }).catch(error=>{
   wfKeyGeneration++;console.error(error);
   if(id===game){wfMessage='Could not process that key. Check the play before continuing.';wfRender();}

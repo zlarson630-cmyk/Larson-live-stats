@@ -220,3 +220,28 @@ test('ambiguous jersey prefixes wait for the next digit or the next action',asyn
  await Promise.all([...('Y2GN')].map(key=>a.press(key,{target:field})));
  assert.equal(a.db.row().events[0].scorer,'2');
 });
+
+test('Space toggles the clock in the command field and preserves a jersey in progress',async()=>{
+ const a=setup('full',{rosters:{home:[{number:'2'},{number:'23'}],away:[]}});
+ const field=a.node('wfCommand');
+ field.closest=()=>field;
+ field.focus();
+ await a.press(' ');
+ assert.equal(a.db.row().running,true);
+ let repeatPrevented=false;
+ await a.press(' ',{repeat:true,preventDefault(){repeatPrevented=true;}});
+ assert.equal(repeatPrevented,true);
+ assert.equal(a.db.row().running,true);
+
+ await a.press('Y');
+ await a.press('2');
+ await a.press(' ');
+ assert.equal(a.db.row().running,false);
+ assert.equal(a.run('wfDraft.stage'),'player');
+ assert.equal(a.run('wfDigits'),'2');
+ assert.equal(a.ctx.document.activeElement,field);
+
+ for(const key of '3GN')await a.press(key);
+ assert.equal(a.db.row().scores.home,3);
+ assert.equal(a.db.row().events[0].scorer,'23');
+});
