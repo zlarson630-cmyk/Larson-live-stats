@@ -101,6 +101,40 @@ function wfRenderTrail(){
   return '<span class="wf-chip'+result+'">'+escapeHtml(labels[step]||step)+'</span>';
  }).join('');
 }
+function wfMiniPlayChips(play){
+ const chip=(label,style='')=>'<span class="wf-chip'+style+'">'+escapeHtml(label)+'</span>';
+ const jersey=number=>number==='team'?'Team rebound':number==null?'Review later':'#'+number;
+ const chips=[chip(SoccerBrand.name(state,play.team))];
+ if(play.kind==='score'||play.kind==='miss'){
+  chips.push(chip(play.points===1?'FT':play.points+'PT'));
+  if(play.individualTracking!==false)chips.push(chip(play.scorer==null?'Unassigned':jersey(play.scorer)));
+  chips.push(play.kind==='score'?chip('MAKE',' wf-chip-made'):chip('MISS',' wf-chip-missed'));
+  if(/^\d{1,2}$/.test(String(play.assist)))chips.push(chip('Assist '+jersey(play.assist)));
+ }else if(play.kind==='rebound'){
+  chips.push(chip(play.reboundType==='defensive'?'Defensive rebound':play.reboundType==='offensive'?'Offensive rebound':'Rebound'));
+  chips.push(chip(jersey(play.player)));
+ }else{
+  const labels={'jump-ball':'Jump ball',foul:play.foulType==='technical'?'Technical foul':'Personal foul',turnover:'Turnover',steal:'Steal',block:'Block'};
+  chips.push(chip(play.openingTip?'Opening tip':labels[play.kind]||wfOriginalLabel(play)));
+  if(labels[play.kind]&&play.player!=null)chips.push(chip(jersey(play.player)));
+ }
+ for(const [key,label] of [['block','Block'],['rebound','Rebound'],['steal','Steal']]){
+  const detail=play[key];
+  if(!detail)continue;
+  const type=key==='rebound'?(detail.type==='defensive'?'DREB':detail.type==='offensive'?'OREB':'Rebound'):label;
+  const team=detail.team!==play.team?' · '+SoccerBrand.name(state,detail.team):'';
+  chips.push(chip(type+team+' · '+jersey(detail.player)));
+ }
+ return chips.join('');
+}
+function wfRenderMiniFlow(){
+ const plays=state.events.slice(0,5);
+ el('wfMiniEmpty').hidden=plays.length>0;
+ el('wfMiniPlays').innerHTML=plays.map(play=>{
+  const time=basketballPeriodLabel(state,play.period)+' '+play.time;
+  return '<li><time>'+escapeHtml(time)+'</time><div>'+wfMiniPlayChips(play)+'</div></li>';
+ }).join('');
+}
 function wfOpenJerseyChip(index){
  if(wfDraft||wfBusy||wfChipEdit||!canWrite()||gameLocked(state))return;
  const play=wfLastPlay&&state.events.find(e=>e.id===wfLastPlay.id);
@@ -177,6 +211,7 @@ function wfRender(){
  }
  el('wfPrompt').textContent=wfMessage||wfStage();
  wfRenderTrail();
+ wfRenderMiniFlow();
  const field=el('wfCommand');
  if(document.activeElement!==field)field.value=wfInput;
  let buttons='';

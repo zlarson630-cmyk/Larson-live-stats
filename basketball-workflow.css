@@ -38,7 +38,8 @@
 .wf-phone{display:none}
 #score[data-controls=phone] .wf-phone{display:block}
 #score[data-controls=phone] .wf-settings,#score[data-controls=phone] .wf-possession,#score[data-controls=phone] #wfTracking,#score[data-controls=phone] #wfActionGrid{display:none!important}
-#score[data-controls=phone] #wfPanel:has(#wfSkip[hidden]){display:none}
+#score[data-controls=phone] #wfPanel:has(#wfSkip[hidden]){background:transparent;border:0;padding:0;margin-top:6px}
+#score[data-controls=phone] #wfPanel:has(#wfSkip[hidden]) > :not(#wfMiniFlow){display:none}
 #wfChoices[hidden],#wfActionGrid[hidden]{display:none!important}
 #wfPhoneTeams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 #wfPhoneTeams section{margin:6px 0;padding:10px 6px;background:var(--phone-jersey);color:var(--phone-ink);border:2px solid #9aa8b8;text-align:center;min-width:0}
@@ -123,3 +124,19 @@ main:has(> #app:not(.hide)) > :is(header,.navHierarchy,.sportNav){display:none!i
 #basketballClockEditor button{min-width:30px;padding:3px 5px}
 #basketballClockEditStatus{margin:0;font-size:12px}
 #basketballClockEditStatus:empty{display:none}
+
+#wfMiniFlow{min-width:0;margin-top:8px;padding:7px 9px;border:1px solid #d5dee8;border-radius:8px;background:#f7f9fc;color:#172332}
+#wfMiniFlow h3{margin:0 0 4px;font-size:15px}
+#wfMiniFlow ol{list-style:none;margin:0;padding:0}
+#wfMiniFlow li{display:grid;grid-template-columns:65px minmax(0,1fr);align-items:baseline;gap:5px;padding:2px 0}
+#wfMiniFlow li + li{border-top:1px solid #e0e6ed}
+#wfMiniFlow time{font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums;color:#536276}
+#wfMiniFlow li div{display:flex;flex-wrap:wrap;gap:3px}
+#wfMiniFlow .wf-chip{font-size:12px;min-height:20px;padding:2px 5px;overflow-wrap:anywhere}
+#wfMiniFlow p{font-size:13px;margin:0}
+@media(min-width:960px){
+ #score[data-controls=computer] #wfPanel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 12px;align-items:start}
+ #score[data-controls=computer] #wfPanel > :not(.wf-entry,#wfMiniFlow){grid-column:1/-1}
+ #score[data-controls=computer] #wfMiniFlow{grid-row:1;grid-column:2;margin:0 0 6px}
+ #score[data-controls=computer] #wfSkip{justify-self:start}
+}

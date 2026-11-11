@@ -575,3 +575,21 @@ test('clock editor keeps invalid times out and discards cancelled changes',async
  assert.equal(a.node('basketballClockEditor').hidden,true);
  assert.equal(a.db.row().seconds,59);
 });
+
+test('scoring mini flow shows the five newest saved plays with their linked details',async()=>{
+ const a=setup();
+ await a.command('J 11 G 02');
+ await a.command('F H 04');
+ await a.command('O V');
+ await a.command('B H');
+ await a.command('F H 11');
+ await a.command('J 11 M D 04');
+ const mini=a.node('wfMiniPlays');
+ assert.equal((mini.innerHTML.match(/<li>/g)||[]).length,5);
+ assert.match(mini.innerHTML,/MISS.*DREB · Away · #04/);
+ assert.match(mini.innerHTML,/Jump ball/);
+ assert.doesNotMatch(mini.innerHTML,/Assist #02/);
+ await a.ctx.undo();
+ assert.match(mini.innerHTML,/MAKE.*Assist #02/);
+ assert.doesNotMatch(mini.innerHTML,/DREB/);
+});
