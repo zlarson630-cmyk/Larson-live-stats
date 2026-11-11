@@ -184,6 +184,7 @@ test('phone keeps both team scoring buttons visible and credits the chosen playe
  const buttons=a.node('wfPhoneTeams').innerHTML;
  for(const t of ['home','away'])for(const n of [1,2,3])assert.ok(buttons.includes("wfPhoneShot('"+t+"',"+n+")"));
  await a.ctx.wfPhoneShot('away',3);
+ assert.equal(a.db.row().scores.away,3);
  await a.command('24');
  const game=a.db.row();
  assert.equal(game.scores.away,3);

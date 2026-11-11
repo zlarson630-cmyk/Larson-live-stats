@@ -46,6 +46,7 @@ function wfStage(){
  if(!d)return 'Choose a play, or type a command.';
  if(d.stage==='team')return d.action==='timeout'?'Which team called timeout?':'Which team committed the foul?';
  if(d.stage==='player')return 'Enter '+(d.action==='shot'?'shooter':d.action==='foul'?'fouling player':'player')+' jersey number.';
+ if(d.stage==='phonePlayer')return 'Basket saved. Who scored? Choose a player or assign later.';
  if(d.stage==='result')return 'Made or missed?';
  if(d.stage==='assist')return 'Who assisted? Choose a player, N for no assist, or skip.';
  if(d.stage==='rebound')return 'Rebound: D defensive, O offensive, K blocked shot, or N to skip.';
@@ -242,6 +243,10 @@ async function wfToken(raw,fromCommand=false){
  }
  const number=token==='TEAM'&&d.stage==='reboundPlayer'?'team':wfValidPlayer(d.team,token);
  if(number===null){wfMessage='Enter a jersey number from '+SoccerBrand.name(state,d.team)+'’s roster.';wfRender();return false;}
+ if(d.stage==='phonePlayer'){
+  if(!await wfPatch(d,e=>{e.scorer=String(number);e.player=String(number);}))return false;
+  wfFinish();return true;
+ }
  if(d.stage==='assist'){
   const shot=state.events.find(e=>e.id===d.eid);
   if(String(shot?.scorer)===String(number)){wfMessage='The shooter cannot assist their own basket.';wfRender();return false;}
@@ -460,7 +465,10 @@ function wfRenderPhone(){
 }
 async function wfPhoneShot(team,points){
  if(wfBusy||wfDraft||!canWrite()||gameLocked(state))return;
- wfDraft={action:'shot',team,offense:team,points,phone:true,stage:'player',trail:[SoccerBrand.name(state,team),'Made '+points]};wfMessage='';wfRender();
+ wfDraft={action:'shot',team,offense:team,points,made:true,player:null,phone:true,stage:'phonePlayer',trail:[SoccerBrand.name(state,team),'Made '+points]};
+ wfMessage='';
+ if(!await wfCommit(wfDraft)){wfDraft=null;wfRender();return;}
+ wfRender();
 }
 async function wfPhoneFoul(team){if(wfBusy||wfDraft||!canWrite()||gameLocked(state))return;if(await wfCommit({action:'foul',team,phone:true}))wfFinish('Team foul saved.');}
 async function wfPhoneTimeout(team){if(wfBusy||wfDraft||!canWrite()||gameLocked(state))return;if(await wfCommit({action:'timeout',team,phone:true}))wfFinish('Timeout saved.');}
