@@ -10,6 +10,8 @@ let wfDigits='',wfLastTrail=[],wfLastPlay=null,wfChipEdit=null,wfSteps=[],wfKeyQ
 const wfOriginalRender=render,wfOriginalLabel=playLabel,wfOriginalEvent=eventHtml;
 const wfOriginalBox=basketballBoxScore,wfOriginalUndo=undo,wfOriginalCorrect=correctEvent;
 const wfOther=team=>team==='home'?'away':'home';
+const wfReboundType=key=>key==='O'?'offensive':key==='D'?'defensive':null;
+const wfReboundTeam=(shootingTeam,type)=>type==='defensive'?wfOther(shootingTeam):shootingTeam;
 const wfMode=game=>game?.scoringMode==='full'&&game.shotChartEnabled?'fullchart':Object.hasOwn(wfModes,game?.scoringMode)?game.scoringMode:'streamlined';
 const wfOffense=game=>['home','away'].includes(game?.offenseTeam)?game.offenseTeam:'home';
 function wfElapsed(game){return basketballElapsedAt(game,Math.max(1,game.period),remaining(game));}
@@ -510,12 +512,12 @@ async function wfApplyToken(raw,fromCommand=false){
   d.stage='player';wfRender();return true;
  }
  if(d.stage==='result'){
-  const reboundShortcut=token==='O'||token==='D';
-  if(!reboundShortcut&&!['G','M','X'].includes(token)){wfMessage=wfStage();wfRender();return false;}
+  const reboundType=wfReboundType(token);
+  if(!reboundType&&!['G','M','X'].includes(token)){wfMessage=wfStage();wfRender();return false;}
   d.made=token==='G';
   if(!await wfCommit(d))return false;
   d.trail.push(d.made?'Made':'Missed');
-  if(reboundShortcut)wfChooseRebound(d,token);
+  if(reboundType)wfChooseRebound(d,reboundType);
   else if(wfIsFull(wfMode(state))&&d.made&&d.points>1)d.stage='assist';
   else if(wfIsFull(wfMode(state))&&!d.made&&el('wfPrompts').checked)d.stage='rebound';
   else wfFinish();
@@ -527,16 +529,20 @@ async function wfApplyToken(raw,fromCommand=false){
  }
  if(d.stage==='rebound'){
   if(token==='K'&&d.eid&&!d.block){d.team=wfOther(d.offense);d.stage='blockPlayer';d.trail.push('Block');wfRender();return true;}
-  if(!['D','O'].includes(token)){wfMessage='Choose D, O, K or N.';wfRender();return false;}
-  wfChooseRebound(d,token);wfRender();return true;
+  const reboundType=wfReboundType(token);
+  if(!reboundType){wfMessage=wfStage();wfRender();return false;}
+  wfChooseRebound(d,reboundType);wfRender();return true;
  }
  if(d.stage==='player'&&d.technical&&token==='N'){
   if(!await wfCommit(d))return false;
   d.trail.push('Team / bench');
   wfFinish('Technical foul saved.');return true;
  }
- if(token==='REVIEW'&&d.stage==='reboundPlayer')return wfSaveRebound(d,null);
- const number=(token==='M'||token==='TEAM')&&d.stage==='reboundPlayer'?'team':wfValidPlayer(d.team,token);
+ if(d.stage==='reboundPlayer'){
+  if(token==='REVIEW')return wfSaveRebound(d,null);
+  if(token==='M'||token==='TEAM')return wfSaveRebound(d,'team');
+ }
+ const number=wfValidPlayer(d.team,token);
  if(number===null){wfMessage='Enter a jersey number from '+SoccerBrand.name(state,d.team)+'’s roster.';wfRender();return false;}
  if(d.stage==='phonePlayer'){
   if(!await wfPatch(d,e=>{e.scorer=String(number);e.player=String(number);}))return false;
@@ -572,13 +578,12 @@ async function wfApplyToken(raw,fromCommand=false){
  if(d.action==='turnover'){d.team=wfOther(d.offense);d.stage='steal';wfRender();}else wfFinish();
  return true;
 }
-function wfChooseRebound(d,token){
- const defensive=token==='D';
- d.reboundType=defensive?'defensive':'offensive';
+function wfChooseRebound(d,type){
  const shootingTeam=state.events.find(e=>e.id===d.eid&&e.kind==='miss')?.team??d.offense;
- d.team=defensive?wfOther(shootingTeam):shootingTeam;
+ d.reboundType=type;
+ d.team=wfReboundTeam(shootingTeam,type);
  d.stage='reboundPlayer';
- d.trail.push(d.reboundType+' rebound');
+ d.trail.push(type+' rebound');
 }
 async function wfSaveRebound(d,player){
  let creditedTeam=d.team;
@@ -591,7 +596,7 @@ async function wfSaveRebound(d,player){
  }else if(d.eid){
   if(!await wfPatch(d,e=>{
    if(e.kind!=='miss')throw Error('The shot changed. Review it in Game Flow.');
-   creditedTeam=d.reboundType==='offensive'?e.team:wfOther(e.team);
+   creditedTeam=wfReboundTeam(e.team,d.reboundType);
    if(creditedTeam!==d.team&&player!=='team')throw Error('The rebound team changed. Review the shot in Game Flow.');
    e.rebound={team:creditedTeam,player,type:d.reboundType};
   }))return false;
