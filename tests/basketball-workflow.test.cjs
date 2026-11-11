@@ -47,7 +47,7 @@ test('a complete keyboard sequence links assist, rebound and block without dupli
  let game=await a.command('H Y 11 G 02');
  assert.equal(game.events.length,1);
  assert.equal(game.events[0].assist,'02');
- assert.equal(game.offenseTeam,'home');
+ assert.equal(game.offenseTeam,'away');
  game=await a.command('V J 24 M K 04 D 02');
  assert.equal(game.events.length,2);
  const miss=game.events[0];
@@ -630,4 +630,36 @@ test('live box score sorts by jersey by default or points, with unassigned last'
  a.node('wfBoxSort').value='points';
  a.ctx.wfRenderBox();
  assert.match(html(),/#11<\/th>.*#2<\/th>.*#3<\/th>.*Unassigned<\/th>/);
+});
+
+test('saving a live assist switches offense, and undo respects the arrow and later manual selections',async()=>{
+ const a=setup('full',{offenseTeam:'home',possession:'home'});
+ await a.command('Y 11 G');
+ assert.equal(a.db.row().offenseTeam,'home');
+ let game=await a.command('02');
+ assert.equal(game.offenseTeam,'away');
+ assert.equal(game.possession,'home');
+ assert.equal(game.offenseEvent,game.events[0].id);
+ await a.ctx.undo();
+ assert.equal(a.db.row().offenseTeam,'home');
+ assert.equal(a.db.row().possession,'home');
+ await a.command('Y 11 G 02');
+ await a.command('V');
+ await a.ctx.undo();
+ game=a.db.row();
+ assert.equal(game.offenseTeam,'away');
+ assert.equal(game.possession,'home');
+});
+
+test('correcting an assisted make to a miss reverses its automatic offense switch',async()=>{
+ const a=setup('full',{offenseTeam:'home',possession:'away'});
+ const game=await a.command('J 11 G 02');
+ a.ctx.prompt=()=> 'miss';
+ await a.ctx.correctEvent(game.events[0].id);
+ const corrected=a.db.row();
+ assert.equal(corrected.events[0].kind,'miss');
+ assert.equal(corrected.events[0].beforePossession,undefined);
+ assert.equal(corrected.scores.home,0);
+ assert.equal(corrected.offenseTeam,'home');
+ assert.equal(corrected.possession,'away');
 });

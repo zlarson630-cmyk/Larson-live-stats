@@ -315,15 +315,19 @@ function wfValidPlayer(team,token){
  return roster.find(p=>String(p.number)===token)?.number??roster.find(p=>Number(p.number)===Number(token))?.number??null;
 }
 const wfJumpBallFields=[['offenseTeam','offenseEvent'],['possession','possessionEvent']];
-function wfRemoveJumpBall(game,event){
+function wfRestorePossession(game,event){
+ const changes=event.beforePossession||event.beforeJump;
+ if(!changes)return;
  for(const [field,source] of wfJumpBallFields){
-  const previous=event.beforeJump[field];
+  const previous=changes[field];
+  if(!previous)continue;
   if(game[source]===event.id){
    game[field]=previous.value;
    game[source]=previous.source;
   }
   for(const later of game.events){
-   if(later.beforeJump?.[field].source===event.id)later.beforeJump[field]=previous;
+   const saved=later.beforePossession||later.beforeJump;
+   if(saved?.[field]?.source===event.id)saved[field]=previous;
   }
  }
 }
@@ -491,7 +495,16 @@ async function wfApplyToken(raw,fromCommand=false){
  if(d.stage==='assist'){
   const shot=state.events.find(e=>e.id===d.eid);
   if(String(shot?.scorer)===String(number)){wfMessage='The shooter cannot assist their own basket.';wfRender();return false;}
-  if(!await wfPatch(d,e=>e.assist=String(number)))return false;
+  if(!await wfPatch(d,(e,s)=>{
+   if(e.kind!=='score'||Number(e.points)<=1)throw Error('The shot changed. Review it in Game Flow.');
+   if(String(e.scorer)===String(number))throw Error('The shooter cannot assist their own basket.');
+   e.assist=String(number);
+   if(s.events[0]?.id===e.id&&wfOffense(s)===e.team){
+    e.beforePossession={offenseTeam:{value:s.offenseTeam??null,source:s.offenseEvent??null}};
+    s.offenseTeam=wfOther(e.team);
+    s.offenseEvent=e.id;
+   }
+  }))return false;
   wfAddJerseyChip(d,'assist',number);wfFinish();return true;
  }
  if(d.stage==='blockPlayer'||d.stage==='stealPlayer'){
@@ -662,7 +675,7 @@ undo=async function(){
    if(e.kind==='score')s.scores[e.team]-=e.points;
    if(e.kind==='foul')s.fouls[e.team]--;
    if(e.kind==='timeout')s.timeouts[e.team]++;
-   if(e.kind==='jump-ball')wfRemoveJumpBall(s,e);
+   wfRestorePossession(s,e);
   });
   if(ok)wfFinish('Last play undone.');
   return;
@@ -677,7 +690,7 @@ correctEvent=async function(eid){
    const index=s.events.findIndex(x=>x.id===eid);
    if(index<0)return;
    const [removed]=s.events.splice(index,1);
-   wfRemoveJumpBall(s,removed);
+   wfRestorePossession(s,removed);
   });
  }else if(e&&['rebound','steal','block','turnover'].includes(e.kind)){
   if(!confirm('Remove this play and its linked statistics?'))return;
