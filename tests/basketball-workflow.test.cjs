@@ -210,19 +210,27 @@ test('desktop keys build and save a play without Enter, even while an earlier ke
  for(const label of ['Away','Y · 3PT','#24','MAKE'])assert.ok(chips.includes(label));
 });
 
-test('ambiguous jersey prefixes wait for the next digit or the next action',async()=>{
- const a=setup('full',{rosters:{home:[{number:'2'},{number:'23'}],away:[]}});
+test('desktop player entry waits for two digits and preserves the roster number',async()=>{
+ const a=setup('full',{rosters:{home:[{number:'5'},{number:'23'}],away:[]}});
  const field=a.node('wfCommand');
- await a.press('Y',{target:field});
- await a.press('2',{target:field});
+ const key=k=>a.press(k,{target:field});
+ for(const k of 'Y5')await key(k);
  assert.equal(a.run('wfDraft.stage'),'player');
- assert.match(a.node('wfTrail').innerHTML,/#2/);
- await a.press('3',{target:field});
- await a.press('G',{target:field});
- await a.press('N',{target:field});
- assert.equal(a.db.row().events[0].scorer,'23');
- await Promise.all([...('Y2GN')].map(key=>a.press(key,{target:field})));
- assert.equal(a.db.row().events[0].scorer,'2');
+ assert.match(a.node('wfTrail').innerHTML,/#5/);
+ await key('G');
+ assert.equal(a.run('wfDraft.stage'),'player');
+ assert.match(a.node('wfPrompt').textContent,/two digits/);
+ assert.equal(a.db.row().events.length,0);
+ await key('Backspace');
+ for(const k of '05G')await key(k);
+ await key('2');
+ await key('Enter');
+ assert.equal(a.run('wfDraft.stage'),'assist');
+ assert.equal(a.db.row().events[0].assist,null);
+ await key('3');
+ assert.equal(a.db.row().events[0].scorer,'5');
+ assert.equal(a.db.row().events[0].assist,'23');
+ assert.equal(a.db.row().offenseTeam,'away');
 });
 
 test('Space toggles the clock in the command field and preserves a jersey in progress',async()=>{
@@ -627,7 +635,9 @@ test('live box score sorts by jersey by default or points, with unassigned last'
  const a=setup('streamlined',{rosters:{home:[{number:'11'},{number:'3'},{number:'2'}],away:[]}});
  await a.command('Y 11');
  await a.command('J 3');
- await a.command('J 2');
+ assert.equal(a.db.row().events.length,1);
+ await a.command('03');
+ await a.command('J 02');
  await a.command('C H N');
  const html=()=>a.node('wfBox').innerHTML;
  assert.match(html(),/#2<\/th>.*#3<\/th>.*#11<\/th>.*Unassigned<\/th>/);

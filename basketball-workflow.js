@@ -44,20 +44,21 @@ function wfComputerActions(mode){
   return '<button type="button" '+(disabled?'disabled ':'')+'title="'+reason+'" onclick="'+handler+'">'+label+(!available?'<small>Not in this mode</small>':'')+'</button>';
  }).join('');
 }
+const wfJerseyEntryHint='Enter two digits for the jersey number (for example, 05 for #5).';
 function wfStage(){
  const d=wfDraft;
  if(!d)return 'Choose a play, or type a command.';
  if(d.action==='jump-ball')return 'Who gets the ball? H for home or V for visitor.';
  if(d.stage==='team')return d.action==='timeout'?'Which team called timeout?':'Which team committed the foul?';
- if(d.stage==='player'&&d.technical)return 'Enter the player’s jersey or choose Team / bench · N.';
- if(d.stage==='player')return 'Enter '+(d.action==='shot'?'shooter':d.action==='foul'?'fouling player':'player')+' jersey number.';
+ if(d.stage==='player'&&d.technical)return 'Enter the player’s two-digit jersey or choose Team / bench · N.';
+ if(d.stage==='player')return 'Enter '+(d.action==='shot'?'shooter':d.action==='foul'?'fouling player':'player')+' jersey number using two digits.';
  if(d.stage==='phonePlayer')return 'Basket saved. Who scored? Choose a player or assign later.';
  if(d.stage==='result')return 'G for make, O for miss + offensive rebound, D for miss + defensive rebound, or M for miss.';
- if(d.stage==='assist')return 'Who assisted? Enter a jersey, or press Enter for no assist and switch possession.';
+ if(d.stage==='assist')return 'Who assisted? Enter a two-digit jersey, or press Enter for no assist and switch possession.';
  if(d.stage==='rebound')return 'Rebound: D defensive, O offensive, K blocked shot, or N to skip.';
- if(d.stage==='reboundPlayer')return 'Enter the rebounder’s jersey, press M for a team rebound, or press Enter to review later.';
+ if(d.stage==='reboundPlayer')return 'Enter the rebounder’s two-digit jersey, press M for a team rebound, or press Enter to review later.';
  if(d.stage==='steal')return 'Was there a steal? S to credit a steal, or N for none.';
- return 'Enter '+(d.stage==='blockPlayer'?'blocker':d.stage==='stealPlayer'?'stealing player':'rebounder')+' jersey number, or Team.';
+ return 'Enter '+(d.stage==='blockPlayer'?'blocker':d.stage==='stealPlayer'?'stealing player':'rebounder')+' jersey number using two digits.';
 }
 function wfNumbers(team){
  const roster=state.rosters?.[team]||[];
@@ -90,7 +91,9 @@ function wfRenderTrail(){
   if(role&&/^\d{1,2}$/.test(String(number))){
    const label=wfJerseyLabel(role,number);
    if(wfChipEdit?.index===index&&wfChipEdit.id===saved.id&&canWrite()&&!gameLocked(state)){
-    return '<input id="wfChipNumber" class="wf-chip-number" type="text" inputmode="numeric" autocomplete="off" maxlength="2" aria-label="Correct jersey number" value="'+escapeHtml(number)+'" onkeydown="wfJerseyEditKey(event)"><button type="button" class="wf-chip-confirm" onclick="wfSaveJerseyChip()">Save</button>';
+    const padded=String(number).padStart(2,'0');
+    const entry=String(wfValidPlayer(target.record.team,padded))===String(number)?padded:'';
+    return '<input id="wfChipNumber" class="wf-chip-number" type="text" inputmode="numeric" autocomplete="off" maxlength="2" aria-label="Correct jersey number" value="'+escapeHtml(entry)+'" onkeydown="wfJerseyEditKey(event)"><button type="button" class="wf-chip-confirm" onclick="wfSaveJerseyChip()">Save</button>';
    }
    if(canWrite()&&!gameLocked(state))return '<button type="button" class="wf-chip wf-chip-edit" aria-label="Edit '+escapeHtml(label)+'" onclick="wfOpenJerseyChip('+index+')">'+escapeHtml(label)+'</button>';
    step=label;
@@ -153,7 +156,7 @@ function wfOpenJerseyChip(index){
  const number=target?.record[target.field];
  if(!/^\d{1,2}$/.test(String(number)))return;
  wfChipEdit={id:play.id,index,role,number,team:target.record.team,saving:false};
- wfMessage='Type the correct jersey and press Enter. Esc cancels.';
+ wfMessage='Type the correct two-digit jersey and press Enter. Esc cancels.';
  wfRender();
  el('wfChipNumber').focus();
  el('wfChipNumber').select();
@@ -170,9 +173,10 @@ async function wfSaveJerseyChip(){
  const edit=wfChipEdit;
  if(!edit||edit.saving||!canWrite()||gameLocked(state))return;
  const input=el('wfChipNumber');
- const player=wfValidPlayer(edit.team,input.value.trim());
+ const entry=input.value.trim();
+ const player=/^\d{2}$/.test(entry)?wfValidPlayer(edit.team,entry):null;
  if(player===null){
-  el('wfPrompt').textContent='Enter a jersey from '+SoccerBrand.name(state,edit.team)+'’s roster.';
+  el('wfPrompt').textContent=!/^\d{2}$/.test(entry)?wfJerseyEntryHint:'Enter a jersey from '+SoccerBrand.name(state,edit.team)+'’s roster.';
   input.focus();input.select();return;
  }
  const number=String(player);
@@ -412,6 +416,7 @@ async function wfToken(raw,fromCommand=false){
  if(state&&wfGame!==id)wfRender();
  if(wfChipEdit?.saving)return false;
  if(wfChipEdit){wfChipEdit=null;wfRender();}
+ wfDigits='';
  const game=id,previous=wfDraft?structuredClone(wfDraft):null;
  const accepted=await wfApplyToken(raw,fromCommand);
  if(accepted&&id===game&&wfDraft&&wfDraft.stage!==previous?.stage)wfSteps.push(previous);
@@ -592,11 +597,14 @@ async function wfSubmit(event){
  const command=el('wfCommand').value.trim();
  if(!command)return;
  wfInput='';el('wfCommand').value='';
- const tokens=command.toUpperCase().match(/TEAM|\d{1,2}|[A-Z]/g)||[];
+ const tokens=command.toUpperCase().match(/TEAM|\d+|[A-Z]/g)||[];
  wfSubmitting=true;
  try{
   for(let i=0;i<tokens.length;i++){
-   if(!await wfToken(tokens[i],true)){
+   const token=tokens[i];
+   const incompleteJersey=/^\d+$/.test(token)&&!/^\d{2}$/.test(token);
+   if(incompleteJersey){wfMessage=wfJerseyEntryHint;wfRender();}
+   if(incompleteJersey||!await wfToken(token,true)){
     wfInput=tokens.slice(i).join(' ');el('wfCommand').value=wfInput;break;
    }
   }
@@ -612,25 +620,16 @@ async function wfProcessKey(key){
  if(key==='BACKSPACE')return wfBackStep();
  if(/^\d$/.test(key)&&wfNeedsJersey()){
   wfDigits+=key;
-  const roster=state.rosters?.[wfDraft.team]||[];
-  const mayContinue=wfDigits.length===1&&(wfDigits==='0'||!roster.length||
-   roster.some(p=>String(p.number).length===2&&String(p.number).startsWith(wfDigits)));
-  if(mayContinue){wfRender();return;}
-  const number=wfDigits;
-  wfDigits='';
-  return wfToken(number);
+  if(wfDigits.length===1){wfMessage='';wfRender();return;}
+  return wfToken(wfDigits);
  }
- if(key==='ENTER'&&(!wfDigits||!['assist','reboundPlayer'].includes(wfDraft?.stage))){
+ if(wfDigits){wfMessage=wfJerseyEntryHint;wfRender();return false;}
+ if(key==='ENTER'){
   if(wfDraft?.stage==='reboundPlayer')return wfToken('REVIEW');
   if(!wfDraft||wfDraft.stage==='assist')return wfToken('END');
   return true;
  }
- if(wfDigits){
-  const number=wfDigits;
-  wfDigits='';
-  if(!await wfToken(number))return false;
- }
- return key==='ENTER'?true:wfToken(key);
+ return wfToken(key);
 }
 
 document.removeEventListener('keydown',basketballKeydown);
