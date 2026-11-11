@@ -366,3 +366,40 @@ test('scorer notes remain editable after final and feedback prompts once the sco
  a.run('owner=false;render()');
  assert.equal(a.node('basketballScorerNotes').value,'');
 });
+
+test('opening tip records the winner, sets the arrow and starts a custom first-half clock exactly once',async()=>{
+ const a=setup('full',{clockFormat:'halves',periodSeconds:[1080,1200],seconds:1080,possession:'away'});
+ const dialog=a.node('basketballOpeningTipDialog');
+ dialog.showModal=()=>{dialog.open=true;};
+ dialog.close=()=>{dialog.open=false;};
+ a.ctx.wfRender();
+ assert.equal(a.node('basketballOpeningTip').hidden,false);
+ a.ctx.openBasketballOpeningTip();
+ assert.equal(dialog.open,true);
+ assert.equal(a.node('basketballTipAway').textContent,'Away');
+ await Promise.all([a.ctx.recordBasketballOpeningTip('away'),a.ctx.recordBasketballOpeningTip('home')]);
+ const game=a.db.row();
+ assert.equal(game.running,true);
+ assert.equal(game.liveStarted,true);
+ assert.equal(game.seconds,1080);
+ assert.equal(game.offenseTeam,'away');
+ assert.equal(game.possession,'home');
+ assert.equal(game.events.length,1);
+ assert.equal(game.events[0].time,'18:00');
+ assert.equal(a.ctx.playLabel(game.events[0]),'Opening tip');
+ assert.equal(dialog.open,false);
+ assert.equal(a.node('basketballOpeningTip').hidden,true);
+ await a.ctx.toggleClock();
+ await a.ctx.recordBasketballOpeningTip('home');
+ assert.equal(a.db.row().events.length,1);
+});
+
+test('pregame technicals allow an opening tip, and opening-tip controls are hidden for viewers',async()=>{
+ const a=setup('basic');
+ await a.command('C H');
+ a.ctx.wfRender();
+ assert.equal(a.node('basketballOpeningTip').hidden,false);
+ a.run('owner=false;wfRender()');
+ assert.equal(a.node('basketballOpeningTip').hidden,true);
+ assert.equal(a.node('basketballPhoneOpeningTip').hidden,true);
+});

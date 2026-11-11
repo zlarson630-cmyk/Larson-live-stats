@@ -69,6 +69,7 @@ function wfRender(){
  el('score').dataset.controls=phone?'phone':'computer';
  el('wfLayout').value=wfLayout;
  wfRenderPhone();
+ wfRenderOpeningTip();
  const panel=el('wfPanel');
  panel.style.setProperty('--wf-jersey',uniform(team));
  panel.style.setProperty('--wf-ink',uniformInk(team));
@@ -200,6 +201,13 @@ async function wfCommit(d){
   if(d.action==='foul'){s.fouls[d.team]++;e.individualTracking=wfMode(s)!=='basic'||!!d.phone;if(!e.individualTracking)e.player=null;if(d.technical)e.foulType='technical';}
   if(d.action==='rebound')e.reboundType=d.reboundType;
   if(d.action==='jump-ball'){
+   if(d.openingTip){
+    if(!wfCanRecordOpeningTip(s))throw Error('The game has already started.');
+    e.openingTip=true;
+    s.running=true;
+    s.startedAt=Date.now();
+    s.liveStarted=true;
+   }
    e.beforeJump={};
    for(const [field,source] of wfJumpBallFields){
     e.beforeJump[field]={value:s[field]??null,source:s[source]??null};
@@ -379,7 +387,7 @@ async function wfProcessKey(key){
 document.removeEventListener('keydown',basketballKeydown);
 document.addEventListener('keydown',event=>{
  if(event.defaultPrevented||event.isComposing||event.altKey||event.ctrlKey||event.metaKey||!state||!canWrite()||gameLocked(state)||el('app').classList.contains('hide'))return;
- if(el('basketballGameText').open||el('basketballClockSettings').open||el('basketballPdfDialog').open||el('shotLocationDialog').open||!el('subSheet').classList.contains('hide')||pickerEvent)return;
+ if(el('basketballOpeningTipDialog').open||el('basketballGameText').open||el('basketballClockSettings').open||el('basketballPdfDialog').open||el('shotLocationDialog').open||!el('subSheet').classList.contains('hide')||pickerEvent)return;
  if(event.key==='F8'){event.preventDefault();if(!event.repeat)toggleClock();return;}
  const editable=event.target?.closest?.('input,textarea,select,[contenteditable=true]');
  if(wfIsPhone()){
@@ -407,7 +415,7 @@ document.addEventListener('keydown',event=>{
 render=function(){wfOriginalRender();wfRender();renderBasketballGameText();};
 playLabel=function(e){
  const labels={'jump-ball':'Jump ball',rebound:'Rebound',turnover:'Turnover',steal:'Steal',block:'Block'};
- let label=e.kind==='foul'&&e.foulType==='technical'?'Technical foul':labels[e.kind]||wfOriginalLabel(e);
+ let label=e.openingTip?'Opening tip':e.kind==='foul'&&e.foulType==='technical'?'Technical foul':labels[e.kind]||wfOriginalLabel(e);
  if(e.player&& !['score','miss'].includes(e.kind))label+=' · '+(e.player==='team'?'Team':'#'+e.player);
  if(e.rebound)label+=' · '+e.rebound.type+' rebound '+SoccerBrand.name(state,e.rebound.team)+' #'+e.rebound.player;
  if(e.block)label+=' · Block #'+e.block.player;
@@ -562,6 +570,41 @@ function wfRenderBox(){
 
 function wfExplainAction(action){wfMessage=action==='assist'?'Record a made field goal to credit its assist.':'Choose a shot type and player, then select Missed.';wfRender();}
 function wfOpenLatestChart(){const e=state.events.find(e=>['score','miss'].includes(e.kind)&&e.points>1);if(e)openBasketballShotLocation(e.id);else{wfMessage='Record a field-goal attempt first.';wfRender();}}
+function wfCanRecordOpeningTip(game){
+ return game.period===1&&!game.running&&!game.liveStarted&&game.seconds===basketballPeriodSeconds(game)&&
+  !game.events.some(e=>e.openingTip||e.kind==='score'||e.kind==='miss');
+}
+function wfRenderOpeningTip(){
+ const available=canWrite()&&!gameLocked(state)&&wfCanRecordOpeningTip(state);
+ for(const button of ['basketballOpeningTip','basketballPhoneOpeningTip']){
+  el(button).hidden=!available;
+  el(button).disabled=wfBusy||!!wfDraft;
+ }
+ for(const [team,button] of [['away','basketballTipAway'],['home','basketballTipHome']]){
+  el(button).textContent=SoccerBrand.name(state,team);
+  el(button).disabled=!available||wfBusy;
+ }
+}
+function openBasketballOpeningTip(){
+ if(!state||!canWrite()||gameLocked(state)||wfBusy||wfDraft||!wfCanRecordOpeningTip(state))return;
+ el('basketballTipStatus').textContent='';
+ el('basketballOpeningTipDialog').showModal();
+}
+async function recordBasketballOpeningTip(team){
+ if(!state||!canWrite()||gameLocked(state)||wfBusy||wfDraft||!wfCanRecordOpeningTip(state))return;
+ const game=id;
+ const tip={action:'jump-ball',openingTip:true,team};
+ const saved=await wfCommit(tip);
+ if(id!==game)return;
+ if(!saved){
+  el('basketballTipStatus').textContent=wfCanRecordOpeningTip(state)?'Tip not saved. Choose the winning team to retry.':'The game has already started.';
+  return;
+ }
+ el('basketballOpeningTipDialog').close();
+ wfLastTrail=['Opening tip',SoccerBrand.name(state,team)];
+ wfFinish('Opening tip saved. Clock running.');
+ if(!wfIsPhone())el('wfCommand').focus();
+}
 function wfRenderPhone(){
  const box=el('wfPhoneTeams');if(!box)return;
  el('wfPhoneClock').textContent=basketballPeriodLabel(state)+' · '+stamp(state);
