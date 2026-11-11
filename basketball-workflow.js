@@ -122,8 +122,7 @@ async function wfCommit(d){
  const eid=d.eid||crypto.randomUUID(),game=id;
  const ok=await wfSave(s=>{
   if(s.events.some(e=>e.id===eid))return;
-  const before=wfOffense(s);
-  const e={id:eid,kind:d.action==='shot'?(d.made?'score':'miss'):d.action,team:d.team,period:s.period,time:stamp(s),seconds:remaining(s),player:d.player,workflow:true,offenseBefore:before,offenseEventBefore:s.offenseEvent??null};
+  const e={id:eid,kind:d.action==='shot'?(d.made?'score':'miss'):d.action,team:d.team,period:s.period,time:stamp(s),seconds:remaining(s),player:d.player,workflow:true};
   if(d.action==='shot'){
    e.points=d.points;e.scorer=d.player;e.shotType=d.points===1?'free throw':d.points===3?'three-pointer':'jumper';
    if(d.made){s.scores[d.team]+=d.points;e.assist=d.points===1?'na':wfMode(s)==='full'?null:'untracked';}
@@ -134,12 +133,6 @@ async function wfCommit(d){
    if(s.timeouts[d.team]<=0)throw Error('No timeouts remaining for this team.');
    s.timeouts[d.team]--;
   }
-  let after=before;
-  if(d.action==='turnover')after=wfOther(d.team);
-  if(d.action==='steal')after=d.team;
-  if(d.action==='rebound')after=d.team;
-  if(d.action==='shot'&&d.made&&d.points>1)after=wfOther(d.team);
-  e.offenseAfter=after;s.offenseTeam=after;s.offenseEvent=eid;
   s.events.unshift(e);
  });
  if(id!==game)return false;
@@ -221,7 +214,7 @@ async function wfToken(raw,fromCommand=false){
  }
  if(d.stage==='reboundPlayer'){
   if(d.eid){
-   if(!await wfPatch(d,(e,s)=>{e.rebound={team:d.team,player:String(number),type:d.reboundType};e.offenseAfter=d.team;if(s.offenseEvent===e.id)s.offenseTeam=d.team;}))return false;
+   if(!await wfPatch(d,(e,s)=>{e.rebound={team:d.team,player:String(number),type:d.reboundType};}))return false;
   }else{
    d.player=String(number);d.action='rebound';
    if(!await wfCommit(d))return false;
@@ -320,7 +313,6 @@ undo=async function(){
    if(e.kind==='score')s.scores[e.team]-=e.points;
    if(e.kind==='foul')s.fouls[e.team]--;
    if(e.kind==='timeout')s.timeouts[e.team]++;
-   if(s.offenseEvent===e.id){s.offenseTeam=e.offenseBefore;s.offenseEvent=e.offenseEventBefore??null;}
   });
   if(ok)wfFinish('Last play undone.');
   return;

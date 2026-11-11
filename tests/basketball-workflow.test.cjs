@@ -28,7 +28,7 @@ test('one-person book entry credits points and personal/team fouls while keeping
  let game=await a.command('H Y 11');
  assert.equal(game.scores.home,3);
  assert.equal(game.events[0].scorer,'11');
- assert.equal(game.offenseTeam,'away');
+ assert.equal(game.offenseTeam,'home');
  assert.equal(game.possession,'away');
  game=await a.command('F V 24');
  assert.equal(game.fouls.away,1);
@@ -46,14 +46,14 @@ test('a complete keyboard sequence links assist, rebound and block without dupli
  let game=await a.command('H Y 11 G 02');
  assert.equal(game.events.length,1);
  assert.equal(game.events[0].assist,'02');
- assert.equal(game.offenseTeam,'away');
+ assert.equal(game.offenseTeam,'home');
  game=await a.command('V J 24 M K 04 D 02');
  assert.equal(game.events.length,2);
  const miss=game.events[0];
  assert.equal(miss.scorer,'24');
  assert.deepEqual(JSON.parse(JSON.stringify(miss.block)),{team:'home',player:'04'});
  assert.deepEqual(JSON.parse(JSON.stringify(miss.rebound)),{team:'home',player:'02',type:'defensive'});
- assert.equal(game.offenseTeam,'home');
+ assert.equal(game.offenseTeam,'away');
  const box=a.ctx.basketballBoxScore(game);
  assert.equal(box.totals.home['04'].blk,1);
  assert.equal(box.totals.home['02'].reb,1);
@@ -64,13 +64,13 @@ test('a complete keyboard sequence links assist, rebound and block without dupli
  assert.equal(a.db.row().offenseTeam,'away');
 });
 
-test('offensive rebounds retain possession, turnovers and linked steals change it',async()=>{
+test('rebounds, turnovers and linked steals keep possession under manual control',async()=>{
  const a=setup();
  let game=await a.command('H J 11 M O 04');
  assert.equal(game.offenseTeam,'home');
  assert.equal(a.ctx.basketballBoxScore(game).teams.home.oreb,1);
  game=await a.command('T 02 S 24');
- assert.equal(game.offenseTeam,'away');
+ assert.equal(game.offenseTeam,'home');
  assert.deepEqual(JSON.parse(JSON.stringify(game.events[0].steal)),{team:'away',player:'24'});
  const box=a.ctx.basketballBoxScore(game);
  assert.equal(box.teams.home.to,1);assert.equal(box.teams.away.stl,1);
@@ -131,7 +131,7 @@ test('a timeout for either team preserves ball possession and can be undone',asy
  assert.equal(a.db.row().timeouts.away,5);
  game=await a.command('V J 24');
  assert.equal(game.scores.away,2);
- assert.equal(game.offenseTeam,'home');
+ assert.equal(game.offenseTeam,'away');
 });
 
 test('back-to-back submissions cannot duplicate a play while its save is in flight',async()=>{
@@ -140,4 +140,15 @@ test('back-to-back submissions cannot duplicate a play while its save is in flig
  await Promise.all([a.ctx.wfSubmit({preventDefault(){}}),a.ctx.wfSubmit({preventDefault(){}})]);
  assert.equal(a.db.row().events.length,1);
  assert.equal(a.db.row().scores.home,2);
+});
+
+test('made shots in all three modes preserve the selected team until H or V is entered',async()=>{
+ for(const mode of ['basic','streamlined','full']){
+  const a=setup(mode,{offenseTeam:'away'});
+  const game=await a.command(mode==='basic'?'V Y 24':mode==='streamlined'?'V Y 24 G':'V Y 24 G N');
+  assert.equal(game.offenseTeam,'away');
+  assert.equal(game.scores.away,3);
+  await a.command('H');
+  assert.equal(a.db.row().offenseTeam,'home');
+ }
 });
