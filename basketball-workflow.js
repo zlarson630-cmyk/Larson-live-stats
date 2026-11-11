@@ -27,6 +27,7 @@ function wfComputerActions(mode){
   ['Free throw · E',"wfToken('E')",true],
   ['Personal foul · F',"wfToken('F')",true],
   ['Timeout · O',"wfToken('O')",true],
+  ['Jump ball · B',"wfToken('B')",true],
   ['Missed shots',"wfExplainAction('miss')",full],
   ['Assist',"wfExplainAction('assist')",full],
   ['Rebound · R',"wfToken('R')",full],
@@ -45,6 +46,7 @@ function wfComputerActions(mode){
 function wfStage(){
  const d=wfDraft;
  if(!d)return 'Choose a play, or type a command.';
+ if(d.action==='jump-ball')return 'Who gets the ball? H for home or V for visitor.';
  if(d.stage==='team')return d.action==='timeout'?'Which team called timeout?':'Which team committed the foul?';
  if(d.stage==='player')return 'Enter '+(d.action==='shot'?'shooter':d.action==='foul'?'fouling player':'player')+' jersey number.';
  if(d.stage==='phonePlayer')return 'Basket saved. Who scored? Choose a player or assign later.';
@@ -73,7 +75,7 @@ function wfRender(){
  el('wfPrompts').checked=state.reboundPrompts??(wfIsFull(mode)&&matchMedia('(pointer:fine)').matches);
  el('wfPromptsLabel').hidden=!wfIsFull(mode);
  el('wfSubs').hidden=!wfIsFull(mode);
- el('wfTeam').textContent=SoccerBrand.name(state,team)+(wfDraft?' · '+(wfDraft.stage==='assist'?'Assist':wfDraft.stage==='blockPlayer'?'Block':wfDraft.stage==='stealPlayer'?'Steal':wfDraft.stage==='reboundPlayer'?'Rebound':wfDraft.action==='foul'?'Personal foul':wfDraft.action==='timeout'?'Timeout':wfDraft.action==='shot'?'Shot entry':wfDraft.action):' has the ball');
+ el('wfTeam').textContent=SoccerBrand.name(state,team)+(wfDraft?' · '+(wfDraft.stage==='assist'?'Assist':wfDraft.stage==='blockPlayer'?'Block':wfDraft.stage==='stealPlayer'?'Steal':wfDraft.stage==='reboundPlayer'?'Rebound':wfDraft.action==='foul'?'Personal foul':wfDraft.action==='timeout'?'Timeout':wfDraft.action==='jump-ball'?'Jump ball':wfDraft.action==='shot'?'Shot entry':wfDraft.action):' has the ball');
  for(const t of ['home','away']){
   const button=el('wfTeam-'+t);
   button.textContent=(t==='home'?'H · ':'V · ')+SoccerBrand.name(state,t);
@@ -93,7 +95,10 @@ function wfRender(){
  if(!d){
   buttons=wfButton('2-point shot · J','J')+wfButton('3-point shot · Y','Y')+wfButton('Free throw · E','E')+wfButton('Personal foul · F','F')+wfButton('Timeout · O','O');
 
- }else if(d.stage==='team')buttons=wfButton(SoccerBrand.name(state,'home'),'H')+wfButton(SoccerBrand.name(state,'away'),'V');
+ }else if(d.stage==='team'){
+  const showKey=d.action==='jump-ball';
+  buttons=wfButton((showKey?'H · ':'')+SoccerBrand.name(state,'home'),'H')+wfButton((showKey?'V · ':'')+SoccerBrand.name(state,'away'),'V');
+ }
  else if(d.stage==='result')buttons=wfButton('Made · G','G')+wfButton('Missed · M','M');
  else if(d.stage==='rebound')buttons=wfButton('Defensive rebound · D','D')+wfButton('Offensive rebound · O','O')+(d.block? '':wfButton('Blocked shot · K','K'))+wfButton('Skip · N','N');
  else if(d.stage==='steal')buttons=wfButton('Credit steal · S','S')+wfButton('No steal · N','N');
@@ -122,6 +127,7 @@ function wfCoverage(game){
  return '';
 }
 async function wfSetTeam(team,fromCommand=false){
+ if(wfDraft?.action==='jump-ball')return wfToken(team==='home'?'H':'V',fromCommand);
  if(wfDraft||wfBusy||(wfSubmitting&&!fromCommand))return false;
  return wfSave(s=>{s.offenseTeam=team;s.offenseEvent=null;});
 }
@@ -162,6 +168,19 @@ function wfValidPlayer(team,token){
  if(!roster.length)return token;
  return roster.find(p=>String(p.number)===token)?.number??roster.find(p=>Number(p.number)===Number(token))?.number??null;
 }
+const wfJumpBallFields=[['offenseTeam','offenseEvent'],['possession','possessionEvent']];
+function wfRemoveJumpBall(game,event){
+ for(const [field,source] of wfJumpBallFields){
+  const previous=event.beforeJump[field];
+  if(game[source]===event.id){
+   game[field]=previous.value;
+   game[source]=previous.source;
+  }
+  for(const later of game.events){
+   if(later.beforeJump?.[field].source===event.id)later.beforeJump[field]=previous;
+  }
+ }
+}
 async function wfCommit(d){
  const eid=d.eid||crypto.randomUUID(),game=id;
  const ok=await wfSave(s=>{
@@ -177,6 +196,15 @@ async function wfCommit(d){
   }
   if(d.action==='foul'){s.fouls[d.team]++;e.individualTracking=wfMode(s)!=='basic'||!!d.phone;if(!e.individualTracking)e.player=null;}
   if(d.action==='rebound')e.reboundType=d.reboundType;
+  if(d.action==='jump-ball'){
+   e.beforeJump={};
+   for(const [field,source] of wfJumpBallFields){
+    e.beforeJump[field]={value:s[field]??null,source:s[source]??null};
+    s[source]=eid;
+   }
+   s.offenseTeam=d.team;
+   s.possession=wfOther(d.team);
+  }
   if(d.action==='timeout'){
    if(s.timeouts[d.team]<=0)throw Error('No timeouts remaining for this team.');
    s.timeouts[d.team]--;
@@ -210,9 +238,10 @@ async function wfToken(raw,fromCommand=false){
   if(['J','Y','E'].includes(token))wfDraft={action:'shot',points:token==='J'?2:token==='Y'?3:1,team,offense:team,stage:'player',trail:[SoccerBrand.name(state,team),token==='E'?'Free throw':token==='Y'?'3-point shot':'2-point shot']};
   else if(token==='F')wfDraft={action:'foul',team:wfOther(team),stage:'team',trail:['Personal foul']};
   else if(token==='O')wfDraft={action:'timeout',team,stage:'team',trail:['Timeout']};
+  else if(token==='B')wfDraft={action:'jump-ball',team,stage:'team',trail:['Jump ball']};
   else if(full&&token==='R')wfDraft={action:'rebound',team,offense:team,stage:'rebound',trail:['Rebound']};
   else if(full&&['T','S','K'].includes(token))wfDraft={action:token==='T'?'turnover':token==='S'?'steal':'block',team:token==='T'?team:wfOther(team),offense:team,stage:'player',trail:[token==='T'?'Turnover':token==='S'?'Steal':'Block']};
-  else{wfMessage='Choose J, Y, E, F or O'+(full?', T, R, S or K':'')+'.';wfRender();return false;}
+  else{wfMessage='Choose J, Y, E, F, O or B'+(full?', T, R, S or K':'')+'.';wfRender();return false;}
   if(wfMode(state)==='basic'&&wfDraft.action==='shot'){wfDraft.made=true;wfDraft.trail.push('Made');if(!await wfCommit(wfDraft))return false;wfFinish();}
   wfRender();return true;
  }
@@ -222,7 +251,13 @@ async function wfToken(raw,fromCommand=false){
  }
  if(d.stage==='team'){
   if(!['H','V'].includes(token)){wfMessage='Choose H for home or V for visitor.';wfRender();return false;}
-  d.team=token==='H'?'home':'away';d.trail.push(SoccerBrand.name(state,d.team));
+  d.team=token==='H'?'home':'away';
+  if(d.action==='jump-ball'){
+   if(!await wfCommit(d))return false;
+   d.trail.push(SoccerBrand.name(state,d.team));
+   wfFinish('Jump ball saved.');return true;
+  }
+  d.trail.push(SoccerBrand.name(state,d.team));
   if(d.action==='timeout'){
    if(!await wfCommit(d)){d.stage='team';return false;}
    wfFinish('Timeout saved.');return true;
@@ -360,7 +395,7 @@ document.addEventListener('keydown',event=>{
 });
 render=function(){wfOriginalRender();wfRender();};
 playLabel=function(e){
- const labels={rebound:'Rebound',turnover:'Turnover',steal:'Steal',block:'Block'};
+ const labels={'jump-ball':'Jump ball',rebound:'Rebound',turnover:'Turnover',steal:'Steal',block:'Block'};
  let label=labels[e.kind]||wfOriginalLabel(e);
  if(e.player&& !['score','miss'].includes(e.kind))label+=' · '+(e.player==='team'?'Team':'#'+e.player);
  if(e.rebound)label+=' · '+e.rebound.type+' rebound '+SoccerBrand.name(state,e.rebound.team)+' #'+e.rebound.player;
@@ -380,7 +415,7 @@ eventHtml=function(e){
  if(e.workflow){
   const line=SoccerBrand.name(state,e.team)+' · '+playLabel(e)+(['score','miss'].includes(e.kind)&&e.individualTracking!==false?' · '+wfPlayerName(e.team,e.scorer):'');
   html=html.replace('<div class="flowActions">','<p class="wf-logline">'+escapeHtml(line)+'</p><div class="flowActions">');
-  if(e.individualTracking!==false&&!['score','miss','timeout'].includes(e.kind))html=html.replace('<div class="flowActions">','<div class="flowActions"><button onclick="assign(\''+escapeHtml(e.id)+'\',\'player\')">Change player</button>');
+  if(e.individualTracking!==false&&!['score','miss','timeout','jump-ball'].includes(e.kind))html=html.replace('<div class="flowActions">','<div class="flowActions"><button onclick="assign(\''+escapeHtml(e.id)+'\',\'player\')">Change player</button>');
  }
  return html;
 };
@@ -409,6 +444,7 @@ undo=async function(){
    if(e.kind==='score')s.scores[e.team]-=e.points;
    if(e.kind==='foul')s.fouls[e.team]--;
    if(e.kind==='timeout')s.timeouts[e.team]++;
+   if(e.kind==='jump-ball')wfRemoveJumpBall(s,e);
   });
   if(ok)wfFinish('Last play undone.');
   return;
@@ -417,7 +453,15 @@ undo=async function(){
 };
 correctEvent=async function(eid){
  const e=state.events.find(e=>e.id===eid);
- if(e&&['rebound','steal','block','turnover'].includes(e.kind)){
+ if(e?.kind==='jump-ball'){
+  if(!confirm('Remove this jump ball from Game Flow?'))return;
+  await wfSave(s=>{
+   const index=s.events.findIndex(x=>x.id===eid);
+   if(index<0)return;
+   const [removed]=s.events.splice(index,1);
+   wfRemoveJumpBall(s,removed);
+  });
+ }else if(e&&['rebound','steal','block','turnover'].includes(e.kind)){
   if(!confirm('Remove this play and its linked statistics?'))return;
   await wfSave(s=>{s.events=s.events.filter(x=>x.id!==eid);s.statCoveragePartial=true;});
  }else{

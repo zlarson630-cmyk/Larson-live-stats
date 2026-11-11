@@ -245,3 +245,54 @@ test('Space toggles the clock in the command field and preserves a jersey in pro
  assert.equal(a.db.row().scores.home,3);
  assert.equal(a.db.row().events[0].scorer,'23');
 });
+
+test('desktop Jump ball works in every mode and updates both possession indicators',async()=>{
+ for(const mode of ['basic','streamlined','full','fullchart']){
+  const a=setup(mode,{offenseTeam:'home',possession:null});
+  assert.match(a.ctx.wfComputerActions(mode),/<button type="button" title="" onclick="wfToken\('B'\)">Jump ball/);
+  const field=a.node('wfCommand');
+  await Promise.all(['B','V'].map(key=>a.press(key,{target:field})));
+  let game=a.db.row();
+  assert.equal(game.offenseTeam,'away');
+  assert.equal(game.possession,'home');
+  assert.equal(game.events.length,1);
+  assert.equal(game.events[0].kind,'jump-ball');
+  assert.equal(game.events[0].team,'away');
+  assert.equal(a.ctx.playLabel(game.events[0]),'Jump ball');
+  assert.doesNotMatch(a.ctx.eventHtml(game.events[0]),/Change player/);
+  await a.ctx.undo();
+  game=a.db.row();
+  assert.equal(game.offenseTeam,'home');
+  assert.equal(game.possession,null);
+  assert.equal(game.events.length,0);
+ }
+});
+
+test('removing an older jump ball preserves the newer one and its undo history',async()=>{
+ const a=setup('basic',{offenseTeam:'home',possession:'away'});
+ let game=await a.command('B V');
+ const first=game.events[0].id;
+ game=await a.command('B H');
+ await a.ctx.correctEvent(first);
+ assert.equal(a.db.row().events.length,1);
+ assert.equal(a.db.row().offenseTeam,'home');
+ await a.ctx.undo();
+ game=a.db.row();
+ assert.equal(game.offenseTeam,'home');
+ assert.equal(game.possession,'away');
+ assert.equal(game.events.length,0);
+});
+
+test('team buttons resolve a jump ball and undo respects later manual possession changes',async()=>{
+ const a=setup('basic',{offenseTeam:'home',possession:'home'});
+ await a.ctx.wfToken('B');
+ await a.ctx.wfSetTeam('away');
+ assert.equal(a.db.row().events[0].team,'away');
+ await a.ctx.togglePossession();
+ await a.ctx.wfSetTeam('home');
+ await a.ctx.undo();
+ const game=a.db.row();
+ assert.equal(game.offenseTeam,'home');
+ assert.equal(game.possession,'away');
+ assert.equal(game.events.length,0);
+});
