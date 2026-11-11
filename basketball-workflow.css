@@ -28,3 +28,24 @@
 .wf-logline{margin:6px 0;font-family:ui-monospace,monospace;font-size:13px;overflow-wrap:anywhere}
 #scoreControls[hidden],#score>.row[hidden],#wfSubs[hidden],#wfPromptsLabel[hidden],#wfSkip[hidden]{display:none!important}
 @media(max-width:750px){#wfBox{grid-template-columns:1fr}#wfPanel{padding:10px}#wfChoices button{flex:1 1 130px}#wfPanel h2{font-size:21px}.wf-settings{align-items:flex-start}}
+.wf-layout-settings{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+#wfActionGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:10px 0}
+#wfActionGrid button{min-height:60px;text-align:center}
+#wfActionGrid button:disabled{opacity:1;background:#e3e7ec;color:#657180;border-color:#adb7c3;cursor:not-allowed;box-shadow:none}
+#wfActionGrid button small{display:block;font-size:11px;font-weight:400}
+.wf-phone{display:none}
+#score[data-controls=phone] .wf-phone{display:block}
+#score[data-controls=phone] .wf-settings,#score[data-controls=phone] .wf-possession,#score[data-controls=phone] #wfTracking,#score[data-controls=phone] #wfActionGrid{display:none!important}
+#score[data-controls=phone] #wfPanel:has(#wfSkip[hidden]){display:none}
+#wfChoices[hidden],#wfActionGrid[hidden]{display:none!important}
+#wfPhoneTeams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#wfPhoneTeams section{margin:6px 0;padding:10px 6px;background:var(--phone-jersey);color:var(--phone-ink);border:2px solid #9aa8b8;text-align:center;min-width:0}
+#wfPhoneTeams h3{margin:0;overflow-wrap:anywhere;font-size:19px}
+#wfPhoneTeams strong{display:block;font-size:36px}
+#wfPhoneTeams p{font-size:12px}
+#wfPhoneTeams section>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
+#wfPhoneTeams button{margin:3px 0;min-height:46px;padding:7px 3px;color:#172332;background:#fff;border:1px solid #8796a8;font-size:16px}
+#wfPhoneTeams section>button{margin:3px 2px;font-size:13px}
+.wf-phone-clock{display:flex;align-items:center;justify-content:space-between;font-variant-numeric:tabular-nums;font-size:24px}
+body:has(#score[data-controls=phone]:not(.hide)) #basketballGameHeader .scoreboard{display:none}
+@media(max-width:500px){#wfActionGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}

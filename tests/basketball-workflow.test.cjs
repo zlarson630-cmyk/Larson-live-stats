@@ -12,7 +12,7 @@ function setup(mode='full',options={}){
  const a=app(),lookup=a.ctx.document.getElementById;
  a.ctx.document.getElementById=id=>{
   const node=lookup(id);
-  node.style.setProperty=()=>{};
+  node.style.setProperty=()=>{};node.dataset={};
   return node;
  };
  a.ctx.crypto=crypto;a.ctx.matchMedia=()=>({matches:true});
@@ -20,11 +20,12 @@ function setup(mode='full',options={}){
   rosters:{home:[{number:'11',name:'Shooter'},{number:'02',name:'Passer'},{number:'04',name:'Home rebounder'}],away:[{number:'24',name:'Visitor shooter'},{number:'04',name:'Visitor rebounder'}]},...options};
  const db=cloud(a,{game});
  a.run(fs.readFileSync('basketball-workflow.js','utf8'));
+ a.run("wfLayout='computer'");
  return {...a,db,async command(text){a.node('wfCommand').value=text;await a.ctx.wfSubmit({preventDefault(){}});return db.row();}};
 }
 
 test('one-person book entry credits points and personal/team fouls while keeping the arrow separate',async()=>{
- const a=setup('basic',{possession:'away'});
+ const a=setup('streamlined',{possession:'away'});
  let game=await a.command('H Y 11');
  assert.equal(game.scores.home,3);
  assert.equal(game.events[0].scorer,'11');
@@ -108,7 +109,7 @@ test('failed saves keep the draft for retry and viewers cannot write',async()=>{
  a.ctx.write=async()=>false;
  await a.command('J 11');
  assert.equal(a.db.row().events.length,0);
- assert.equal(a.run('wfDraft.player'),'11');
+ assert.equal(a.run('wfDraft.action'),'shot');
  a.run('owner=false');
  await a.command('Y 11');
  assert.equal(a.db.row().events.length,0);
@@ -145,10 +146,49 @@ test('back-to-back submissions cannot duplicate a play while its save is in flig
 test('made shots in all three modes preserve the selected team until H or V is entered',async()=>{
  for(const mode of ['basic','streamlined','full']){
   const a=setup(mode,{offenseTeam:'away'});
-  const game=await a.command(mode==='basic'?'V Y 24':mode==='streamlined'?'V Y 24 G':'V Y 24 G N');
+  const game=await a.command(mode==='basic'?'V Y':mode==='streamlined'?'V Y 24 G':'V Y 24 G N');
   assert.equal(game.offenseTeam,'away');
   assert.equal(game.scores.away,3);
   await a.command('H');
   assert.equal(a.db.row().offenseTeam,'home');
  }
+});
+
+test('computer Basic records only team totals without asking for a jersey',async()=>{
+ const a=setup('basic');
+ let game=await a.command('J');
+ assert.equal(game.scores.home,2);
+ assert.equal(game.events[0].individualTracking,false);
+ assert.equal(game.events[0].scorer,null);
+ assert.equal(a.run('wfDraft'),null);
+ game=await a.command('F V');
+ assert.equal(game.fouls.away,1);
+ assert.equal(game.events[0].player,null);
+ assert.equal(a.run('wfDraft'),null);
+});
+
+test('computer actions keep their order across modes and lock unavailable stats',()=>{
+ const a=setup();
+ const labels=html=>[...html.matchAll(/>([^<>]+)(?:<small>|<\/button>)/g)].map(m=>m[1]);
+ const basic=a.ctx.wfComputerActions('basic'),full=a.ctx.wfComputerActions('full'),charted=a.ctx.wfComputerActions('fullchart');
+ assert.deepEqual(labels(basic),labels(full));
+ assert.deepEqual(labels(full),labels(charted));
+ assert.match(basic,/<button[^>]*disabled[^>]*onclick="wfToken\('R'\)"/);
+ assert.doesNotMatch(full,/<button[^>]*disabled[^>]*onclick="wfToken\('R'\)"/);
+ assert.match(full,/<button[^>]*disabled[^>]*onclick="wfOpenLatestChart\(\)"/);
+ assert.doesNotMatch(charted,/<button[^>]*disabled[^>]*onclick="wfOpenLatestChart\(\)"/);
+});
+
+test('phone keeps both team scoring buttons visible and credits the chosen player',async()=>{
+ const a=setup('basic');a.run("wfLayout='phone';wfRender()");
+ const buttons=a.node('wfPhoneTeams').innerHTML;
+ for(const t of ['home','away'])for(const n of [1,2,3])assert.ok(buttons.includes("wfPhoneShot('"+t+"',"+n+")"));
+ await a.ctx.wfPhoneShot('away',3);
+ await a.command('24');
+ const game=a.db.row();
+ assert.equal(game.scores.away,3);
+ assert.equal(game.events[0].scorer,'24');
+ assert.equal(game.events[0].individualTracking,true);
+ assert.equal(a.run('wfDraft'),null);
+ assert.ok(a.node('wfPhoneTeams').innerHTML.includes("wfPhoneShot('home',2)"));
 });
