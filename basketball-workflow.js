@@ -532,6 +532,7 @@ document.removeEventListener('keydown',basketballKeydown);
 document.addEventListener('keydown',event=>{
  if(event.defaultPrevented||event.isComposing||event.altKey||event.ctrlKey||event.metaKey||!state||!canWrite()||gameLocked(state)||el('app').classList.contains('hide'))return;
  if(el('basketballOpeningTipDialog').open||el('basketballGameText').open||el('basketballClockSettings').open||el('basketballPdfDialog').open||el('shotLocationDialog').open||!el('subSheet').classList.contains('hide')||pickerEvent)return;
+ if(event.target?.closest?.('#basketballClockEditor')?.id==='basketballClockEditor')return;
  if(event.key==='F8'){event.preventDefault();if(!event.repeat)toggleClock();return;}
  const editable=event.target?.closest?.('input,textarea,select,[contenteditable=true]');
  if(wfIsPhone()){
@@ -558,7 +559,7 @@ document.addEventListener('keydown',event=>{
  });
  return wfKeyQueue;
 });
-render=function(){wfOriginalRender();wfRender();renderBasketballGameText();};
+render=function(){wfOriginalRender();wfRender();renderBasketballGameText();renderBasketballClockEditor();};
 playLabel=function(e){
  const labels={'jump-ball':'Jump ball',rebound:'Rebound',turnover:'Turnover',steal:'Steal',block:'Block'};
  let label=e.openingTip?'Opening tip':e.kind==='foul'&&e.foulType==='technical'?'Technical foul':labels[e.kind]||wfOriginalLabel(e);

@@ -537,3 +537,41 @@ test('the scoring lineup separates the five on the floor and bench after confirm
  assert.match(html,/<h4>On the floor<\/h4>[\s\S]+<h4>Bench<\/h4>/);
  assert.match(html,/<h3>Away<\/h3><p>No starting five recorded<\/p><h4>Roster<\/h4>/);
 });
+
+test('clock corrections stamp the next play at the new time and preserve saved timestamps',async()=>{
+ const a=setup('basic',{seconds:236});
+ await a.command('J');
+ const saved=a.db.row().events[0];
+ assert.equal(saved.time,'3:56');
+
+ a.ctx.openBasketballClockEditor();
+ assert.equal(a.node('basketballClockMinutes').value,'3');
+ assert.equal(a.node('basketballClockSeconds').value,'56');
+ for(let i=0;i<4;i++)a.ctx.stepBasketballClockEdit(1);
+ assert.equal(a.node('basketballClockMinutes').value,'4');
+ assert.equal(a.node('basketballClockSeconds').value,'00');
+ await Promise.all([a.ctx.saveBasketballClockEdit({preventDefault(){}}),a.command('Y')]);
+ const game=a.db.row();
+ assert.equal(game.seconds,240);
+ assert.equal(game.running,false);
+ assert.equal(game.events[0].time,'4:00');
+ assert.equal(game.events[0].seconds,240);
+ assert.equal(game.events[1].id,saved.id);
+ assert.equal(game.events[1].time,'3:56');
+ assert.equal(a.node('basketballClockEditor').hidden,true);
+});
+
+test('clock editor keeps invalid times out and discards cancelled changes',async()=>{
+ const a=setup('basic',{seconds:59});
+ a.ctx.openBasketballClockEditor();
+ a.ctx.stepBasketballClockEdit(1);
+ assert.equal(a.node('basketballClockMinutes').value,'1');
+ assert.equal(a.node('basketballClockSeconds').value,'00');
+ a.node('basketballClockSeconds').value='60';
+ await a.ctx.saveBasketballClockEdit({preventDefault(){}});
+ assert.equal(a.db.row().seconds,59);
+ assert.match(a.node('basketballClockEditStatus').textContent,/0–59/);
+ a.ctx.cancelBasketballClockEdit();
+ assert.equal(a.node('basketballClockEditor').hidden,true);
+ assert.equal(a.db.row().seconds,59);
+});
