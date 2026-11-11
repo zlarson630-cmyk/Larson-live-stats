@@ -296,3 +296,73 @@ test('team buttons resolve a jump ball and undo respects later manual possession
  assert.equal(game.possession,'away');
  assert.equal(game.events.length,0);
 });
+
+test('technical fouls track player or bench, preserve possession and support undo',async()=>{
+ const a=setup('full');
+ let game=await a.command('C V 24');
+ assert.equal(game.events[0].foulType,'technical');
+ assert.equal(a.ctx.playLabel(game.events[0]),'Technical foul · #24');
+ assert.equal(game.fouls.away,1);
+ assert.equal(game.offenseTeam,'home');
+ assert.equal(game.scores.home,0);
+ assert.equal(a.ctx.basketballBoxScore(game).totals.away['24'].tf,1);
+ game=await a.command('C H N');
+ assert.equal(game.fouls.home,1);
+ assert.equal(game.events[0].player,undefined);
+ await a.ctx.undo();
+ assert.equal(a.db.row().fouls.home,0);
+ const basic=setup('basic');
+ game=await basic.command('C H');
+ assert.equal(game.events[0].player,null);
+ assert.equal(game.fouls.home,1);
+});
+
+test('custom college halves load each duration and use five-minute overtime by default',async()=>{
+ const a=setup();
+ a.node('basketballClockSettings').close=()=>{};
+ a.node('basketballClockFormat').value='halves';
+ a.node('basketballPeriodMinutes1').value='18';
+ a.node('basketballPeriodMinutes2').value='20';
+ a.node('basketballOvertimeMinutes').value='5';
+ await a.ctx.saveBasketballClockSettings({preventDefault(){}});
+ assert.equal(a.db.row().seconds,1080);
+ assert.equal(a.ctx.basketballPeriodLabel(a.db.row()),'H1');
+ await a.ctx.changePeriod();
+ assert.equal(a.db.row().seconds,1200);
+ assert.equal(a.ctx.basketballPeriodLabel(a.db.row()),'H2');
+ assert.equal(a.ctx.basketballElapsedAt(a.db.row(),2,1190),1090);
+ await a.ctx.changePeriod();
+ assert.equal(a.db.row().seconds,300);
+ assert.equal(a.ctx.basketballPeriodLabel(a.db.row()),'OT');
+});
+
+test('scorer notes remain editable after final and feedback prompts once the score is locked',async()=>{
+ const a=setup();
+ const dialog=a.node('basketballGameText');
+ dialog.showModal=()=>{dialog.open=true;};
+ dialog.close=()=>{dialog.open=false;};
+ const submit={preventDefault(){}};
+ a.ctx.openBasketballGameText('scorerNotes');
+ a.node('basketballScorerNotes').value='Game-day note';
+ await a.ctx.saveBasketballGameText(submit);
+ assert.equal(a.db.row().scorerNotes,'Game-day note');
+
+ await a.ctx.markBasketballFinal();
+ assert.equal(a.db.row().libraryStatus,'completed');
+ assert.equal(dialog.open,true);
+ assert.equal(a.node('basketballGameTextTitle').textContent,'Postgame feedback');
+ a.node('basketballFeedbackWell').value='Keyboard scoring';
+ a.node('basketballFeedbackDifficult').value='Rebounds';
+ a.node('basketballFeedbackChange').value='More practice examples';
+ await a.ctx.saveBasketballGameText(submit);
+ assert.equal(a.db.row().scorerFeedback.change,'More practice examples');
+ assert.equal(await a.ctx.toggleClock(),false);
+
+ a.ctx.openBasketballGameText('scorerNotes');
+ assert.equal(a.node('basketballScorerNotes').value,'Game-day note');
+ a.node('basketballScorerNotes').value='Postgame note';
+ await a.ctx.saveBasketballGameText(submit);
+ assert.equal(a.db.row().scorerNotes,'Postgame note');
+ a.run('owner=false;render()');
+ assert.equal(a.node('basketballScorerNotes').value,'');
+});

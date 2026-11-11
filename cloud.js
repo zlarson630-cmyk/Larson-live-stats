@@ -57,16 +57,16 @@ joinGame=async function(code){
 };
 goHome=function(event){if(pendingWrites){event?.preventDefault();alert('Wait for the current save to finish.');return false;}stopCloud();return localHome(event);};
 reload=function(){};
-write=function(fn){
+write=function(fn,gameTextField){
  if(!cloudMode){syncStatus('Open a cloud game before scoring.');return Promise.resolve(false);}
- if(!owner){syncStatus('Read only · sign in as the game owner to score');return Promise.resolve(false);}if(gameLocked(state)){syncStatus('Game is final or trashed · move it to Active to edit');return Promise.resolve(false);}
+ if(!owner){syncStatus('Read only · sign in as the game owner to score');return Promise.resolve(false);}if(basketballWriteLocked(state,gameTextField)){syncStatus('Game is final or trashed · move it to Active to edit');return Promise.resolve(false);}
  const game=id,epoch=sessionEpoch;pendingWrites++;
  const task=writeQueue.then(async()=>{
   if(epoch!==sessionEpoch) return false;
   try{
    for(let attempt=0;attempt<5;attempt++){
     const row=await Live.read(Live.client,'live_games',game);if(!row)throw Error('Scorer access expired. Sign in again.');
-    if(gameLocked(row.state)){
+    if(basketballWriteLocked(row.state,gameTextField)){
      if(epoch===sessionEpoch){state=row.state;render();}
      syncStatus('Game is final or trashed · move it to Active to edit');
      return false;

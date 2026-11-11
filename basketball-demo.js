@@ -90,8 +90,8 @@ function startBasketballDemo(){
  state=createBasketballDemo();
  id=state.id;
  canWrite=()=>true;
- write=async change=>{
-  if(gameLocked(state))return false;
+ write=async (change,gameTextField)=>{
+  if(basketballWriteLocked(state,gameTextField))return false;
   try{
    const next=structuredClone(state);
    change(next);

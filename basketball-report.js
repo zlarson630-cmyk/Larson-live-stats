@@ -54,7 +54,7 @@ function openBasketballShotLocation(eid){
  if(!basketballFieldGoal(play))return;
  basketballShotTarget={game:id,eid};
  basketballShotPoint=basketballShotLocation(play);
- el('shotLocationTitle').textContent=SoccerBrand.name(state,play.team)+' · Q'+play.period+' '+play.time+' · '+playLabel(play);
+ el('shotLocationTitle').textContent=SoccerBrand.name(state,play.team)+' · '+basketballPeriodLabel(state,play.period)+' '+play.time+' · '+playLabel(play);
  el('shotLocationStatus').textContent='';
  el('shotCourt').innerHTML=basketballCourtLines().map(points=>
   '<polyline points="'+points.map(p=>p.join(',')).join(' ')+'"/>').join('')+'<circle id="shotCourtMarker" r="1"/>';
@@ -149,7 +149,7 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
   text('LARSON LIVE STATS',margin+26,46,{size:11,bold:true});
   text(compact?'BASKETBALL BOX SCORE':'BASKETBALL GAME REPORT',margin+width,45,{size:10,bold:true,align:'right'});
   text(order.map(t=>name(t)+' '+score(t)).join('  |  '),margin,67,{size:15,bold:true,maxWidth:width});
-  const stage=game.libraryStatus==='completed'?'FINAL':'IN PROGRESS / Q'+game.period+' '+gameClock;
+  const stage=game.libraryStatus==='completed'?'FINAL':'IN PROGRESS / '+basketballPeriodLabel(game)+' '+gameClock;
   text(stage+'  /  '+(game.demo?'TEST GAME':'GAME '+game.id),margin,85,{size:9,color:muted});
   text('Possession arrow: '+(game.possession?name(game.possession):'-'),margin+width,85,{size:9,color:muted,align:'right',maxWidth:width/2});
   y=104;
@@ -190,7 +190,7 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
   for(let first=firstPeriod;first<=periodCount;first+=batch){
    const quarters=Array.from({length:Math.min(batch,periodCount-first+1)},(_,i)=>first+i);
    const widths=[width*.4,...Array(quarters.length+1).fill(width*.6/(quarters.length+1))];
-   table('Score by period',['TEAM',...quarters.map(q=>'Q'+q),'TOTAL'],widths,
+   table('Score by period',['TEAM',...quarters.map(q=>basketballPeriodLabel(game,q)),'TOTAL'],widths,
     order.map(t=>[name(t),...quarters.map(q=>complete(t)?periods[t][q]||0:'-'),score(t)]));
   }
   if(order.some(t=>!complete(t))||firstPeriod>1){
@@ -248,7 +248,7 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
   }
   const subs=events.filter(e=>e.kind==='substitution').reverse();
   table('Substitution log',['TEAM','CLOCK','OUT','IN'],[135,75,169,169],
-   subs.map(e=>[name(e.team),'Q'+e.period+' '+e.time,format(e.team,String(e.out||'').split(', ').filter(Boolean)),
+   subs.map(e=>[name(e.team),basketballPeriodLabel(game,e.period)+' '+e.time,format(e.team,String(e.out||'').split(', ').filter(Boolean)),
     format(e.team,String(e.in||'').split(', ').filter(Boolean))]));
  }
  function playByPlay(){
@@ -260,7 +260,7 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
     e.kind==='miss'?(Number(e.points)===1?'Missed FT':'Missed '+e.points+'-pointer'):playLabel(e);
    const detail=attempt?' / '+playerName(e.team,e.scorer)+
     (/^\d{1,2}$/.test(String(e.assist))?' / Assist '+playerName(e.team,e.assist):''):'';
-   return [label+detail,'Q'+e.period+' '+e.time,name(e.team),order.map(t=>running[t]).join('-')];
+   return [label+detail,basketballPeriodLabel(game,e.period)+' '+e.time,name(e.team),order.map(t=>running[t]).join('-')];
   });
   table('Play-by-play',['PLAY','CLOCK','TEAM','LOG SCORE'],[285,67,130,66],rows);
  }
