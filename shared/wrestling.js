@@ -104,7 +104,48 @@
     return box;
   }
 
-  const api = { weights, periods, moves, results, sides, createDual, timeLeft, boutScore, dualScore, award, recordResult, periodScores, dualBoxScore };
+  function createMidDualDemo() {
+    const meet = createDual('Prairie Falcons', 'River Otters', 'girls', 130, 'practice-mid-dual');
+    const lineup = [
+      ['Morgan Hall', 'Jordan Lee'], ['Jamie Cole', 'Riley West'], ['Drew Lane', 'Taylor Park'],
+      ['Skyler Reed', 'Peyton Ellis'], ['Rowan Shaw', 'Casey Quinn'], ['Avery Gray', 'Sam Brooks'],
+      ['Rory Bell', 'Kendall Fox'], ['Blair Ross', 'Harper Wells'], ['Cameron Hill', 'Charlie King'],
+      ['Emerson Price', 'Quinn Rivers'], ['Sydney Green', 'Reese Clark'], ['Dakota James', 'Logan Ford'],
+      ['Alex Blake', 'Jules Stone'], ['Dylan Scott', 'Marlowe Wood']
+    ];
+    const resultsSoFar = [
+      ['home', 'fall', 0, 43, [['home', 'takedown', 0, 92]]],
+      ['away', 'decision', 2, 0, [['away', 'takedown', 0, 81], ['home', 'escape', 1, 96], ['away', 'escape', 2, 41]]],
+      ['home', 'decision', 2, 0, [['home', 'takedown', 0, 93], ['home', 'near4', 0, 80], ['home', 'reversal', 2, 52]]],
+      ['away', 'fall', 1, 35, [['away', 'takedown', 0, 55], ['home', 'escape', 1, 85], ['away', 'takedown', 1, 42]]],
+      ['away', 'technical', 2, 19, [['away', 'takedown', 0, 97], ['away', 'near4', 0, 78], ['away', 'near4', 1, 84], ['away', 'near4', 2, 19]]],
+      ['home', 'decision', 2, 0, [['away', 'takedown', 0, 66], ['home', 'escape', 0, 48], ['home', 'reversal', 1, 72], ['home', 'escape', 2, 33]]],
+      ['home', 'fall', 0, 61, [['home', 'takedown', 0, 80]]],
+      ['away', 'decision', 2, 0, [['home', 'takedown', 0, 90], ['away', 'escape', 0, 66], ['away', 'takedown', 2, 34]]],
+      ['away', 'decision', 2, 0, [['away', 'takedown', 0, 95], ['away', 'near3', 0, 77], ['away', 'near3', 1, 37], ['home', 'escape', 2, 69]]]
+    ];
+    function stage(bout, period, seconds, events) {
+      for (const [side, move, eventPeriod, eventSeconds] of events) {
+        bout.period = eventPeriod;
+        bout.remaining = eventSeconds * 1000;
+        award(bout, side, move);
+      }
+      bout.period = period;
+      bout.remaining = seconds * 1000;
+    }
+    meet.bouts.forEach((bout, index) => { [bout.home, bout.away] = lineup[index]; });
+    resultsSoFar.forEach(([winner, type, period, seconds, events], index) => {
+      const bout = meet.bouts[index];
+      stage(bout, period, seconds, events);
+      recordResult(bout, type, winner);
+    });
+    const current = meet.bouts[resultsSoFar.length];
+    stage(current, 1, 47, [['home', 'takedown', 0, 91], ['away', 'escape', 0, 78], ['away', 'escape', 1, 93]]);
+    meet.active = current.weight;
+    return meet;
+  }
+
+  const api = { weights, periods, moves, results, sides, createDual, timeLeft, boutScore, dualScore, award, recordResult, periodScores, dualBoxScore, createMidDualDemo };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.LarsonWrestling = api;
 })(globalThis);

@@ -1,10 +1,11 @@
 (() => {
   'use strict';
 
-  const { weights, periods, moves, results, sides, createDual, timeLeft, boutScore, dualScore, award, recordResult, periodScores, dualBoxScore } = window.LarsonWrestling;
+  const { weights, periods, moves, results, sides, createDual, timeLeft, boutScore, dualScore, award, recordResult, periodScores, dualBoxScore, createMidDualDemo } = window.LarsonWrestling;
   const get = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
-  const demo = params.get('demo') === '1';
+  const lateDemo = params.get('demo') === 'late';
+  const demo = lateDemo || params.get('demo') === '1';
   const prefix = 'lls:wrestling:dual:v1:';
   let storage;
   let dual;
@@ -419,8 +420,13 @@
   try {
     storage = demo ? sessionStorage : localStorage;
     if (demo) {
-      lastSaved = storage.getItem(prefix + 'practice');
+      const practiceId = lateDemo ? 'practice-mid-dual' : 'practice';
+      lastSaved = storage.getItem(prefix + practiceId);
       let meet = read(lastSaved);
+      if (!meet && lateDemo) {
+        meet = createMidDualDemo();
+        save(meet);
+      }
       if (!meet) {
         meet = createDual('Prairie Falcons', 'River Otters', 'girls', 120, 'practice');
         const bout = active(meet);
