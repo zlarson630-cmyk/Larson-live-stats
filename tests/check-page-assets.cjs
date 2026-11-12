@@ -1,5 +1,5 @@
 const fs=require('node:fs');const path=require('node:path');const assert=require('node:assert/strict');
-const pages=['schedule','games','view','volleyball'];
+const pages=['schedule','games','view','volleyball','wrestling'];
 for(const page of pages){
  const html=fs.readFileSync(page+'.html','utf8');
  const css='assets/css/'+page+'.css',js='assets/js/'+page+'.js';

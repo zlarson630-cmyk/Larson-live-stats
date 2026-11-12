@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wrestling · Larson Live Stats</title>
+  <link rel="icon" href="assets/brand/larson-z-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/wrestling.css">
+  <script defer src="shared/wrestling.js"></script>
+  <script defer src="assets/js/wrestling.js"></script>
+</head>
+<body>
+<header><div class="page"><a class="brand" href="./"><img src="assets/brand/larson-z-mark.svg" alt="">Larson Live Stats</a><span>Wrestling Beta</span></div></header>
+<main class="page">
+  <h1>Wrestling</h1>
+  <p id="message" role="status"></p>
+  <nav id="lobby" class="grid" aria-label="Wrestling lobby">
+    <a class="choice" href="?new=1"><strong>New Game</strong><span>Set the teams, division, and starting weight.</span></a>
+    <a class="choice" href="?resume=1"><strong>Resume Game</strong><span>Open a dual meet saved in this browser.</span></a>
+    <a class="choice" href="?demo=1"><strong>Test Game</strong><span>Practice with a fictional dual meet.</span></a>
+  </nav>
+  <section id="setup" class="panel" hidden>
+    <h2>New dual meet</h2>
+    <p>Scores and wrestler names save in this browser.</p>
+    <form id="newDual">
+      <div class="grid two">
+        <label>Home team <input id="home" required maxlength="60"></label>
+        <label>Away team <input id="away" required maxlength="60"></label>
+        <label>Weight classes <select id="division"><option value="boys">IHSA boys</option><option value="girls">IHSA girls</option></select></label>
+        <label>Starting weight <select id="starting"></select></label>
+      </div>
+      <div class="actions"><button class="primary">Start dual meet</button><a class="button" href="wrestling.html">Wrestling lobby</a></div>
+    </form>
+  </section>
+  <section id="resume" class="panel" hidden>
+    <h2>Saved dual meets</h2>
+    <p>Meets are saved in this browser.</p>
+    <div id="saved"></div>
+    <div class="actions"><a class="button primary" href="?new=1">New dual meet</a><a class="button" href="wrestling.html">Wrestling lobby</a></div>
+  </section>
+  <div id="scorer" hidden>
+    <section class="panel" id="overview">
+      <div class="heading"><div><h2 id="matchup"></h2><p id="progress"></p></div><a class="button" href="wrestling.html">Wrestling lobby</a></div>
+      <div id="dualScore" class="grid two" aria-label="Dual meet team score"></div>
+    </section>
+    <section class="panel" id="boutPanel">
+      <div class="heading"><h2 id="boutTitle"></h2><label>Weight class <select id="bout"></select></label></div>
+      <div class="actions clock-controls">
+        <label>Period <select id="period"></select></label>
+        <label>Time remaining <input id="clock" size="5" pattern="[0-9]{1,2}:[0-5][0-9]" aria-label="Time remaining, minutes and seconds"></label>
+        <button type="button" class="primary" id="timer">Start clock</button>
+      </div>
+      <div class="grid two" id="scoring"></div>
+      <div class="actions">
+        <button type="button" id="undo">Undo last score</button>
+        <button type="button" id="next">Next open bout</button>
+      </div>
+      <p id="resultText" hidden></p>
+      <button type="button" id="reopen" hidden>Reopen bout</button>
+      <details id="result">
+        <summary>Record official result</summary>
+        <form id="resultForm">
+          <div class="grid two">
+            <label>Result <select id="outcome"></select></label>
+            <label>Winner <select id="winner" required></select></label>
+          </div>
+          <button class="primary">Save bout result</button>
+        </form>
+      </details>
+      <details id="log"><summary>Bout scoring log</summary><ol id="events" reversed></ol></details>
+    </section>
+    <section class="panel" id="scorecard">
+      <div class="heading"><h2>Dual meet scorecard</h2><button type="button" id="print">Print / Save PDF</button></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th scope="col">Weight</th><th scope="col" id="homeColumn"></th><th scope="col" id="awayColumn"></th><th scope="col">Bout score</th><th scope="col">Result</th><th scope="col">Team points</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table></div>
+      <ul id="adjustments" aria-label="Team point adjustments"></ul>
+      <details id="adjustControls"><summary>Adjust team points</summary>
+        <form id="adjustForm">
+          <div class="grid two">
+            <label>Team <select id="adjustTeam"></select></label>
+            <label>Point adjustment <input id="adjustPoints" type="number" min="-99" max="99" step="1" required></label>
+          </div>
+          <label>Reason <input id="adjustReason" maxlength="100" required></label>
+          <div class="actions"><button>Apply adjustment</button><button type="button" id="undoAdjustment">Undo last adjustment</button></div>
+        </form>
+      </details>
+      <button class="primary" type="button" id="finish">Finalize dual meet</button>
+    </section>
+  </div>
+</main>
+</body>
+</html>
