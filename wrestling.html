@@ -5,20 +5,26 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Wrestling · Larson Live Stats</title>
   <link rel="icon" href="assets/brand/larson-z-mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/css/wrestling.css">
-  <script defer src="shared/wrestling.js"></script>
-  <script defer src="assets/js/wrestling.js"></script>
+  <link rel="stylesheet" href="athletic-ui.css?v=light-sports">
+  <link rel="stylesheet" href="assets/css/wrestling.css?v=box-score-1">
+  <script defer src="shared/wrestling.js?v=box-score-1"></script>
+  <script defer src="assets/js/wrestling.js?v=box-score-1"></script>
 </head>
 <body>
-<header><div class="page"><a class="brand" href="./"><img src="assets/brand/larson-z-mark.svg" alt="">Larson Live Stats</a><span>Wrestling Beta</span></div></header>
 <main class="page">
-  <h1>Wrestling</h1>
+  <header class="heading site-header">
+    <h1><a class="brandHome" href="./" aria-label="Larson Live Stats home">Live Stats</a> <span class="small">Wrestling Beta</span></h1>
+  </header>
+  <nav class="sport-nav" aria-label="Wrestling"><a href="./">Home</a><a href="wrestling.html">Game Lobby</a></nav>
   <p id="message" role="status"></p>
-  <nav id="lobby" class="grid" aria-label="Wrestling lobby">
-    <a class="choice" href="?new=1"><strong>New Game</strong><span>Set the teams, division, and starting weight.</span></a>
-    <a class="choice" href="?resume=1"><strong>Resume Game</strong><span>Open a dual meet saved in this browser.</span></a>
-    <a class="choice" href="?demo=1"><strong>Test Game</strong><span>Practice with a fictional dual meet.</span></a>
-  </nav>
+  <div id="lobby">
+    <h2 class="lobby-title">🤼 Wrestling</h2>
+    <nav class="choices" aria-label="Wrestling lobby">
+      <a class="choice" href="?new=1"><span class="symbol" aria-hidden="true">＋</span><span><strong>New Game</strong><small>Set teams, division, and starting weight</small></span><span class="arrow" aria-hidden="true">›</span></a>
+      <a class="choice" href="?resume=1"><span class="symbol" aria-hidden="true">▶</span><span><strong>Resume Game</strong><small>Open a dual meet saved in this browser</small></span><span class="arrow" aria-hidden="true">›</span></a>
+      <a class="choice" href="?demo=1"><span class="symbol" aria-hidden="true">★</span><span><strong>Test Game</strong><small>Practice with a fictional dual meet</small></span><span class="arrow" aria-hidden="true">›</span></a>
+    </nav>
+  </div>
   <section id="setup" class="panel" hidden>
     <h2>New dual meet</h2>
     <p>Scores and wrestler names save in this browser.</p>
@@ -40,15 +46,33 @@
   </section>
   <div id="scorer" hidden>
     <section class="panel" id="overview">
-      <div class="heading"><div><h2 id="matchup"></h2><p id="progress"></p></div><a class="button" href="wrestling.html">Wrestling lobby</a></div>
+      <div class="heading">
+        <div><h2 id="matchup"></h2><p class="small" id="progress"></p></div>
+        <a class="button" href="#scorecard">Box Score</a>
+      </div>
       <div id="dualScore" class="grid two" aria-label="Dual meet team score"></div>
+      <details id="appearance">
+        <summary>Scoring colors</summary>
+        <div class="actions color-options">
+          <label>Color mode <select id="colorMode"><option value="mat">Mat colors (red / green)</option><option value="uniform">Team uniform colors</option></select></label>
+          <button type="button" id="swapColors">Swap red / green</button>
+          <div id="uniformColors" class="uniform-colors" hidden>
+            <label><span id="awayColorLabel">Away uniform</span><input type="color" id="awayColor"></label>
+            <label><span id="homeColorLabel">Home uniform</span><input type="color" id="homeColor"></label>
+          </div>
+        </div>
+      </details>
     </section>
     <section class="panel" id="boutPanel">
       <div class="heading"><h2 id="boutTitle"></h2><label>Weight class <select id="bout"></select></label></div>
-      <div class="actions clock-controls">
-        <label>Period <select id="period"></select></label>
-        <label>Time remaining <input id="clock" size="5" pattern="[0-9]{1,2}:[0-5][0-9]" aria-label="Time remaining, minutes and seconds"></label>
-        <button type="button" class="primary" id="timer">Start clock</button>
+      <div class="bout-scoreboard">
+        <div class="teamTile" id="awayBoutTile"><b id="awayBoutLabel"></b><div class="points" id="awayBoutPoints"></div><div class="small" id="awayBoutSide">Away</div></div>
+        <div class="clock-controls">
+          <label><span class="sr-only">Period</span><select id="period"></select></label>
+          <label><span class="sr-only">Time remaining</span><input id="clock" size="5" pattern="[0-9]{1,2}:[0-5][0-9]" aria-label="Time remaining, minutes and seconds"></label>
+          <button type="button" id="timer">Start clock</button>
+        </div>
+        <div class="teamTile" id="homeBoutTile"><b id="homeBoutLabel"></b><div class="points" id="homeBoutPoints"></div><div class="small" id="homeBoutSide">Home</div></div>
       </div>
       <div class="grid two" id="scoring"></div>
       <div class="actions">
@@ -70,10 +94,17 @@
       <details id="log"><summary>Bout scoring log</summary><ol id="events" reversed></ol></details>
     </section>
     <section class="panel" id="scorecard">
-      <div class="heading"><h2>Dual meet scorecard</h2><button type="button" id="print">Print / Save PDF</button></div>
-      <div class="table-wrap"><table>
-        <thead><tr><th scope="col">Weight</th><th scope="col" id="homeColumn"></th><th scope="col" id="awayColumn"></th><th scope="col">Bout score</th><th scope="col">Result</th><th scope="col">Team points</th></tr></thead>
+      <div class="heading"><h2>Live box score</h2><button type="button" class="primary" id="print">Print / Save PDF</button></div>
+      <p class="small">Scores and team points are listed away–home.</p>
+      <div class="table-wrap" role="region" aria-label="Bout results" tabindex="0"><table>
+        <thead><tr><th scope="col">Weight</th><th scope="col" id="awayColumn"></th><th scope="col" id="homeColumn"></th><th scope="col">P1</th><th scope="col">P2</th><th scope="col">P3</th><th scope="col">OT</th><th scope="col">Bout score</th><th scope="col">Result</th><th scope="col">Team points</th></tr></thead>
         <tbody id="rows"></tbody>
+        <tfoot><tr><th scope="row" colspan="9">Dual total</th><td id="boxTotal"></td></tr></tfoot>
+      </table></div>
+      <div class="table-wrap team-summary"><table>
+        <caption>Team totals</caption>
+        <thead><tr><th scope="col">Team</th><th scope="col">Bout wins</th><th scope="col">Falls</th><th scope="col">Tech falls</th><th scope="col">Majors</th><th scope="col">Decisions</th><th scope="col">Other wins</th><th scope="col">Adjustments</th><th scope="col">Team points</th></tr></thead>
+        <tbody id="boxTeams"></tbody>
       </table></div>
       <ul id="adjustments" aria-label="Team point adjustments"></ul>
       <details id="adjustControls"><summary>Adjust team points</summary>

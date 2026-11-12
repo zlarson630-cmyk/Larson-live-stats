@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const { weights, periods, moves, results, sides, createDual, timeLeft, boutScore, dualScore, award, recordResult } = window.LarsonWrestling;
+  const { weights, periods, moves, results, sides, createDual, timeLeft, boutScore, dualScore, award, recordResult, periodScores, dualBoxScore } = window.LarsonWrestling;
   const get = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
   const demo = params.get('demo') === '1';
@@ -10,6 +10,56 @@
   let dual;
   let lastSaved = null;
   let panels = {};
+  const displayOrder = ['away', 'home'];
+  const matColors = { red: '#c62828', green: '#18764a' };
+  const defaultUniforms = { home: '#ffffff', away: '#c62828' };
+  const validColor = value => /^#[0-9a-f]{6}$/i.test(value ?? '');
+
+  function appearance(meet) {
+    const saved = meet.appearance;
+    return {
+      mode: saved?.mode === 'uniform' ? 'uniform' : 'mat',
+      homeMat: saved?.homeMat === 'red' ? 'red' : 'green',
+      uniforms: Object.fromEntries(sides.map(side => [
+        side, validColor(saved?.uniforms?.[side]) ? saved.uniforms[side] : defaultUniforms[side]
+      ]))
+    };
+  }
+
+  function teamTheme(side, settings) {
+    const awayMat = settings.homeMat === 'green' ? 'red' : 'green';
+    const mat = side === 'home' ? settings.homeMat : awayMat;
+    const color = settings.mode === 'uniform' ? settings.uniforms[side] : matColors[mat];
+    const channels = [1, 3, 5].map(start => {
+      const value = Number.parseInt(color.slice(start, start + 2), 16) / 255;
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    });
+    const luminance = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+    const label = side === 'home' ? 'Home' : 'Away';
+    return { color, ink: luminance >= 0.179 ? '#000000' : '#ffffff',
+      label: settings.mode === 'mat' ? label + ' · ' + (mat === 'green' ? 'Green' : 'Red') : label };
+  }
+
+  function applyTheme(node, theme) {
+    node.style.setProperty('--jersey', theme.color);
+    node.style.setProperty('--jersey-ink', theme.ink);
+  }
+
+  function updateAppearance(apply, control) {
+    const saved = change((_, meet) => {
+      const settings = appearance(meet);
+      apply(settings);
+      meet.appearance = settings;
+    });
+    if (!saved && control) {
+      const settings = appearance(dual);
+      control.value = control.id === 'colorMode' ? settings.mode : settings.uniforms[control.dataset.side];
+    }
+  }
+
+  function awayHome(score) {
+    return score.away + '–' + score.home;
+  }
 
   function element(tag, content, className) {
     const node = document.createElement(tag);
@@ -103,9 +153,7 @@
   function createPanel(side) {
     const section = element('section', undefined, 'team ' + side);
     const header = element('div', undefined, 'heading');
-    const points = element('output', '0', 'points');
-    points.setAttribute('aria-label', dual[side] + ' bout score');
-    header.append(element('h3', dual[side]), points);
+    header.append(element('h3', dual[side]));
     const label = element('label', 'Wrestler');
     const name = element('input');
     name.value = active()[side];
@@ -124,7 +172,7 @@
       controls.append(button);
     }
     section.append(header, label, controls);
-    panels[side] = { name, points, controls };
+    panels[side] = { section, name, controls };
     return section;
   }
 
@@ -161,7 +209,7 @@
     const locked = dual.finished || Boolean(bout.result);
     const completed = dual.bouts.filter(item => item.result).length;
     if (rebuild) {
-      get('scoring').replaceChildren(...sides.map(createPanel));
+      get('scoring').replaceChildren(...displayOrder.map(createPanel));
       get('result').open = false;
       get('log').open = false;
       get('resultForm').reset();
@@ -182,15 +230,23 @@
       return element('li', dual[event.side] + ' · ' + label + ' +' + value + ' · '
         + periods[event.period][0] + ', ' + timeLabel(event.remaining) + ' left');
     }));
-    for (const side of sides) {
+    const settings = appearance(dual);
+    get('colorMode').value = settings.mode;
+    get('swapColors').hidden = settings.mode !== 'mat';
+    get('uniformColors').hidden = settings.mode !== 'uniform';
+    const totals = dualScore(dual);
+    get('dualScore').replaceChildren(...displayOrder.map(side => {
       const panel = panels[side];
-      if (panel.points.value !== String(score[side])) panel.points.value = score[side];
+      const theme = teamTheme(side, settings);
+      applyTheme(panel.section, theme);
+      applyTheme(get(side + 'BoutTile'), theme);
+      get(side + 'BoutPoints').textContent = score[side];
+      get(side + 'BoutSide').textContent = theme.label;
+      get(side + 'Color').value = settings.uniforms[side];
       panel.name.readOnly = locked;
       for (const button of panel.controls.children) button.disabled = locked;
-    }
-    const totals = dualScore(dual);
-    get('dualScore').replaceChildren(...sides.map(side => {
-      const team = element('div', undefined, 'dual team ' + side);
+      const team = element('div', undefined, 'dual team');
+      applyTheme(team, theme);
       team.append(element('span', dual[side]), element('strong', totals[side], 'points'));
       return team;
     }));
@@ -208,9 +264,25 @@
       weight.append(link);
       const score = boutScore(item);
       const hasScore = item.events.length || (item.result && !['forfeit', 'double'].includes(item.result.type));
-      row.append(weight, element('td', item.home || '—'), element('td', item.away || '—'),
-        element('td', hasScore ? score.home + '–' + score.away : '—'), element('td', describe(item)),
-        element('td', item.result ? results[item.result.type][1] : '—'));
+      const lastPeriod = Math.max(item.period, ...item.events.map(event => event.period));
+      const byPeriod = periodScores(item).map((points, index) =>
+        element('td', hasScore && index <= lastPeriod ? awayHome(points) : '—', 'numeric'));
+      const points = { home: 0, away: 0 };
+      if (item.result?.side) points[item.result.side] = results[item.result.type][1];
+      row.append(weight, element('td', item.away || '—'), element('td', item.home || '—'),
+        ...byPeriod, element('td', hasScore ? awayHome(score) : '—', 'numeric'), element('td', describe(item)),
+        element('td', item.result ? awayHome(points) : '—', 'numeric'));
+      return row;
+    }));
+    get('boxTotal').textContent = awayHome(totals);
+    const summary = dualBoxScore(dual);
+    get('boxTeams').replaceChildren(...displayOrder.map(side => {
+      const row = element('tr');
+      const team = element('th', dual[side]);
+      team.scope = 'row';
+      const stats = summary[side];
+      row.append(team, ...['wins', 'fall', 'technical', 'major', 'decision', 'other', 'adjustment', 'points'].map(key =>
+        element('td', key === 'adjustment' && stats[key] > 0 ? '+' + stats[key] : stats[key], 'numeric')));
       return row;
     }));
     get('adjustments').replaceChildren(...dual.adjustments.map(({ side, points, reason }) =>
@@ -237,7 +309,12 @@
 
   function open(meet) {
     dual = meet;
-    get('matchup').textContent = meet.home + ' vs. ' + meet.away;
+    get('matchup').textContent = meet.away + ' at ' + meet.home;
+    for (const side of sides) {
+      get(side + 'BoutLabel').textContent = meet[side];
+      get(side + 'ColorLabel').textContent = meet[side] + ' uniform';
+      get(side + 'Color').dataset.side = side;
+    }
     get('homeColumn').textContent = meet.home;
     get('awayColumn').textContent = meet.away;
     get('bout').replaceChildren(...meet.bouts.map(bout => new Option(bout.weight + ' lb', bout.weight)));
@@ -326,6 +403,17 @@
   get('undoAdjustment').addEventListener('click', () => change((_, meet) => meet.adjustments.pop(),
     { message: 'Last adjustment undone.' }));
   get('finish').addEventListener('click', () => change((_, meet) => { meet.finished = !meet.finished; }));
+  get('colorMode').addEventListener('change', event => {
+    updateAppearance(settings => { settings.mode = event.target.value; }, event.target);
+  });
+  get('swapColors').addEventListener('click', () => {
+    updateAppearance(settings => { settings.homeMat = settings.homeMat === 'green' ? 'red' : 'green'; });
+  });
+  for (const side of sides) {
+    get(side + 'Color').addEventListener('change', event => {
+      updateAppearance(settings => { settings.uniforms[side] = event.target.value; }, event.target);
+    });
+  }
   get('print').addEventListener('click', () => window.print());
 
   try {

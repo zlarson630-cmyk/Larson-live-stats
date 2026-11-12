@@ -82,7 +82,29 @@
     bout.result = { type, side };
   }
 
-  const api = { weights, periods, moves, results, sides, createDual, timeLeft, boutScore, dualScore, award, recordResult };
+  function periodScores(bout) {
+    const scores = Array.from({ length: 4 }, () => ({ home: 0, away: 0 }));
+    for (const { side, move, period } of bout.events) scores[Math.min(period, 3)][side] += moves[move][1];
+    return scores;
+  }
+
+  function dualBoxScore(dual) {
+    const team = () => ({ wins: 0, fall: 0, technical: 0, major: 0, decision: 0, other: 0, adjustment: 0 });
+    const totals = dualScore(dual);
+    const box = { home: team(), away: team() };
+    for (const { result } of dual.bouts) {
+      if (!result?.side) continue;
+      const team = box[result.side];
+      team.wins++;
+      const column = Object.hasOwn(team, result.type) ? result.type : 'other';
+      team[column]++;
+    }
+    for (const { side, points } of dual.adjustments) box[side].adjustment += points;
+    for (const side of sides) box[side].points = totals[side];
+    return box;
+  }
+
+  const api = { weights, periods, moves, results, sides, createDual, timeLeft, boutScore, dualScore, award, recordResult, periodScores, dualBoxScore };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.LarsonWrestling = api;
 })(globalThis);
