@@ -2,7 +2,7 @@
   'use strict';
 
   const page = location.pathname.split('/').pop() || 'index.html';
-  const supportEmail = '';
+  const supportEmail = 'zlarson630@gmail.com';
   const starting = ['How do I start a game?', 'Choose your sport from Home and follow its game setup. For basketball, use Quick Game for a fast setup or Resume Game to open a saved game.'];
   const saved = ['Where are my saved games?', 'Sign in with the account you used to create the game, then open My Games. Browser-only games are available on the device and browser where you started them.'];
   const basketball = [
