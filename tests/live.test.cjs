@@ -1,12 +1,13 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
+const crypto=require('node:crypto');
 const fs=require('node:fs');
 function app(){
  const nodes=new Map(), storage=new Map(),listeners=new Map();
  let activeElement=null;
- const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,textContent:'',innerHTML:'',parentElement:{style:{}},style:{},setAttribute(k,v){this[k]=v},classList:{add(){},remove(){},toggle(){},contains(c){return c==='hide'&&id==='subSheet'}},focus(){activeElement=this},blur(){activeElement=null},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
- const ctx=vm.createContext({console,structuredClone,URLSearchParams,Date,Math,Promise,
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,open:false,showModal(){this.open=true},close(){this.open=false},textContent:'',innerHTML:'',parentElement:{style:{}},style:{},setAttribute(k,v){this[k]=v},classList:{add(){},remove(){},toggle(){},contains(c){return c==='hide'&&id==='subSheet'}},focus(){activeElement=this},blur(){activeElement=null},addEventListener(){},querySelectorAll(){return []},querySelector(){return node('panel')},scrollIntoView(){}});return nodes.get(id);};
+ const ctx=vm.createContext({console,structuredClone,URLSearchParams,Date,Math,Promise,crypto,AbortSignal,
  document:{getElementById:node,get activeElement(){return activeElement},querySelectorAll:()=>[],addEventListener(type,handler){listeners.set(type,handler)},removeEventListener(){}},
  localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},
  location:{pathname:'/',search:''},history:{replaceState(){}},
@@ -20,9 +21,12 @@ function app(){
  return {ctx,node,press,run:s=>vm.runInContext(s,ctx)};
 }
 const initial={id:'ABC123',home:'Home',away:'Away',scores:{home:0,away:0},colors:{home:'#ffffff',away:'#c62828'},fouls:{home:0,away:0},timeouts:{home:5,away:5},period:1,seconds:480,running:false,startedAt:null,events:[],version:1};
-function cloud(a,{conflicts=0,fail=false,game=initial}={}){
- let row=structuredClone(game), calls=0;
- a.ctx.Live.read=async()=>({state:structuredClone(row)});
+function cloud(a,{conflicts=0,fail=false,disconnect=false,loseResponse=false,game=initial}={}){
+ let row=structuredClone(game), calls=0,offline=false;
+ a.ctx.Live.read=async()=>{
+  if(offline)throw Error('offline');
+  return {state:structuredClone(row)};
+ };
  a.ctx.Live.client={from:()=>({update:({state})=>{
   calls++;
   const filters=new Map();
@@ -30,7 +34,8 @@ function cloud(a,{conflicts=0,fail=false,game=initial}={}){
    eq(key,value){filters.set(key,value);return q},
    is(key,value){filters.set(key,value);return q},
    async select(){
-    if(fail)return {error:Error('offline')};
+    if(fail)return {status:403,error:Error('denied')};
+    if(disconnect){disconnect=false;offline=true;return {status:0,error:Error('offline')};}
     if(filters.has('state'))return {error:Error('Request URL is too long')};
     assert.equal(filters.get('id'),row.id);
     if(conflicts-->0){row.scores.home++;row.version++;}
@@ -38,13 +43,15 @@ function cloud(a,{conflicts=0,fail=false,game=initial}={}){
      ?filters.get('state->>version')===null
      :filters.get('state->version')===JSON.stringify(row.version);
     if(!matches)return {data:[]};
-    row=state;return {data:[{state:row}]};
+    row=state;
+    if(loseResponse){loseResponse=false;offline=true;return {status:0,error:Error('offline')};}
+    return {data:[{state:row}]};
    }
   };
   return q;
  }})};
  a.run("cloudMode=true;owner=true;id='ABC123'");a.ctx.seed=game;a.run('state=structuredClone(seed)');
- return {row:()=>row,calls:()=>calls};
+ return {row:()=>row,calls:()=>calls,reconnect(){offline=false},replace(game){row=game}};
 }
 test('signed-out scorer cannot create or save a device-only game',async()=>{const a=app();a.node('localMode').checked=true;await a.run('createGame()');assert.match(a.node('sync').textContent,/NOT CREATED/);assert.equal(a.run('state'),null);assert.equal(await a.run('write(()=>{})'),false);});
 test('cloud saves serialize and retry a conflicting update without losing points',async()=>{
@@ -55,9 +62,66 @@ test('cloud saves serialize and retry a conflicting update without losing points
 test('public viewers cannot submit writes',async()=>{
  const a=app(),db=cloud(a);a.run('owner=false');assert.equal(await a.run('write(s=>s.scores.home++)'),false);assert.equal(db.calls(),0);
 });
-test('failed cloud save keeps confirmed state and reports unsaved action',async()=>{
+test('rejected cloud save keeps confirmed state and reports unsaved action',async()=>{
  const a=app();cloud(a,{fail:true});assert.equal(await a.run('write(s=>s.scores.home+=3)'),false);assert.equal(a.run('state.scores.home'),0);assert.match(a.node('sync').textContent,/Not saved/);
 });
+test('retry checks an ambiguous save before repeating a score, foul, timeout, clock action or undo',async()=>{
+ const actions=[
+  ['score', 'write(s=>s.scores.home+=2)', (s)=>s.scores.home, 2],
+  ['foul', "foul('home')", (s)=>s.fouls.home, 1],
+  ['timeout', "timeout('home')", (s)=>s.timeouts.home, 4],
+  ['clock', 'toggleClock()', (s)=>s.running, true],
+  ['undo', 'undo()', (s)=>s.events.length, 1],
+ ];
+ for(const [label,action,stat,expected] of actions){
+  const a=app();
+  const db=cloud(a,{loseResponse:true,game:{...initial,events:[{id:'first'},{id:'last'}]}});
+  // The legacy foul handler does not return its write promise.
+  const save=a.run(action)??a.run('writeQueue');
+  assert.equal(a.node('basketballSaveStatus').textContent,'Saving…',label);
+  await new Promise(setImmediate);
+  assert.equal(a.node('basketballSaveRecovery').open,true,label);
+  assert.equal(a.node('basketballSaveStatus').textContent,'Couldn’t confirm save',label);
+  assert.equal(stat(db.row()),expected,label);
+  assert.equal(await a.run('write(s=>s.scores.home+=99)'),false,label);
+  db.reconnect();
+  a.ctx.retryBasketballSaveNow();
+  await save;
+  assert.equal(db.calls(),1,label);
+  assert.equal(stat(a.run('state')),expected,label);
+  assert.equal(a.node('basketballSaveStatus').textContent,'Saved',label);
+  assert.equal(a.node('basketballSaveRecovery').open,false,label);
+ }
+});
+
+test('retry sends the original action if a dropped connection prevented it from saving',async()=>{
+ const a=app(),db=cloud(a,{disconnect:true});
+ const save=a.run("timeout('away')");
+ await new Promise(setImmediate);
+ assert.equal(db.row().timeouts.away,5);
+ assert.equal(a.node('basketballSaveRecovery').open,true);
+ db.reconnect();
+ a.ctx.retryBasketballSaveNow();
+ assert.equal(await save,true);
+ assert.equal(db.calls(),2);
+ assert.equal(db.row().timeouts.away,4);
+ assert.equal(db.row().saveReceipts.length,1);
+});
+
+test('an ambiguous action is never reapplied on top of an intervening game change',async()=>{
+ const a=app(),db=cloud(a,{disconnect:true});
+ const save=a.run('toggleClock()');
+ await new Promise(setImmediate);
+ db.replace({...db.row(),version:2,period:2});
+ db.reconnect();
+ a.ctx.retryBasketballSaveNow();
+ assert.equal(await save,false);
+ assert.equal(db.calls(),1);
+ assert.equal(a.run('state.period'),2);
+ assert.equal(a.run('state.running'),false);
+ assert.match(a.node('sync').textContent,/game changed/);
+});
+
 test('public subscription catches up on reconnect, polls and cleans up',async()=>{
  let cb,refresh,removed=0,reads=0,last,status;
  const client={from:()=>({select(){return this},eq(){return this},maybeSingle:async()=>({data:{id:'ABC123',home_score:++reads}})}),channel:()=>({on(event,filter,fn){assert.equal(filter.table,'live_scoreboards');return this},subscribe(fn){cb=fn;return this}}),removeChannel(){removed++}};
