@@ -1,0 +1,66 @@
+button.lls-help-launch {
+  position: fixed;
+  inset-inline-end: max(0.85rem, env(safe-area-inset-right));
+  inset-block-end: max(0.85rem, env(safe-area-inset-bottom));
+  z-index: 20;
+  min-height: 44px;
+  margin: 0;
+  padding: 0.45rem 1rem;
+  border: 1px solid #b50d22;
+  border-radius: 999px;
+  background: #fff;
+  color: #a30c20;
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 3px 14px #17202a24;
+}
+.lls-help {
+  box-sizing: border-box;
+  width: min(30rem, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid #d7dee6;
+  border-radius: 0.8rem;
+  background: #fff;
+  color: #17202a;
+  font: inherit;
+  line-height: 1.45;
+}
+.lls-help::backdrop { background: #17202a66; }
+.lls-help > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 0.5rem;
+}
+.lls-help h2 { margin: 0; }
+.lls-help header button {
+  min-height: 44px;
+  margin: 0;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #c8d1db;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #17202a;
+  font: inherit;
+}
+.lls-help details { border-top: 1px solid #d7dee6; }
+.lls-help summary {
+  cursor: pointer;
+  padding: 0.7rem 0;
+  color: #17202a;
+  font-weight: 700;
+}
+.lls-help details p { margin: 0 0 0.85rem; }
+.lls-help-contact {
+  display: inline-block;
+  margin-block-start: 0.5rem;
+  padding-block: 0.6rem;
+  color: #a30c20;
+  font-weight: 700;
+}
+.lls-help :focus-visible,
+.lls-help-launch:focus-visible { outline: 2px solid #a30c20; outline-offset: 3px; }
