@@ -6,8 +6,8 @@
   const starting = ['How do I start a game?', 'Choose your sport from Home and follow its game setup. For basketball, use Quick Game for a fast setup or Resume Game to open a saved game.'];
   const saved = ['Where are my saved games?', 'Sign in with the account you used to create the game, then open My Games. Browser-only games are available on the device and browser where you started them.'];
   const basketball = [
-    ['What are the basketball shortcuts?', 'On a computer, press Space or F8 to start or stop the clock, H for home or V for visitor, J for a two-pointer, Y for a three-pointer, and E for a free throw. Enter jerseys with two digits, such as 05. Open Quick guide & keyboard commands in the scorer for the full list.'],
-    ['How do I correct a play?', 'Use Backspace while entering a play. Click a jersey chip to edit the latest play, choose Undo last play to remove it, or open Game Flow to review earlier plays.'],
+    ['What are the basketball shortcuts?', 'On a computer, press Space or F8 to start or stop the clock, H for home or V for visitor, J for a two-pointer, Y for a three-pointer, E for a free throw, L for layup, U for dunk, and I for Full Suite substitutions. Enter jerseys with two digits, such as 05. Open Quick guide & keyboard commands in the scorer for the full list.'],
+    ['How do I correct a play?', 'Use Backspace while entering a play. In Last five plays, click a timestamp, shot value, or jersey to correct it. Click Add steal on a turnover or the rebound chip to change its credit. Use Undo last play to remove the latest play or Game Flow to review older plays.'],
     ['What if a save can’t be confirmed?', 'When your connection returns, choose Check and retry. The scorer checks whether the original action saved before trying it again. If you reload, review the last action in Game Flow before re-entering it.'],
     ['How do I get a box score?', 'Open PDF reports in the scorer and choose One-page PDF or Full stats PDF. You can download a report during the game or after it ends.'],
   ];

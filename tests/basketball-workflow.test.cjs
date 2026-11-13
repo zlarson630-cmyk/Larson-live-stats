@@ -48,13 +48,13 @@ test('a complete keyboard sequence links assist, rebound and block without dupli
  assert.equal(game.events.length,1);
  assert.equal(game.events[0].assist,'02');
  assert.equal(game.offenseTeam,'away');
- game=await a.command('V J 24 M K 04 D 02');
+ game=await a.command('V J 24 K 04 D 02');
  assert.equal(game.events.length,2);
  const miss=game.events[0];
  assert.equal(miss.scorer,'24');
  assert.deepEqual(JSON.parse(JSON.stringify(miss.block)),{team:'home',player:'04'});
  assert.deepEqual(JSON.parse(JSON.stringify(miss.rebound)),{team:'home',player:'02',type:'defensive'});
- assert.equal(game.offenseTeam,'away');
+ assert.equal(game.offenseTeam,'home');
  const box=a.ctx.basketballBoxScore(game);
  assert.equal(box.totals.home['04'].blk,1);
  assert.equal(box.totals.home['02'].reb,1);
@@ -147,11 +147,11 @@ test('back-to-back submissions cannot duplicate a play while its save is in flig
  assert.equal(a.db.row().scores.home,2);
 });
 
-test('made shots in all three modes preserve the selected team until H or V is entered',async()=>{
+test('N skips an assist and switches possession in Full Suite',async()=>{
  for(const mode of ['basic','streamlined','full']){
   const a=setup(mode,{offenseTeam:'away'});
   const game=await a.command(mode==='basic'?'V Y':mode==='streamlined'?'V Y 24 G':'V Y 24 G N');
-  assert.equal(game.offenseTeam,'away');
+  assert.equal(game.offenseTeam,mode==='full'?'home':'away');
   assert.equal(game.scores.away,3);
   await a.command('H');
   assert.equal(a.db.row().offenseTeam,'home');
@@ -379,41 +379,17 @@ test('scorer notes remain editable after final and feedback prompts once the sco
  assert.equal(a.node('basketballScorerNotes').value,'');
 });
 
-test('opening tip records the winner, sets the arrow and starts a custom first-half clock exactly once',async()=>{
- const a=setup('full',{clockFormat:'halves',periodSeconds:[1080,1200],seconds:1080,possession:'away'});
- const dialog=a.node('basketballOpeningTipDialog');
- dialog.showModal=()=>{dialog.open=true;};
- dialog.close=()=>{dialog.open=false;};
- a.ctx.wfRender();
- assert.equal(a.node('basketballOpeningTip').hidden,false);
- a.ctx.openBasketballOpeningTip();
- assert.equal(dialog.open,true);
- assert.equal(a.node('basketballTipAway').textContent,'Away');
- await Promise.all([a.ctx.recordBasketballOpeningTip('away'),a.ctx.recordBasketballOpeningTip('home')]);
- const game=a.db.row();
- assert.equal(game.running,true);
- assert.equal(game.liveStarted,true);
- assert.equal(game.seconds,1080);
- assert.equal(game.offenseTeam,'away');
- assert.equal(game.possession,'home');
- assert.equal(game.events.length,1);
- assert.equal(game.events[0].time,'18:00');
- assert.equal(a.ctx.playLabel(game.events[0]),'Opening tip');
- assert.equal(dialog.open,false);
- assert.equal(a.node('basketballOpeningTip').hidden,true);
- await a.ctx.toggleClock();
- await a.ctx.recordBasketballOpeningTip('home');
- assert.equal(a.db.row().events.length,1);
-});
-
-test('pregame technicals allow an opening tip, and opening-tip controls are hidden for viewers',async()=>{
- const a=setup('basic');
- await a.command('C H');
- a.ctx.wfRender();
- assert.equal(a.node('basketballOpeningTip').hidden,false);
- a.run('owner=false;wfRender()');
- assert.equal(a.node('basketballOpeningTip').hidden,true);
- assert.equal(a.node('basketballPhoneOpeningTip').hidden,true);
+test('Space starts and stops the game and possession is selected separately',async()=>{
+ const a=setup('full',{clockFormat:'halves',periodSeconds:[1080,1200],seconds:1080,possession:'home'});
+ await a.press(' ',{target:a.node('wfCommand')});
+ assert.equal(a.db.row().running,true);
+ assert.equal(a.db.row().seconds,1080);
+ await a.command('V');
+ assert.equal(a.db.row().offenseTeam,'away');
+ assert.equal(a.db.row().possession,'home');
+ assert.equal(a.db.row().events.length,0);
+ await a.press(' ',{target:a.node('wfCommand')});
+ assert.equal(a.db.row().running,false);
 });
 
 test('Backspace restores one play step, including a shot result that already saved',async()=>{
@@ -521,7 +497,7 @@ test('shot and linked rebound jersey chips edit their own teams without changing
  assert.equal(game.events[0].rebound.player,'24');
  assert.equal(a.ctx.basketballBoxScore(game).teams.away.dreb,1);
 
- await a.command('J 11 G 02');
+ await a.command('H J 11 G 02');
  a.ctx.wfOpenJerseyChip(2);
  input.value='02';
  await a.ctx.wfSaveJerseyChip();
@@ -597,7 +573,7 @@ test('scoring mini flow shows the five newest saved plays with their linked deta
  await a.command('F H 11');
  await a.command('J 11 M D 04');
  const mini=a.node('wfMiniPlays');
- assert.equal((mini.innerHTML.match(/<li>/g)||[]).length,5);
+ assert.equal((mini.innerHTML.match(/<li data-play-id=/g)||[]).length,5);
  assert.match(mini.innerHTML,/--chip-jersey:#ffffff[^"]*">Home/);
  assert.match(mini.innerHTML,/MISS.*>DREB<.*--chip-jersey:#0051ba[^"]*">Away<.*--chip-jersey:#0051ba[^"]*">#04</);
  assert.match(mini.innerHTML,/Jump ball/);
@@ -686,7 +662,7 @@ test('O and D record the miss and go straight to player or team rebound entry',a
  assert.equal(game.events.length,1);
  assert.equal(game.events[0].kind,'miss');
  assert.deepEqual({...game.events[0].rebound},{team:'away',player:'04',type:'defensive'});
- for(const key of 'Y11OM')await a.press(key,{target:field});
+ for(const key of 'HY11OM')await a.press(key,{target:field});
  game=a.db.row();
  assert.equal(game.events.length,2);
  assert.equal(game.events[0].kind,'miss');
@@ -759,7 +735,7 @@ test('Enter ends a just-completed make in Streamlined, but ignores a miss',async
  const full=setup('full');
  await full.command('J 11 D M');
  await full.press('Enter',{target:full.node('wfCommand')});
- assert.equal(full.db.row().offenseTeam,'home');
+ assert.equal(full.db.row().offenseTeam,'away');
 });
 
 test('turnover possession reverses on Backspace or Undo and preserves the arrow',async()=>{
@@ -881,4 +857,65 @@ test('the same practice tab reopens its saved game and unfinished details',async
  assert.equal(reopened.run('state.scores.home'),score);
  assert.equal(reopened.run('state.events[0].pendingDetail'),'assist');
  assert.equal(reopened.node('wfDetailReview').textContent,'Review unfinished plays (1)');
+});
+
+test('Last five edits time, shot points and jersey without resetting the game clock',async()=>{
+ const a=setup('full',{seconds:417});
+ const shot=(await a.command('L 11 G N')).events[0];
+ assert.equal(shot.shotType,'layup');
+ a.node('wfRecentValue').select=()=>{};
+ const submit={preventDefault(){}};
+ for(const [field,value] of [['time','7:02'],['points','3'],['scorer','04']]){
+  a.ctx.wfOpenRecentEdit(shot.id,field);
+  a.node('wfRecentValue').value=value;
+  await a.ctx.wfSaveRecentEdit(submit);
+ }
+ const game=a.db.row();
+ assert.equal(game.seconds,417);
+ assert.equal(game.events[0].seconds,422);
+ assert.equal(game.events[0].time,'7:02');
+ assert.equal(game.events[0].scorer,'04');
+ assert.equal(game.events[0].shotType,'three-pointer');
+ assert.equal(game.scores.home,3);
+});
+
+test('Last five adds a steal and changes team rebound credit in either direction',async()=>{
+ const a=setup();
+ const turnover=(await a.command('T 11 N')).events[0];
+ assert.match(a.node('wfMiniPlays').innerHTML,/Add steal/);
+ a.node('wfRecentValue').select=()=>{};
+ const correct=async(id,field,value)=>{
+  a.ctx.wfOpenRecentEdit(id,field);
+  a.node('wfRecentValue').value=value;
+  await a.ctx.wfSaveRecentEdit({preventDefault(){}});
+ };
+ await correct(turnover.id,'steal','04');
+ assert.equal(a.db.row().events[0].steal.player,'04');
+ assert.equal(a.db.row().offenseTeam,'away');
+ const miss=(await a.command('U 24 D M')).events[0];
+ assert.equal(miss.shotType,'dunk');
+ await correct(miss.id,'rebound','02');
+ assert.equal(a.db.row().events[0].rebound.player,'02');
+ await correct(miss.id,'rebound','TEAM');
+ assert.equal(a.db.row().events[0].rebound.player,'team');
+ assert.equal(a.ctx.basketballBoxScore(a.db.row()).teams.home.dreb,1);
+ assert.equal(a.db.row().offenseTeam,'home');
+});
+
+test('keyboard substitutions stage pairs and reset the five before applying',async()=>{
+ const home=['11','02','04','21','30','35'].map(number=>({number}));
+ const a=setup('full',{startingLineups:{home:['11','02','21','30','35']},rosters:{home,away:[]}});
+ await a.command('I');
+ a.node('subKeyboard').value='04 21';
+ await a.ctx.stageBasketballSubs();
+ assert.deepEqual([...a.ctx.basketballOnCourt(a.db.row(),'home')],['11','02','21','30','35']);
+ await a.ctx.confirmBasketballSubs(a.db.row().pendingSubs[0].id);
+ assert.ok(a.ctx.basketballOnCourt(a.db.row(),'home').has('04'));
+ await a.command('I');
+ a.ctx.resetBasketballSubEntry();
+ a.node('subKeyboard').value='02 04 11 21 35';
+ await a.ctx.stageBasketballSubs();
+ await a.ctx.confirmBasketballSubs(a.db.row().pendingSubs[0].id);
+ assert.deepEqual([...a.ctx.basketballOnCourt(a.db.row(),'home')],['02','04','11','21','35']);
+ assert.match(a.node('wfLineups').innerHTML,/#02.*#04.*#11.*#21.*#35/);
 });
