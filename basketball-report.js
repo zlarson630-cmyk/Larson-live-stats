@@ -197,7 +197,7 @@ function basketballOnePageBoxScore(game,gameClock){
   heading(name(t)+'  /  '+score(t),margin,top,boxWidth,accent(t));
   heading('Shooting by period',x,top,shootWidth,accent(t));
   const minutes=advanced&&!game.statCoveragePartial&&typeof wfMinutes==='function'?wfMinutes(game,t):null;
-  const playerName=n=>n==='Unassigned'?'Unassigned / team':('#'+n+' '+(rosters[t].get(n)||'')).trim();
+  const playerName=n=>n==='team'?'Team':n==='Unassigned'?'Unassigned / team':('#'+n+' '+(rosters[t].get(n)||'')).trim();
   const cells=(label,stat,time,points,isTotal=false)=>[
    label,...(advanced?[time]:[]),points,...shotRow(stat),
    ...(advanced?advancedKeys.slice(0,3).map(key=>stat[key]??'-'):[]),isTotal?(game.fouls?.[t]??'-'):(stat.pf??'-'),stat.tf??'-',
@@ -211,7 +211,7 @@ function basketballOnePageBoxScore(game,gameClock){
   }
   players[t].forEach((n,i)=>{
    const stat=totals[t][n]||fresh();
-   row(cells(playerName(n),stat,minutesLabel(n==='Unassigned'?null:minutes?.[n]??(minutes?0:null)),stat.pts),playerWidths,margin,y,rowHeight,{size,stripe:i%2===0});
+   row(cells(playerName(n),stat,minutesLabel(n==='Unassigned'||n==='team'?null:minutes?.[n]??(minutes?0:null)),stat.pts),playerWidths,margin,y,rowHeight,{size,stripe:i%2===0});
    y+=rowHeight;
   });
   row(cells('Totals',teams[t],'-',score(t),true),playerWidths,margin,y,17,{total:true,size:8.4});
@@ -294,7 +294,7 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
  const shot=(made,attempted,pct=false)=>['basic','streamlined'].includes(game.scoringMode)?made+' made':made+'-'+attempted+(pct&&attempted&&!game.statCoveragePartial?' ('+Math.round(100*made/attempted)+'%)':'');
  const statCells=(p,pct=false)=>[p.pts,shot(p.fgm,p.fga,pct),shot(p.tm,p.ta,pct),shot(p.ftm,p.fta,pct),['basic','streamlined'].includes(game.scoringMode)?'-':p.ast];
  const roster=Object.fromEntries(order.map(t=>[t,new Map((game.rosters?.[t]||[]).map(p=>[String(p.number),p.name]))]));
- const playerName=(t,n)=>n==null||n==='Unassigned'?'Unassigned':('#'+n+' '+(roster[t].get(String(n))||'')).trim();
+ const playerName=(t,n)=>n==='team'?'Team':n==null||n==='Unassigned'?'Unassigned':('#'+n+' '+(roster[t].get(String(n))||'')).trim();
  const playerRows=t=>[...new Set([...roster[t].keys(),...Object.keys(totals[t])])]
   .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))
   .map(n=>[playerName(t,n),...statCells(totals[t][n]||fresh()),totals[t][n]?.pf??0]);
@@ -447,10 +447,10 @@ function basketballBoxScorePdf(game,gameClock,preset='one',selected=[]){
   for(const t of order){
    const minutes=typeof wfMinutes==='function'?wfMinutes(game,t):null;
    const rows=[...new Set([...roster[t].keys(),...Object.keys(totals[t])])].map(n=>{
-    const p=totals[t][n]||fresh(),seconds=minutes?.[n]??(minutes?0:null);
+    const p=totals[t][n]||fresh(),seconds=n==='team'?null:minutes?.[n]??(minutes?0:null);
     return [playerName(t,n),p.oreb??0,p.dreb??0,p.reb??0,p.stl??0,p.blk??0,p.to??0,seconds==null?'-':Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0')];
    });
-   table(name(t)+' / Full Box',['PLAYER','OREB','DREB','REB','STL','BLK','TO','MIN'],[198,50,50,50,50,50,50,50],rows);
+   table(name(t)+' / Full Box',['PLAYER','OREB','DREB','REB','STL','BLK','TO','MIN'],[198,50,50,50,50,50,50,50],rows,{total:['Team total',...['oreb','dreb','reb','stl','blk','to'].map(key=>teams[t][key]??0),'-']});
   }
  }
  if(include('teams'))teamComparison();

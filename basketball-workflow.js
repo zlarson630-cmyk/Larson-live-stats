@@ -54,6 +54,7 @@ function wfStage(){
  if(!d)return 'Choose a play, or type a command.';
  if(d.action==='jump-ball')return 'Who gets the ball? H for home or V for visitor.';
  if(d.stage==='team')return d.action==='timeout'?'Which team called timeout?':'Which team committed the foul?';
+ if(d.stage==='player'&&d.action==='turnover')return 'Enter the offensive player’s two-digit jersey or choose Team.';
  if(d.stage==='player'&&d.technical)return 'Enter the player’s two-digit jersey or choose Team / bench · N.';
  if(d.stage==='player')return 'Enter '+(d.action==='shot'?'shooter':d.action==='foul'?'fouling player':'player')+' jersey number using two digits.';
  if(d.stage==='phonePlayer')return 'Basket saved. Who scored? Choose a player or assign later.';
@@ -61,8 +62,8 @@ function wfStage(){
  if(d.stage==='assist')return 'Who assisted? Enter a two-digit jersey, or press Enter for no assist and switch possession.';
  if(d.stage==='rebound')return 'Rebound: D defensive, O offensive, or N to skip.'+(!d.block&&d.eid&&d.points!==1?' K records a block.':'');
  if(d.stage==='reboundPlayer')return 'Enter the rebounder’s two-digit jersey, press M for a team rebound, or press Enter to review later.';
- if(d.stage==='steal')return 'Was there a steal? S to credit a steal, or N for none.';
- return 'Enter '+(d.stage==='blockPlayer'?'blocker':d.stage==='stealPlayer'?'stealing player':'rebounder')+' jersey number using two digits.';
+ if(d.stage==='steal')return 'Enter the defender’s two-digit jersey for a steal, or press Enter for no steal.';
+ return 'Enter '+(d.stage==='blockPlayer'?'blocker':'rebounder')+' jersey number using two digits.';
 }
 function wfNumbers(team){
  const roster=state.rosters?.[team]||[];
@@ -140,7 +141,8 @@ function wfMiniPlayChips(play){
  }else{
   const labels={'jump-ball':'Jump ball',foul:play.foulType==='technical'?'Technical foul':'Personal foul',turnover:'Turnover',steal:'Steal',block:'Block'};
   chips.push(chip(play.openingTip?'Opening tip':labels[play.kind]||wfOriginalLabel(play)));
-  if(labels[play.kind]&&play.player!=null)chips.push(jerseyChip(play.player,play.team,'player'));
+  if(play.kind==='turnover'&&play.player==='team')chips.push(chip('Team'));
+  else if(labels[play.kind]&&play.player!=null)chips.push(jerseyChip(play.player,play.team,'player'));
  }
  for(const [key,label] of [['block','Block'],['rebound','Rebound'],['steal','Steal']]){
   const detail=play[key];
@@ -302,7 +304,7 @@ function wfRender(){
  el('wfPrompts').checked=state.reboundPrompts??(wfIsFull(mode)&&matchMedia('(pointer:fine)').matches);
  el('wfPromptsLabel').hidden=!wfIsFull(mode);
  el('wfSubs').hidden=!wfIsFull(mode);
- el('wfTeam').textContent=SoccerBrand.name(state,team)+(wfDraft?' · '+(wfDraft.stage==='assist'?'Assist':wfDraft.stage==='blockPlayer'?'Block':['steal','stealPlayer'].includes(wfDraft.stage)?'Steal':wfDraft.stage==='reboundPlayer'?'Rebound':wfDraft.action==='foul'?(wfDraft.technical?'Technical foul':'Personal foul'):wfDraft.action==='timeout'?'Timeout':wfDraft.action==='jump-ball'?'Jump ball':wfDraft.action==='shot'?'Shot entry':wfDraft.action):' has the ball');
+ el('wfTeam').textContent=SoccerBrand.name(state,team)+(wfDraft?' · '+(wfDraft.stage==='assist'?'Assist':wfDraft.stage==='blockPlayer'?'Block':wfDraft.stage==='steal'?'Steal':wfDraft.stage==='reboundPlayer'?'Rebound':wfDraft.action==='foul'?(wfDraft.technical?'Technical foul':'Personal foul'):wfDraft.action==='timeout'?'Timeout':wfDraft.action==='jump-ball'?'Jump ball':wfDraft.action==='shot'?'Shot entry':wfDraft.action):' has the ball');
  for(const t of ['home','away']){
   const button=el('wfTeam-'+t);
   button.textContent=(t==='home'?'H · ':'V · ')+SoccerBrand.name(state,t);
@@ -325,9 +327,10 @@ function wfRender(){
  else if(d.stage==='result')buttons=wfButton('Made · G','G')+
   wfButton('Miss + offensive rebound · O','O')+wfButton('Miss + defensive rebound · D','D')+wfButton('Missed · M','M')+(d.points>1?wfButton('Blocked shot · K','K'):'');
  else if(d.stage==='rebound')buttons=wfButton('Defensive rebound · D','D')+wfButton('Offensive rebound · O','O')+(d.block||!d.eid||d.points===1?'':wfButton('Blocked shot · K','K'))+wfButton('Skip · N','N');
- else if(d.stage==='steal')buttons=wfButton('Credit steal · S','S')+wfButton('No steal · N','N');
+ else if(d.stage==='steal')buttons=wfNumbers(d.team)+wfButton('No steal · Enter','N');
  else{
   buttons=wfNumbers(d.team);
+  if(d.stage==='player'&&d.action==='turnover')buttons+=wfButton('Team turnover','TEAM');
   if(d.stage==='player'&&d.technical)buttons+=wfButton('Team / bench · N','N');
   if(d.stage==='assist')buttons+=wfButton('No assist + switch · Enter','END')+wfButton('No assist + switch · N','N');
   if(d.stage==='reboundPlayer')buttons+=wfButton(SoccerBrand.name(state,d.team)+' team rebound · M','M')+wfButton('Review later · Enter','REVIEW');
@@ -580,7 +583,7 @@ async function wfApplyToken(raw,fromCommand=false){
   if(state.events.find(e=>e.id===d.eid)?.assist==='no-assist')d.trail.push('No assist');
   wfFinish();return true;
  }
- if(token==='N'&&['rebound','steal'].includes(d.stage)){
+ if((token==='N'&&['rebound','steal'].includes(d.stage))||(token==='ENTER'&&d.stage==='steal')){
   if(d.eid&&state.events.find(e=>e.id===d.eid)?.pendingDetail){
    if(!await wfPatch(d,()=>{},true))return false;
   }
@@ -617,10 +620,7 @@ async function wfApplyToken(raw,fromCommand=false){
   else wfFinish();
   wfRender();return true;
  }
- if(d.stage==='steal'){
-  if(token!=='S'){wfMessage='Choose S for a steal or N for none.';wfRender();return false;}
-  d.team=wfOther(d.offense);d.stage='stealPlayer';d.trail.push('Steal');wfRender();return true;
- }
+ if(d.stage==='steal'&&token==='S')return true;
  if(d.stage==='rebound'){
   if(token==='K'&&d.eid&&!d.block&&d.points!==1){wfChooseBlock(d);wfRender();return true;}
   const reboundType=wfReboundType(token);
@@ -636,7 +636,7 @@ async function wfApplyToken(raw,fromCommand=false){
   if(token==='REVIEW')return wfSaveRebound(d,null);
   if(token==='M'||token==='TEAM')return wfSaveRebound(d,'team');
  }
- const number=wfValidPlayer(d.team,token);
+ const number=d.stage==='player'&&d.action==='turnover'&&token==='TEAM'?'team':wfValidPlayer(d.team,token);
  if(number===null){wfMessage='Enter a jersey number from '+SoccerBrand.name(state,d.team)+'’s roster.';wfRender();return false;}
  if(d.stage==='phonePlayer'){
   if(!await wfPatch(d,e=>{e.scorer=String(number);e.player=String(number);}))return false;
@@ -653,18 +653,21 @@ async function wfApplyToken(raw,fromCommand=false){
   },true))return false;
   wfAddJerseyChip(d,'assist',number);wfFinish();return true;
  }
- if(d.stage==='blockPlayer'||d.stage==='stealPlayer'){
+ if(d.stage==='blockPlayer'||d.stage==='steal'){
   const key=d.stage==='blockPlayer'?'block':'steal';
   if(!await wfPatch(d,e=>{
    e[key]={team:d.team,player:String(number)};
    if(key==='block'&&e.pendingDetail==='blockPlayer')e.pendingDetail='rebound';
   },key==='steal'))return false;
+  if(key==='steal')d.trail.push('Steal');
   wfAddJerseyChip(d,key,number);
   if(key==='block'){if(d.followup==='blockPlayer')d.followup='rebound';if(d.recovered==='blockPlayer')d.recovered='rebound';d.block=true;d.team=d.offense;d.stage='rebound';wfRender();}else wfFinish();
   return true;
  }
  if(d.stage==='reboundPlayer')return wfSaveRebound(d,String(number));
- d.player=String(number);wfAddJerseyChip(d,d.action==='shot'?'scorer':'player',number);
+ d.player=String(number);
+ if(number==='team')d.trail.push('Team');
+ else wfAddJerseyChip(d,d.action==='shot'?'scorer':'player',number);
  if(d.action==='shot'){
   if(!wfIsFull(wfMode(state))||d.phone){
    d.made=true;d.trail.push('Made');if(!await wfCommit(d))return false;wfFinish();
@@ -718,7 +721,7 @@ async function wfSubmit(event){
  const command=el('wfCommand').value.trim();
  if(!command)return;
  wfInput='';el('wfCommand').value='';
- const tokens=command.toUpperCase().match(/TEAM|\d+|[A-Z]/g)||[];
+ const tokens=command.toUpperCase().match(/ENTER|TEAM|\d+|[A-Z]/g)||[];
  wfSubmitting=true;
  try{
   for(let i=0;i<tokens.length;i++){
@@ -734,7 +737,7 @@ async function wfSubmit(event){
  el('wfCommand').focus();
 }
 function wfNeedsJersey(){
- return ['player','assist','reboundPlayer','blockPlayer','stealPlayer'].includes(wfDraft?.stage);
+ return ['player','assist','reboundPlayer','blockPlayer','steal'].includes(wfDraft?.stage);
 }
 
 async function wfProcessKey(key){
@@ -748,6 +751,7 @@ async function wfProcessKey(key){
  if(wfDigits){wfMessage=wfJerseyEntryHint;wfRender();return false;}
  if(key==='ENTER'){
   if(wfDraft?.stage==='reboundPlayer')return wfToken('REVIEW');
+  if(wfDraft?.stage==='steal')return wfToken('ENTER');
   if(!wfDraft||wfDraft.stage==='assist')return wfToken('END');
   return true;
  }
@@ -973,7 +977,7 @@ basketballBoxScore=function(game){
    if(e.foulType==='technical')add(e.team,e.player,'tf');
   }
   if(e.kind==='rebound')add(e.team,e.player,e.reboundType==='offensive'?'oreb':'dreb');
-  if(e.kind==='turnover')add(e.team,e.player,'to');
+  if(e.kind==='turnover')add(e.team,e.player??'team','to');
   if(e.kind==='steal')add(e.team,e.player,'stl');
   if(e.kind==='block')add(e.team,e.player,'blk');
   if(e.rebound)add(wfLinkedReboundTeam(e),e.rebound.player,e.rebound.type==='offensive'?'oreb':'dreb');
@@ -1045,6 +1049,8 @@ function wfRenderBox(){
   numbers.sort((a,b)=>{
    if(a==='Unassigned')return 1;
    if(b==='Unassigned')return -1;
+   if(a==='team')return 1;
+   if(b==='team')return -1;
    const difference=byPoints?(stats.totals[t][b]?.pts??0)-(stats.totals[t][a]?.pts??0):0;
    return difference||Number(a)-Number(b)||a.localeCompare(b);
   });

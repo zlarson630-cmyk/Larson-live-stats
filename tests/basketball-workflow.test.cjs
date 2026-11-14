@@ -74,7 +74,7 @@ test('a turnover switches possession once, and the linked steal credits the oppo
  assert.equal(game.offenseTeam,'away');
  assert.equal(game.events[0].team,'home');
  assert.equal(a.run('wfDraft.stage'),'steal');
- game=await a.command('S 24');
+ game=await a.command('24');
  assert.equal(game.offenseTeam,'away');
  assert.deepEqual(JSON.parse(JSON.stringify(game.events[0].steal)),{team:'away',player:'24'});
  const box=a.ctx.basketballBoxScore(game);
@@ -918,4 +918,36 @@ test('keyboard substitutions stage pairs and reset the five before applying',asy
  await a.ctx.confirmBasketballSubs(a.db.row().pendingSubs[0].id);
  assert.deepEqual([...a.ctx.basketballOnCourt(a.db.row(),'home')],['02','04','11','21','35']);
  assert.match(a.node('wfLineups').innerHTML,/#02.*#04.*#11.*#21.*#35/);
+});
+
+test('keyboard turnover accepts the defender directly, or closes with Enter',async()=>{
+ const a=setup('full',{offenseTeam:'home',possession:'home'});
+ const field=a.node('wfCommand');
+ for(const key of 'T1124')await a.press(key,{target:field});
+ let game=a.db.row();
+ assert.equal(game.events.length,1);
+ assert.equal(game.events[0].player,'11');
+ assert.equal(game.events[0].steal.player,'24');
+ assert.equal(game.offenseTeam,'away');
+ assert.equal(game.possession,'home');
+ for(const key of 'T24')await a.press(key,{target:field});
+ await a.press('Enter',{target:field});
+ game=a.db.row();
+ assert.equal(game.events.length,2);
+ assert.equal(game.events[0].steal,undefined);
+ assert.equal(game.events[0].pendingDetail,undefined);
+ assert.equal(a.run('wfDraft'),null);
+});
+
+test('team turnovers use their own row and count once in the team total',async()=>{
+ const a=setup();
+ const game=await a.command('T 11 ENTER H T TEAM ENTER');
+ assert.equal(game.events[0].player,'team');
+ assert.equal(game.offenseTeam,'away');
+ const stats=a.ctx.basketballBoxScore(game);
+ assert.equal(stats.totals.home.team.to,1);
+ assert.equal(stats.totals.home['11'].to,1);
+ assert.equal(stats.teams.home.to,2);
+ assert.equal(stats.teams.away.stl,0);
+ assert.match(a.node('wfBox').innerHTML,/<th>Team<\/th>/);
 });
