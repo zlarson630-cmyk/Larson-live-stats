@@ -119,6 +119,19 @@ body:has(#broadcast:not(.hide)) main{max-width:1440px}
 <div class="wf-tools"><button id="wfUndo" onclick="undo()">Undo last play</button><button id="wfDetailReview" type="button" hidden onclick="wfReviewNextDetail()">Review unfinished plays</button><button id="wfReviewQueue" type="button" hidden onclick="wfReviewNextRebound()">Review rebounds</button><button onclick="toggleClock()">Start / stop clock · Space</button><span id="wfSubs"><button onclick="openBasketballSubs('home')">Home substitutions</button><button onclick="openBasketballSubs('away')">Visitor substitutions</button></span></div>
 <div id="basketballPending"></div><div class="wf-live-box" role="region" aria-labelledby="wfBoxTitle"><div class="wf-box-heading"><h2 id="wfBoxTitle">Live box score</h2><label id="wfBoxSortControl">Sort by <select id="wfBoxSort" onchange="wfRenderBox()"><option value="jersey">Jersey number</option><option value="points">Most points</option></select></label></div><div id="wfBox"></div></div>
 <details class="wf-score-settings"><summary>Scoring settings</summary><div class="wf-layout-settings"><label>Controls <select id="wfLayout" onchange="wfSetLayout(this.value)"><option value="auto">Automatic for this screen</option><option value="computer">Computer</option><option value="phone">Phone</option></select></label><span id="wfReporter"></span></div><div class="wf-settings"><label>Scoring mode <select id="wfMode" onchange="wfSetMode(this.value)"><option value="basic">Basic · team totals</option><option value="streamlined">Streamlined · scorebook</option><option value="full">Full Suite</option><option value="fullchart">Full Suite + shot chart</option></select></label><label id="wfPromptsLabel"><input id="wfPrompts" type="checkbox" onchange="wfSetPrompts(this.checked)"> Prompt for rebounds after misses</label></div>
+<fieldset id="basketballTagSetup" hidden>
+ <legend>Tag Team</legend>
+ <label>Second device <select id="basketballTagMode">
+  <option value="details">Shooting + Assists &amp; Rebounds</option>
+  <option value="chart">Full Suite + Shot Chart</option>
+ </select></label>
+ <button id="basketballTagShare" type="button">Create second-device link</button>
+ <button id="basketballTagStop" type="button" hidden>Turn off Tag Team</button>
+ <label id="basketballTagLinkLabel" hidden>Second-device link
+  <input id="basketballTagLink" type="url" readonly spellcheck="false">
+ </label>
+ <p id="basketballTagStatus" class="small" role="status"></p>
+</fieldset>
 <p id="wfTracking" class="small"></p><p id="wfCoverage" class="small" role="note"></p>
 </details>
 <details class="wf-guide">
@@ -127,6 +140,7 @@ body:has(#broadcast:not(.hide)) main{max-width:1440px}
  <p><strong>Points, fouls and timeouts.</strong> <kbd>J</kbd> starts a two-pointer, <kbd>Y</kbd> a three-pointer and <kbd>E</kbd> a free throw, <kbd>L</kbd> a layup and <kbd>U</kbd> a dunk. Enter every jersey with two digits, such as <kbd>05</kbd> for No. 5. Basic saves team points immediately. Streamlined saves made shots after the jersey. In Full Suite, press <kbd>G</kbd> for a make or <kbd>M</kbd> for a miss. <kbd>F</kbd> is personal foul, <kbd>C</kbd> is technical foul and <kbd>O</kbd> starts a timeout when no play is in progress. Choose <kbd>H</kbd> or <kbd>V</kbd> for the team. For player-tracked fouls, enter the jersey or use <kbd>N</kbd> for a team or bench technical. Phone controls keep +1, +2 and +3 visible for both teams.</p>
  <p><strong>Assists and turnovers.</strong> Enter the assisting player’s two-digit jersey after a made field goal to credit the assist and switch possession. <kbd>Enter</kbd> skips the assist and switches possession. <kbd>N</kbd> also skips the assist and switches possession. After a saved make in Basic or Streamlined, <kbd>Enter</kbd> switches possession. In Full Suite, press <kbd>T</kbd>, then enter the offensive player’s jersey or choose <strong>Team turnover</strong>. Enter the defender’s jersey to credit a steal, or press <kbd>Enter</kbd> for no steal.</p>
  <p><strong>Misses and rebounds.</strong> In Full Suite, press <kbd>O</kbd> or <kbd>D</kbd> after the shooter’s jersey to save the miss and go straight to an offensive or defensive rebound. Enter the rebounder’s jersey, press <kbd>M</kbd> for a team rebound, or press <kbd>Enter</kbd> to review it later. For example, <kbd>E 05 O M</kbd> records No. 5’s missed free throw and credits the shooting team with the rebound. A plain <kbd>M</kbd> at the shot result follows your rebound prompt setting. After entering a field-goal shooter, press <kbd>K</kbd> to record a miss and enter the blocker before the rebound. Saving a defensive rebound switches possession. <kbd>R</kbd> starts a standalone rebound.</p>
+ <p><strong>Tag Team.</strong> In Scoring settings, create a link for your second operator. In Shooting + Assists &amp; Rebounds, a made field goal switches possession as soon as it saves. Use <kbd>M</kbd> for a miss or <kbd>D</kbd> for a miss that switches possession. You can also set the next offense with <kbd>H</kbd> or <kbd>V</kbd>. The second operator records the rebound or assist from their list. In Full Suite + Shot Chart, the second operator taps or clicks locations on their court.</p>
  <p><strong>Review and correct.</strong> <kbd>Backspace</kbd> removes a digit or goes back one step in the current play. Click a timestamp, shot type, or jersey in Last five plays to correct it. In Full Suite, press <kbd>I</kbd> for substitutions. Choose <kbd>H</kbd> or <kbd>V</kbd>, then type in/out pairs or press <kbd>R</kbd> to enter the full five. Click <strong>Confirm entered court</strong> once they take the floor. To finish a turnover or correct rebound credit later, click <strong>Add steal</strong> or the rebound chip in Last five plays. Click a jersey chip in the latest saved play to correct it, or use <strong>Game Flow</strong> for earlier plays. If you reopen the game after a refresh or disconnect, <strong>Review unfinished plays</strong> flags saved plays still waiting for an assist, steal or rebound. Use <strong>Review rebounds</strong> to assign an unknown rebounder later. <strong>Undo last play</strong> removes the play and its linked stats. Use <strong>PDF reports</strong> for the one-page or full stats report.</p>
 </details>
 
@@ -428,7 +442,7 @@ function reload(){}
 function write(){syncStatus('Sign in and open a cloud game before scoring.');return Promise.resolve(false)}
 function remaining(s){return s.running?Math.max(0,s.seconds-Math.floor((Date.now()-s.startedAt)/1000)):s.seconds}
 function stamp(s){let n=remaining(s);return Math.floor(n/60)+':'+String(n%60).padStart(2,'0')}
-async function markBasketballFinal(){if(!state||state.libraryStatus==='completed')return;const game=id;if(!confirm('Mark this game FINAL? The clock will stop and the game will move to Completed Games.'))return;const saved=await write(s=>{s.seconds=remaining(s);s.running=false;s.startedAt=null;s.libraryStatus='completed';s.finalAt=new Date().toISOString()});if(saved&&id===game){scorerToast('Final score saved · game completed');openBasketballGameText('scorerFeedback',true);}}
+async function markBasketballFinal(){if(!state||state.libraryStatus==='completed')return;const game=id;if(!confirm('Mark this game FINAL? The clock will stop and the game will move to Completed Games.'))return;const saved=await write(s=>{s.seconds=remaining(s);s.running=false;s.startedAt=null;s.libraryStatus='completed';delete s.tagTeam;s.finalAt=new Date().toISOString()});if(saved&&id===game){scorerToast('Final score saved · game completed');openBasketballGameText('scorerFeedback',true);}}
 function toggleClock(){return write(s=>{s.seconds=remaining(s);s.running=!s.running;s.startedAt=s.running?Date.now():null;if(s.running)s.liveStarted=true})}
 let basketballClockEdit=null;
 function renderBasketballClockEditor(){
@@ -843,6 +857,11 @@ async function correctEvent(eid){
   if(['1','2','3'].includes(a)){old.points=Number(a);old.kind=wasScore?'score':'miss';}
   if(Number(old.points)===1)delete old.shotLocation;
   if(old.kind!==(wasScore?'score':'miss')||(old.pendingDetail==='assist'&&Number(old.points)===1))delete old.pendingDetail;
+  if(old.kind!==(wasScore?'score':'miss')&&old.tagTeamDetail){
+   delete old.rebound;
+   delete old.tagTeamNoRebound;
+   old.tagTeamDetail=old.kind==='score'?'assist':'rebound';
+  }
   if(old.kind==='score'){s.scores[old.team]+=old.points;old.assist=old.points===1?'na':(old.assist==='na'?null:old.assist??null);}else delete old.assist;
  });
  scorerToast(ok?'Play corrected':'Correction not saved',!ok);
@@ -1098,5 +1117,5 @@ function listSeasonTeams(){
 }
 window.addEventListener('hashchange',showBasketballSetup);
 showBasketballSetup();
-</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script><script src="live.js"></script><script src="cloud.js?v=basketball-safe-save-1"></script><script src="basketball-quick-roster.js?v=starters-20261107"></script><script src="cloud-library.js"></script><script src="profile.js"></script><script src="basketball-setup.js?v=lobby-20261107"></script><script src="basketball-report.js?v=turnover-shortcut-1"></script><script src="basketball-demo.js?v=practice-resume-1"></script><script src="basketball-graphics.js?v=team-comparison"></script><script src="basketball-workflow.js?v=turnover-shortcut-1"></script><script>startBasketballDemo();</script><script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script></body></html>
+</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script><script src="live.js"></script><script src="cloud.js?v=basketball-safe-save-1"></script><script src="basketball-quick-roster.js?v=starters-20261107"></script><script src="cloud-library.js"></script><script src="profile.js"></script><script src="basketball-setup.js?v=lobby-20261107"></script><script src="basketball-report.js?v=turnover-shortcut-1"></script><script src="basketball-demo.js?v=practice-resume-1"></script><script src="basketball-graphics.js?v=team-comparison"></script><script src="basketball-workflow.js?v=tag-team-1"></script><script src="basketball-tag-setup.js?v=tag-team-1"></script><script>startBasketballDemo();</script><script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script></body></html>
 

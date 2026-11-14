@@ -65,6 +65,13 @@ In Basketball or Soccer setup, enter an optional **Public scheduled start** befo
 
 The public feed uses the allowlisted projection in `supabase/008_game_center.sql`. It refreshes every five seconds and shows upcoming games and finals within seven days. Live entries leave the home feed after 12 hours without an update. Private schedules and legacy imports are excluded.
 
+## Basketball Tag Team
+
+The primary scorer opens **Scoring settings → Tag Team**, chooses a setup, and creates a second-device link. The link grants access to the selected game and assignment until replaced, turned off, or the game is finalized. If you reload the primary device and need the link again, use **Replace second-device link**.
+
+- **Shooting + Assists & Rebounds**: The primary scorer records field-goal makes and misses. Makes switch possession. Use D for a miss that switches possession, or set the next offense with H or V. The second device records the assist or rebound on the saved shot.
+- **Full Suite + Shot Chart**: The primary scorer records the full play. The second device selects a shot from the list and taps or clicks the half court. It advances to the oldest unplotted shot after each save.
+
 ## Football, baseball and softball betas
 
 Open a sport from Home and create a game. Use one scorer tab and keep its Broadcast Center open in another tab in the same browser. Broadcast links reference the saved game on that device. Export a branded PDF box score from either view.

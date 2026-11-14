@@ -951,3 +951,27 @@ test('team turnovers use their own row and count once in the team total',async()
  assert.equal(stats.teams.away.stl,0);
  assert.match(a.node('wfBox').innerHTML,/<th>Team<\/th>/);
 });
+
+test('Tag Team detail mode queues field goals without blocking the primary scorer',async()=>{
+ const a=setup('full',{tagTeam:{mode:'details'}});
+ let game=await a.command('H Y 11 G J 24 M');
+ assert.equal(a.run('wfDraft'),null);
+ assert.equal(game.events[1].tagTeamDetail,'assist');
+ assert.equal(game.events[1].assist,null);
+ assert.equal(game.events[0].tagTeamDetail,'rebound');
+ assert.equal(game.events[0].pendingDetail,undefined);
+ assert.equal(game.offenseTeam,'away');
+ game=await a.command('J 24 D');
+ assert.equal(a.run('wfDraft'),null);
+ assert.equal(game.offenseTeam,'home');
+ assert.equal(game.events[0].tagTeamDetail,'rebound');
+ assert.equal(game.events[0].rebound,undefined);
+});
+
+test('Tag Team shot chart retains the full scoring sequence and leaves plotting to the second device',async()=>{
+ const a=setup('full',{shotChartEnabled:true,tagTeam:{mode:'chart'}});
+ const game=await a.command('H J 11 G 02');
+ assert.equal(game.events[0].assist,'02');
+ assert.equal(game.events[0].tagTeamDetail,undefined);
+ assert.equal(a.node('shotLocationDialog').open,false);
+});

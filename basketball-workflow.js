@@ -13,6 +13,7 @@ const wfOther=team=>team==='home'?'away':'home';
 const wfReboundType=key=>key==='O'?'offensive':key==='D'?'defensive':null;
 const wfReboundTeam=(shootingTeam,type)=>type==='defensive'?wfOther(shootingTeam):shootingTeam;
 const wfMode=game=>game?.scoringMode==='full'&&game.shotChartEnabled?'fullchart':Object.hasOwn(wfModes,game?.scoringMode)?game.scoringMode:'streamlined';
+const wfTagDetails=game=>game?.tagTeam?.mode==='details';
 const wfOffense=game=>['home','away'].includes(game?.offenseTeam)?game.offenseTeam:'home';
 function wfElapsed(game){return basketballElapsedAt(game,Math.max(1,game.period),remaining(game));}
 function wfPlayerName(team,number){
@@ -58,6 +59,7 @@ function wfStage(){
  if(d.stage==='player'&&d.technical)return 'Enter the player’s two-digit jersey or choose Team / bench · N.';
  if(d.stage==='player')return 'Enter '+(d.action==='shot'?'shooter':d.action==='foul'?'fouling player':'player')+' jersey number using two digits.';
  if(d.stage==='phonePlayer')return 'Basket saved. Who scored? Choose a player or assign later.';
+ if(d.stage==='result'&&wfTagDetails(state)&&d.points>1)return 'G for make, M for miss, or D for miss + switch possession.';
  if(d.stage==='result')return 'G for make, O for miss + offensive rebound, D for miss + defensive rebound, or M for miss.'+(d.points>1?' K records a blocked shot.':'');
  if(d.stage==='assist')return 'Who assisted? Enter a two-digit jersey, or press Enter for no assist and switch possession.';
  if(d.stage==='rebound')return 'Rebound: D defensive, O offensive, or N to skip.'+(!d.block&&d.eid&&d.points!==1?' K records a block.':'');
@@ -301,6 +303,8 @@ function wfRender(){
  panel.style.setProperty('--wf-ink',uniformInk(team));
  panel.style.setProperty('--wf-accent',uniformAccent(team));
  el('wfMode').value=mode;
+ el('wfMode').disabled=!!state.tagTeam?.mode;
+ window.renderBasketballTagTeam?.();
  el('wfPrompts').checked=state.reboundPrompts??(wfIsFull(mode)&&matchMedia('(pointer:fine)').matches);
  el('wfPromptsLabel').hidden=!wfIsFull(mode);
  el('wfSubs').hidden=!wfIsFull(mode);
@@ -324,6 +328,7 @@ function wfRender(){
   const showKey=d.action==='jump-ball';
   buttons=wfButton((showKey?'H · ':'')+SoccerBrand.name(state,'home'),'H')+wfButton((showKey?'V · ':'')+SoccerBrand.name(state,'away'),'V');
  }
+ else if(d.stage==='result'&&wfTagDetails(state)&&d.points>1)buttons=wfButton('Made · G','G')+wfButton('Missed · M','M')+wfButton('Miss + switch possession · D','D');
  else if(d.stage==='result')buttons=wfButton('Made · G','G')+
   wfButton('Miss + offensive rebound · O','O')+wfButton('Miss + defensive rebound · D','D')+wfButton('Missed · M','M')+(d.points>1?wfButton('Blocked shot · K','K'):'');
  else if(d.stage==='rebound')buttons=wfButton('Defensive rebound · D','D')+wfButton('Offensive rebound · O','O')+(d.block||!d.eid||d.points===1?'':wfButton('Blocked shot · K','K'))+wfButton('Skip · N','N');
@@ -376,6 +381,7 @@ async function wfSave(change){
  finally{wfBusy=false;wfRender();}
 }
 async function wfSetMode(mode){
+ if(state?.tagTeam?.mode){el('wfMode').value=wfMode(state);return;}
  if(wfDraft||wfBusy||wfSubmitting){el('wfMode').value=wfMode(state);wfMessage='Finish or skip this play before changing modes.';wfRender();return;}
  if(!Object.hasOwn(wfModes,mode))return;
  await wfSave(s=>{
@@ -398,7 +404,7 @@ function wfFinish(message='Play saved. Ready for the next play.',openChart=true)
  }
  wfChipEdit=null;
  wfDigits='';wfSteps=[];wfDraft=null;wfInput='';wfMessage=message;wfRender();
- if(openChart&&finished?.eid&&finished.action==='shot'&&finished.points>1&&wfMode(state)==='fullchart'&&!finished.phone&&!finished.recovered)openBasketballShotLocation(finished.eid);
+ if(openChart&&state.tagTeam?.mode!=='chart'&&finished?.eid&&finished.action==='shot'&&finished.points>1&&wfMode(state)==='fullchart'&&!finished.phone&&!finished.recovered)openBasketballShotLocation(finished.eid);
 }
 function wfSkip(){
  if(wfBusy)return;
@@ -485,11 +491,17 @@ async function wfCommit(d){
    if(s.timeouts[d.team]<=0)throw Error('No timeouts remaining for this team.');
    s.timeouts[d.team]--;
   }
-  if(e.kind==='score'&&e.assist===null)e.pendingDetail='assist';
-  if(e.kind==='miss'&&d.pendingRebound)e.pendingDetail=d.pendingRebound;
+  const assigned=wfTagDetails(s)&&d.action==='shot'&&d.points>1;
+  if(assigned){
+   e.tagTeamDetail=d.made?'assist':'rebound';
+   if(d.made)e.assist=null;
+  }else{
+   if(e.kind==='score'&&e.assist===null)e.pendingDetail='assist';
+   if(e.kind==='miss'&&d.pendingRebound)e.pendingDetail=d.pendingRebound;
+  }
   if(e.kind==='turnover')e.pendingDetail='steal';
   s.events.unshift(e);
-  if(e.kind==='turnover')wfSwitchOffense(s,e);
+  if(e.kind==='turnover'||(assigned&&(d.made||d.pendingRebound==='defensive')))wfSwitchOffense(s,e);
   if(e.kind==='rebound'&&e.reboundType==='defensive')wfSwitchOffense(s,e,d.offense);
  });
  if(id!==game)return false;
@@ -606,7 +618,9 @@ async function wfApplyToken(raw,fromCommand=false){
   d.stage='player';wfRender();return true;
  }
  if(d.stage==='result'){
+  const assigned=wfTagDetails(state)&&d.points>1;
   const reboundType=wfReboundType(token);
+  if(assigned&&!['G','M','X','O','D'].includes(token)){wfMessage=wfStage();wfRender();return false;}
   const blocked=token==='K'&&d.points>1;
   if(!blocked&&!reboundType&&!['G','M','X'].includes(token)){wfMessage=wfStage();wfRender();return false;}
   d.made=token==='G';
