@@ -63,3 +63,51 @@ test('basketball can import and review a PDF before loading a season',async()=>{
 });
 test('soccer creates a cloud match, confirms edits, and rolls back an unsuccessful save without writing to the browser',async()=>{const a=fixtureApp({sport:'soccer'});a.file('soccer-brand.js');a.file('soccer-clock.js');a.html('soccer.html');await a.ready();a.node('home').value='Jefferson';a.node('away').value='Visitor';a.node('soccerSeason').value='2026–27';a.node('soccerProgram').value='boys';a.node('hr').value='9, Soccer Player';assert.equal(await a.run('createCloudMatch()'),true);await a.run("choose('Goal','home');saveEvent();cloudQueue");assert.equal(a.db.tables.live_games[0].state.scores.home,1);assert.equal(a.ctx.CloudLibrary.rosters()['soccer|jefferson|boys|2026–27'],'9, Soccer Player');a.db.setOffline(true);await a.run("choose('Goal','home');saveEvent();cloudQueue");assert.match(a.node('status').textContent,/NOT SAVED/);assert.equal(a.run('s.events.length'),1);assert.deepEqual(a.writes,[])});
 test('Team Brands renders the complete account shelf and exposes shared brands without opening the editor',async()=>{const db=database(),a=fixtureApp({db}),b=fixtureApp({db,user:{id:'B',email:'b@example.com'}});await Promise.all([a.ready(),b.ready()]);await Promise.all([a.ctx.TeamBrands.save(brand),a.ctx.TeamBrands.save({...brand,id:'another',name:'Another School'})]);await b.ctx.TeamBrands.save({...brand,id:'visitor',name:'Visitor School'});await b.ctx.SharedBrands.publish({id:'visitor'});a.file('soccer-brand.js');a.file('brands-editor.js');await a.settle();assert.equal(a.node('brandCount').textContent,2);assert.equal(a.node('brandLibrary').children.length,2);assert.equal(a.node('sharedLibrary').children.length,1);assert.equal(a.node('sharedLibrary').children[0].children.find(e=>e.textContent==='Add to my library').disabled,false);a.node('brandSearch').value='Another';a.node('brandSearch').input();assert.equal(a.node('brandLibrary').children.length,1);assert.deepEqual(a.writes,[])});
+
+test('shared brand discovery matches the nickname and sorts official listings first',async()=>{
+ const db=database(),a=fixtureApp({db}),b=fixtureApp({db,user:{id:'B'}});
+ await Promise.all([a.ready(),b.ready()]);
+ await a.ctx.TeamBrands.save({...brand,id:'harlem',name:'Harlem High School',nickname:'Huskies'});
+ await a.ctx.TeamBrands.save({...brand,id:'another',name:'Another School',nickname:'Huskies'});
+ await a.ctx.SharedBrands.publish({id:'harlem'});
+ await a.ctx.SharedBrands.publish({id:'another'});
+ for(const row of db.tables.shared_team_brands)row.official=row.brand_id==='harlem';
+ const rows=await b.ctx.SharedBrands.browse('huskies');
+ assert.deepEqual(Array.from(rows,row=>row.name),['Harlem High School','Another School']);
+});
+
+test('public season rosters match team, program, season and level, then disappear after unpublishing',async()=>{
+ const db=database(),a=fixtureApp({db}),b=fixtureApp({db,user:null});
+ a.file('school-directory.js');b.file('school-directory.js');
+ await a.ready();
+ const season={team:'Harlem',season:'2026–27',program:'girls',level:'varsity'};
+ await a.ctx.SchoolDirectory.publish(season,'05, Player One, , ',true,'A');
+ await a.ctx.SchoolDirectory.publish({...season,level:'jv'},'12, Player Two, , ',true,'A');
+ assert.equal((await b.ctx.SchoolDirectory.browse({...season,team:'  HARLEM  '}))[0].roster,'05, Player One, , ');
+ assert.equal((await b.ctx.SchoolDirectory.browse({...season,level:'jv'}))[0].player_count,1);
+ assert.equal((await b.ctx.SchoolDirectory.browse({...season,program:'boys'})).length,0);
+ await a.ctx.SchoolDirectory.publish(season,'',false,'A');
+ assert.equal((await b.ctx.SchoolDirectory.browse(season)).length,0);
+ assert.equal((await b.ctx.SchoolDirectory.browse({...season,level:'jv'})).length,1);
+});
+
+test('basketball suggests an official roster and copies it only into the game draft',async()=>{
+ const a=fixtureApp();
+ a.file('soccer-brand.js');a.html('basketball.html');a.file('school-directory.js');
+ await a.ready();
+ const selection={team:'Harlem',season:'2026–27',program:'girls',level:'varsity'};
+ await a.ctx.SchoolDirectory.publish(selection,'05, Player One, , ',true,'A');
+ a.db.tables.shared_season_rosters[0].official=true;
+ a.node('home').value='Harlem';a.node('homeSeason').value=selection.season;
+ a.node('homeProgram').value=selection.program;
+ a.file('basketball-roster-directory.js');
+ await a.settle();
+ await a.ctx.BasketballRosterDirectory.suggest('home',true);
+ const rosterPanel=a.node('homeSharedRosters');
+ assert.equal(rosterPanel.hidden,false);
+ assert.equal(rosterPanel.children[1].textContent,'Use official roster');
+ rosterPanel.children[1].onclick();
+ assert.match(a.node('homeRoster').value,/05, Player One/);
+ assert.equal(a.ctx.CloudLibrary.rosters()['harlem|girls|2026–27'],undefined);
+ assert.equal(a.run('gameTeamSeasons().home.sharedRosterId'),a.db.tables.shared_season_rosters[0].id);
+});

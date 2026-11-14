@@ -5,10 +5,10 @@ body[data-management="games"] :is(#teams,#brands,#games .profileSectionHeading),
 #games .gameLibraryFilters label{display:grid;gap:4px}
 .profileCard .gameActions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:9px}
 .profileCard .gameActions button{font-size:.92rem;padding:6px 10px;margin:0}
-</style><link rel="stylesheet" href="site-help.css?v=1"><script defer src="site-help.js?v=1"></script></head>
+</style><link rel="stylesheet" href="site-help.css?v=1"><script defer src="site-help.js?v=1"></script><link rel="stylesheet" href="site-nav.css?v=directory-1"><script defer src="site-nav.js?v=1"></script></head>
 <body data-profile-page><main>
 <header class="profileHeader"><a class="brandHome" href="./">Live Stats</a></header>
-<nav class="siteNav" aria-label="Main navigation"><a href="./">Home</a><a href="basketball.html">Basketball</a><a href="soccer.html">Soccer</a><a href="brands.html">Team Brands</a><a href="profile.html" aria-current="page">My Profile</a></nav>
+<nav data-site-nav="main" data-page="profile"></nav>
 <section class="accountHero"><div class="profileAvatar" id="profileAvatar" aria-hidden="true">?</div><div><p class="profileEyebrow">YOUR LIVE STATS</p><h1 id="profileHeading">My profile</h1><p id="profileIdentity" role="status">Checking sign-in…</p></div><button id="profileSignOut" hidden>Sign out</button></section>
 <section id="profileLogin"><h2>Sign in to your account</h2><p>Your account connects your team brands and cloud games across devices.</p><form id="profileSignIn"><label>Email<input id="profileEmail" type="email" autocomplete="username" required></label><label>Password<input id="profilePassword" type="password" autocomplete="current-password" required></label><button type="submit" class="primary">Sign in</button></form><button id="profileResetPassword" type="button">Email me a password reset link</button><p id="profilePasswordEmailStatus" role="status"></p><p id="profileAuthMessage" role="status" aria-live="polite"></p></section>
 <section id="profilePasswordSection" hidden>
@@ -26,7 +26,7 @@ body[data-management="games"] :is(#teams,#brands,#games .profileSectionHeading),
 <section id="legacyImport" hidden><h2>Bring older records into the cloud</h2><p class="profileHint">If you used this app before cloud saving, open this page in the original browser to bring those brands, rosters and games into your account. Existing cloud records stay intact. Imported games get a game code for the scoreboard; rosters and play details stay in your account.</p><p id="legacyImportStatus" role="status"></p><button id="legacyImportButton">Import older records to my account</button></section><p id="profileStatus" role="status" aria-live="polite"></p>
 <nav class="profileTabs" aria-label="Profile sections">
  <a href="profile.html?view=teams#teams"><span>My Teams<small>Teams and player rosters</small></span><b id="teamsCount">0</b></a>
- <a href="profile.html#brands"><span>Team Brands<small>Logos, colors, and uniforms</small></span><b id="brandsCount">0</b></a>
+ <a href="profile.html#brands"><span>My saved brands<small>Logos, colors, and uniforms</small></span><b id="brandsCount">0</b></a>
  <a href="profile.html?view=games#games"><span>My Games<small>Saved games and results</small></span><b id="gamesCount">0</b></a>
 </nav>
 <div class="profileTools"><label>Search your library<input id="profileSearch" type="search" placeholder="Team, season, player or game code"></label><button id="profileRefresh">Refresh</button></div>

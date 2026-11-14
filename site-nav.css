@@ -11,3 +11,7 @@
 .navHierarchy a:focus-visible,.navHierarchy summary:focus-visible,.sportNav>a:focus-visible{outline:2px solid #b9233d;outline-offset:2px}
 .sportNav{margin:0 0 10px;padding-bottom:5px;border-bottom:1px solid #cfd8e3}
 .sportNav>a[aria-current=page]{color:#8d1731;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:5px}
+/* Open the footer menu upward so it stays within the game view. */
+[data-site-nav=game] .sportsMenu{top:auto;bottom:calc(100% + 4px)}
+[data-site-nav=main] a[aria-current=page]{background:#fce9ed;color:#871d31}
+@media(max-width:500px){.navHierarchy{gap:4px 8px}.navHierarchy>a{padding:6px}.navHierarchy>details>summary{padding:6px 8px}}

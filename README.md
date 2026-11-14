@@ -33,7 +33,15 @@ Supabase API references: https://supabase.com/docs/reference/javascript/auth-sig
 
 ## Reusable Team Brands
 
-Open `brands.html` to save team/school names, nicknames, short names, logos and whites/primary uniform schemes and an optional alternate. Upload PNG/JPG/WebP logos or use HTTPS image links. Select a saved team and uniform in either sport’s setup. The library is stored in your account. Use Share brand to make a visual identity available in Discover shared brands; other users can add an independent copy. Export/import JSON is available for backups. Games retain brand snapshots.
+Open `brands.html` to save team/school names, nicknames, short names, logos and whites/primary uniform schemes and an optional alternate. Upload PNG/JPG/WebP logos or use HTTPS image links. Select a saved team and uniform in either sport’s setup. The library is stored in your account. Use **Make discoverable** to let other signed-in users find a brand by school name or nickname and add an independent copy. Official brands appear first. Export/import JSON is available for backups. Games retain brand snapshots.
+
+### Public basketball rosters
+
+In **Basketball → New Game → Teams**, choose a team, program, season and level. Check **Make roster public** and save to publish player rows. Uncheck it and save to remove the public copy. Rosters already copied into games remain part of those games. Previously saved rosters without a level are treated as varsity.
+
+In game setup, matching public rosters appear when you choose a team, season, program and level. **Use official roster** copies it into that game's editable roster. Users can also select a community-published roster when available.
+
+LLS staff accounts have a server-managed Supabase Auth `app_metadata.lls_staff` boolean. Staff can verify or remove an official badge on the public brand or roster listing, after confirming the publisher represents that school. The badge covers that school or program identity, so routine roster updates retain it. Changing the identity requires a new verification.
 
 Soccer shots on goal create a linked save for the other team. Set each current goalkeeper in setup or under **Goalkeepers and team logos**; update it after a keeper substitution. Without a designated keeper, the event form offers the opponent roster. Goals do not create saves. Edit/delete/undo keeps linked shots and saves together.
 

@@ -10,3 +10,11 @@ for(const page of pages){
  assert.ok(!/<style>([\s\S]*?)<\/style>/i.test(html),page+' contains inline style');
  console.log('Validated '+page+' page assets');
 }
+
+const routedPages=['index','basketball-home','basketball','sport-home','soccer','volleyball','wrestling','field-sports','brands','profile','games','schedule','quick-game'];
+for(const page of routedPages){
+ const html=fs.readFileSync(page+'.html','utf8');
+ assert.match(html,/<nav[^>]*data-site-nav=/,page+' shared navigation missing');
+ assert.match(html,/src="site-nav\.js\?/,page+' navigation script missing');
+ assert.doesNotMatch(html,/href="home\.html">← Multisport home/,page+' uses the legacy home link');
+}
