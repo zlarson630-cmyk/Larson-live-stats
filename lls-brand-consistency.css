@@ -1,0 +1,21 @@
+/* Shared Larson Live Stats brand consistency layer. Loaded after legacy sport styles. */
+@font-face{font-family:LLSBarlow;src:url('fonts/Barlow-Regular.ttf');font-weight:400;font-display:swap}
+@font-face{font-family:LLSBarlow;src:url('fonts/Barlow-Bold.ttf');font-weight:700;font-display:swap}
+@font-face{font-family:LLSCondensed;src:url('fonts/BarlowCondensed-Bold.ttf');font-weight:700;font-display:swap}
+:root{color-scheme:light;font-family:LLSBarlow,system-ui,sans-serif;background:#f3f4f6;color:#252b34}
+body:not(.overlay){background:#f3f4f6;color:#252b34;font-family:LLSBarlow,system-ui,sans-serif}
+body:not(.overlay) section,body:not(.overlay) .panel{background:#fff;color:#252b34;border:1px solid #dce2e8;box-shadow:0 2px 10px #1c2b3d0a}
+body:not(.overlay) h1,body:not(.overlay) h2,body:not(.overlay) h3{color:#252b34}
+body:not(.overlay) h2,body:not(.overlay) h3{font-family:LLSCondensed,LLSBarlow,sans-serif;text-transform:uppercase;letter-spacing:.02em}
+body:not(.overlay) button{font-family:LLSBarlow,system-ui,sans-serif;background:#e9edf2;color:#283441;border:1px solid #cdd6e0;border-radius:9px}
+body:not(.overlay) button.primary{background:#ed1e26;color:#fff;border-color:#ed1e26}
+body:not(.overlay) button:hover:not(:disabled){filter:brightness(.96)}
+body:not(.overlay) input,body:not(.overlay) textarea,body:not(.overlay) select{font-family:LLSBarlow,system-ui,sans-serif;background:#fff;color:#252b34;border:1px solid #bdc8d5}
+body:not(.overlay) a{color:#a31723}
+body:not(.overlay) .muted,body:not(.overlay) .small{color:#536071}
+body:not(.overlay) .pickerPanel,body:not(.overlay) .entrySheet{background:#fff;color:#252b34}
+body:not(.overlay) .scoreTeam,body:not(.overlay) .teamTile,body:not(.overlay) .team{background:#f8fafc;color:#252b34}
+body:not(.overlay) .sticky{background:#f3f4f6}
+body:not(.overlay) .brandHome{font-family:LLSCondensed,LLSBarlow,sans-serif;text-transform:uppercase;font-weight:700}
+body:not(.overlay) .brandHome:before{content:'';display:inline-block;width:32px;height:32px;vertical-align:middle;margin-right:8px;background:url('assets/brand/larson-z-mark.svg') center/contain no-repeat}
+body:not(.overlay) :focus-visible{outline:3px solid #ed1e26;outline-offset:2px}
